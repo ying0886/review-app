@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <!--
-  复习界面.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
-  APP_VERSION: 2.5.0
-  DATA_VERSION: 2026-10-22
-  本次变更: 新增「应用更新检查」（纯前端、无新依赖）——①同步抽屉内新增「应用更新」区块：更新检查地址（返回 JSON 的 URL）、
+  review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
+  文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
+  APP_VERSION: 2.6.0
+  DATA_VERSION: 2026-10-23
+  本次变更: 知识点新增 signal / methods / network / examPattern 四类字段（高数 32 + 化学 44 全覆盖）——①卡片头部新增「信号」微标签（题干特征），点击即按该信号筛选并高亮同类；②展开区新增「解题方法」
+             （名师步骤链 + 来源徽章 + 适用条件）、「知识网络」（前置/对比/后续）、「考法模式」三个区块；③旧字段 content/trap/action/examples/links 全部保留，
+             新字段缺失时对应区块整块不渲染，不出现 undefined；④新增样式仅在末尾追加，打印与手机横屏均已适配。
+  上次变更: 新增「应用更新检查」（纯前端、无新依赖）——①同步抽屉内新增「应用更新」区块：更新检查地址（返回 JSON 的 URL）、
             「打开页面时自动检查」开关、立即检查按钮，配置存 review.update.*（不覆盖 review.sync.*）；
             ②实现 x.y.z 语义化版本比较，远端 > 本地 APP_VERSION 才算有新版本，支持「忽略此版本」（记 review.update.ignore.v1）；
             ③顶部栏下方新增可关闭的 .updatebar 横幅（立即更新 / 稍后 / 忽略此版本），复用现有配色变量，适配深色与手机横竖屏；
@@ -24,7 +28,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="2.5.0">
+<meta name="app-version" content="2.6.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -240,6 +244,12 @@
   .badge.sec{color:var(--ink2);font-variant-numeric:tabular-nums}
   .badge.refs{color:var(--ink2);opacity:.75}
   .badge.none{color:var(--ink2);opacity:.55;border-style:dashed}
+  .badge.sig{
+    color:var(--ink2);background:var(--chip);border-color:var(--line2);
+    cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  }
+  .badge.sig:hover{color:var(--accent);border-color:var(--accent)}
+  .card.sigfocus>summary{outline:1.5px solid var(--accent);outline-offset:2px;border-radius:4px}
   .form{
     font-size:11.5px;line-height:1.5;padding:1px 6px;
     background:var(--chip);color:var(--ink2);border-radius:3px;white-space:nowrap;
@@ -280,6 +290,20 @@
   .field p.warn{color:var(--ink)}
   .ref{color:var(--accent);text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:1px}
   .low{font-size:12px;color:var(--ink2);border-left:2px solid var(--line2);padding-left:8px;display:inline-block}
+
+  /* ---------- 解题方法 / 知识网络（新增字段渲染） ---------- */
+  .mthbox,.netbox{flex:1 1 auto;min-width:0}
+  .mth{border-left:2px solid var(--line2);padding:0 0 0 10px;margin:0 0 12px}
+  .mth:last-child{margin-bottom:0}
+  .mthhead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:3px}
+  .mthno{font-size:11.5px;color:var(--ink2);font-variant-numeric:tabular-nums}
+  .mthname{font-size:14px;font-weight:600}
+  .mthsteps{margin:2px 0 3px;padding-left:1.15em;font-size:14px;line-height:1.7}
+  .mthsteps li{margin:1px 0;overflow-wrap:anywhere}
+  .mthwhen{font-size:12.5px;line-height:1.6;color:var(--ink2);margin:2px 0 0}
+  .netline{display:flex;flex-wrap:wrap;gap:4px;align-items:baseline;font-size:14px;line-height:1.75;margin:0 0 3px}
+  .netline:last-child{margin-bottom:0}
+  .netlab{flex:0 0 auto;font-size:12px;color:var(--ink2);letter-spacing:.03em}
 
   /* ---------- 例题 ---------- */
   .examples{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line2)}
@@ -475,6 +499,11 @@
     .drawer,.drawerScrim,.favbtn,.favcount{display:none !important}
     .ex,.sol{break-inside:avoid;page-break-inside:avoid}
     .katex{font-size:1em;break-inside:avoid}
+    .badge.sig{background:#fff !important;border:1px solid #888;white-space:normal;overflow:visible;text-overflow:clip}
+    .mth,.netline,.mthsteps li{break-inside:avoid;page-break-inside:avoid}
+    .mth{border-left-color:#bbb}
+    .mthno,.mthwhen,.netlab{color:#000 !important}
+    .card.sigfocus>summary{outline:0}
   }
   @media (max-width:560px){
     .flabel{width:100%}
@@ -700,7 +729,40 @@
               "q": "下列体系相数为 \\(1\\) 的是（　）<br>\\(A\\). 冰与水共存　B. 互不相溶的油与水　C. \\(\\mathrm{N}_{2}\\)与 \\(\\mathrm{O}_{2}\\)的均匀混合气　D. 饱和 \\(\\mathrm{Na}\\mathrm{Cl}\\)溶液与其蒸气",
               "a": "<p><b>答案：C</b></p><p>均匀混合气处处性质相同，永远是 \\(1\\) 相；冰水共存 \\(2\\) 相，油水分层 \\(2\\) 相，溶液与蒸气 \\(2\\) 相。</p><p>易错：把「两种气体」数成两相，或把冰水共存数成 \\(1\\) 相。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「相数」「组分数」「独立组分」，或给一堆冰/水/蒸汽、油水、混合气让你数",
+          "methods": [
+            {
+              "name": "数相三步法",
+              "source": "教材通用",
+              "steps": [
+                "气体：不论几种都只算 1 相",
+                "液体：互溶算 1 相，分层各算 1 相",
+                "固体：同种同晶型算 1 相，不同晶型分开算"
+              ],
+              "when": "凡问相数，只做第一步，不掺组分"
+            },
+            {
+              "name": "组分数抓题眼",
+              "source": "史达清",
+              "steps": [
+                "先数独立物种数 S",
+                "把独立化学平衡数 R 与浓度限制条件数 R' 相加",
+                "代 K=S−R−R'，浓度限制只对同一相内成立"
+              ],
+              "when": "题干出现「独立组分」或给出多个平衡"
+            }
+          ],
+          "network": {
+            "prerequisite": [],
+            "contrast": [
+              "c2s1-01"
+            ],
+            "next": [
+              "c1s2-01"
+            ]
+          },
+          "examPattern": "选择题给 4 个体系选相数为 1 的；填空题直接填相数或组分数；判断题考「几种物质就是几相」"
         },
         {
           "id": "c1s2-01",
@@ -736,7 +798,42 @@
               "q": "下列物理量中属于途径函数的是（　）<br>\\(A\\). 焓 \\(H\\)　B. 熵 \\(S\\)　C. 吉布斯自由能 \\(G\\)　D. 体积功 W",
               "a": "<p><b>答案：D</b></p><p>第一步：状态函数只由始末态决定，\\(H\\)、\\(S\\)、\\(G\\) 都是。<br>第二步：体积功 \\(W\\) 的数值取决于过程走法（等温可逆膨胀与一次膨胀的功不同），是途径函数。<br>第三步：功是过程中传递的能量，不是系统储存的性质。<br>所以选 \\(D\\)。</p><p>易错：以为「做了功」就意味着系统里多了某种能量——那能量属过程量，不属状态。</p>"
             }
-          ]
+          ],
+          "signal": "问某物理量是状态函数还是途径函数，或「沿不同途径」到达同一始末态",
+          "methods": [
+            {
+              "name": "定义判别法",
+              "source": "教材通用",
+              "steps": [
+                "看是否只由始末态决定：是→状态函数（U、H、S、G、T、p、V）",
+                "看是否与路径有关：是→途径函数（Q、W）",
+                "判断「ΔU 与途径无关」类命题直接套第一条"
+              ],
+              "when": "任何概念判断题"
+            },
+            {
+              "name": "全微分检验",
+              "source": "史达清",
+              "steps": [
+                "写出微元式，如 dU=δQ+δW 中 Q、W 无全微分",
+                "无全微分⇔途径函数",
+                "有全微分⇔状态函数"
+              ],
+              "when": "题干给出微元关系式让判断"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s1-01"
+            ],
+            "contrast": [
+              "c1s2-02"
+            ],
+            "next": [
+              "c1s2-02"
+            ]
+          },
+          "examPattern": "判断题考「Q 是状态函数」类错误表述；选择题从一组量里挑出全是状态函数的组合"
         },
         {
           "id": "c1s2-02",
@@ -772,7 +869,42 @@
               "q": "下列过程中可直接用 \\(\\Delta U=Q\\)计算的是（　）<br>\\(A\\). 恒压、只做体积功的过程　B. 恒容、不作非体积功的过程　C. 绝热过程　D. 气体自由膨胀过程",
               "a": "<p><b>答案：B</b></p><p>第一步：由 \\(\\Delta U=Q+W\\)，要得到 \\(\\Delta U=Q\\) 必须 \\(W=0\\)。<br>第二步：恒容时体积功 \\(W_{\\text{体}}=-p\\Delta V=0\\)；若再不作非体积功，则总功 \\(W=0\\)，于是 \\(\\Delta U=Q_{V}\\)。<br>第三步：恒压只做体积功时 \\(Q_{p}=\\Delta H\\)，不是 \\(\\Delta U=Q\\)；绝热过程 \\(Q=0\\)，是 \\(\\Delta U=W\\)；自由膨胀 \\(W=0\\) 但 \\(Q\\) 一般不为 0。<br>所以选 \\(B\\)。</p><p>易错：把「恒压热等于焓变」与「恒容热等于内能变」记反。</p>"
             }
-          ]
+          ],
+          "signal": "给了 Q 和 W 求 ΔU，或题干出现「体系对环境做功」「环境对体系做功」",
+          "methods": [
+            {
+              "name": "符号约定先行",
+              "source": "教材通用",
+              "steps": [
+                "先定约定：Q 体系吸热为正，W 环境对体系做功为正",
+                "代 ΔU=Q+W，把「体系对外做功」写成 W 取负",
+                "单位统一成 kJ 或 J 再算，别混"
+              ],
+              "when": "所有第一定律计算题，第一步就写符号"
+            },
+            {
+              "name": "抓题眼识别 QV/Qp",
+              "source": "哈哥",
+              "steps": [
+                "看到密闭刚性容器→等容→QV=ΔU",
+                "看到敞口/恒压→等压→Qp=ΔH",
+                "看到绝热→Q=0，只剩 W"
+              ],
+              "when": "题干出现容器类型词"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s2-01"
+            ],
+            "contrast": [
+              "c1s2-03"
+            ],
+            "next": [
+              "c1s2-03"
+            ]
+          },
+          "examPattern": "计算题第一步求 ΔU 或 Q；选择题考「膨胀功的符号」"
         },
         {
           "id": "c1s2-03",
@@ -804,7 +936,41 @@
               "q": "下列过程的热效应可用 \\(\\Delta H=Q\\)表示的是（　）<br>\\(A\\). 恒容、只作体积功的过程　B. 恒压、只作体积功的过程　C. 恒压并伴随非体积功（如电池放电）的过程　D. 绝热恒压过程",
               "a": "<p><b>答案：B</b></p><p>\\(\\Delta H=Q_{p}\\)成立的条件是恒压且不做非体积功，两条缺一不可。</p><p>易错：以为只要「恒压」就行，忽略了非体积功。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「弹式量热计」「氧弹」「恒容燃烧热」「W=0」",
+          "methods": [
+            {
+              "name": "弹式量热计两步走",
+              "source": "哈哥",
+              "steps": [
+                "弹式量热计＝恒容：由测温得 QV，直接等于 ΔU",
+                "再用 ΔH=ΔU+Δn(g)RT 换成 ΔH，Δn(g) 只数气体"
+              ],
+              "when": "凡出现弹式量热计，先写 QV=ΔU 再换 ΔH"
+            },
+            {
+              "name": "ΔH 与 ΔU 换算",
+              "source": "教材通用",
+              "steps": [
+                "Δn(g)=Σν(气态产物)−Σν(气态反应物)",
+                "T 用开尔文，R=8.314 J·mol⁻¹·K⁻¹",
+                "固、液不参与 Δn(g)"
+              ],
+              "when": "给了 ΔU 问 ΔH 或反之"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s2-02"
+            ],
+            "contrast": [
+              "c1s4-03"
+            ],
+            "next": [
+              "c1s2-04"
+            ]
+          },
+          "examPattern": "计算题：弹式量热计测燃烧热，要求先求 ΔU 再求 ΔH；判断题考「QV=ΔH」"
         },
         {
           "id": "c1s2-04",
@@ -840,7 +1006,42 @@
               "q": "「\\(\\mathrm{Br}_{2}(\\)l) 的 \\(\\Delta_{f}H^{\\ominus}=0\\)，因此 \\(\\mathrm{Br}_{2}(\\)g) 的 \\(\\Delta_{f}H^{\\ominus}\\)也等于 \\(0\\)。」（　）<br>\\(A\\). 正确　B. 错误",
               "a": "<p><b>答案：B</b></p><p>第一步：标准摩尔生成焓要求由「最稳定单质」生成 1 mol 该物质，最稳定单质的生成焓规定为零。<br>第二步：298 K 时溴的最稳定单质是 \\(\\mathrm{Br_2(l)}\\)，故 \\(\\Delta_f H^{\\ominus}(\\mathrm{Br_2,l})=0\\) 成立。<br>第三步：\\(\\mathrm{Br_2(g)}\\) 由液态溴汽化而来，其生成焓等于溴的汽化焓（约 \\(+30.9\\ \\mathrm{kJ\\cdot mol^{-1}}\\)），不为零。<br>所以「因此 \\(\\mathrm{Br_2(g)}\\) 也等于 0」错误，选 \\(B\\)。</p><p>易错：把「某元素」当「某物质」，认为该元素的一切单质生成焓都是零。</p>"
             }
-          ]
+          ],
+          "signal": "给了标准摩尔生成焓表求某反应的 ΔrH°，或表里出现「单质」",
+          "methods": [
+            {
+              "name": "产物减反应物",
+              "source": "教材通用",
+              "steps": [
+                "写配平方程式",
+                "ΔrH°=ΣνΔfH°(产物)−ΣνΔfH°(反应物)",
+                "单质的 ΔfH°≡0，但只在最稳定单质状态为 0"
+              ],
+              "when": "凡给生成焓表求反应焓"
+            },
+            {
+              "name": "相态核对",
+              "source": "史达清",
+              "steps": [
+                "逐个核对物质相态（s/l/g）与表里一致",
+                "相态不一致要另加相变焓",
+                "系数乘到焓值上，别漏化学计量数"
+              ],
+              "when": "表里同时给了 H2O(l) 与 H2O(g) 时必做"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s2-02"
+            ],
+            "contrast": [
+              "c1s2-05"
+            ],
+            "next": [
+              "c1s2-05"
+            ]
+          },
+          "examPattern": "计算题主考；选择题考「单质生成焓一定为 0」的反例（如 O3、金刚石）"
         },
         {
           "id": "c1s2-05",
@@ -876,7 +1077,42 @@
               "q": "「方程式乘 \\(2\\) 时，\\(\\Delta H\\)的数值不变，只是它对应的反应进度变了。」（　）<br>\\(A\\). 正确　B. 错误",
               "a": "<p><b>答案：B</b></p><p>第一步：焓是广度性质，与物质的量成正比。<br>第二步：方程式乘 \\(2\\) 意味着「每摩尔反应」对应的物质的量翻倍，故放出的热量也翻倍。<br>第三步：因此 \\(\\Delta H\\) 必须同乘 \\(2\\)，「数值不变」的说法错误。<br>所以选 \\(B\\)。</p><p>易错：组合盖斯定律时只乘方程式系数、漏乘 \\(\\Delta H\\)，是本章计算最大的失分点。</p>"
             }
-          ]
+          ],
+          "signal": "给了 2–3 个已知反应及其焓变，要你求一个目标反应",
+          "methods": [
+            {
+              "name": "方程式拼装",
+              "source": "教材通用",
+              "steps": [
+                "把目标反应的反应物、产物分别写成左右两边",
+                "逐个已知反应试叠加/取逆/乘系数去凑",
+                "已知反应取逆则焓变变号，乘 k 则焓变乘 k"
+              ],
+              "when": "任何盖斯定律题"
+            },
+            {
+              "name": "逆向拆解凑消元",
+              "source": "史达清",
+              "steps": [
+                "先从目标里的独有物质入手，找唯一含它的已知反应",
+                "再消掉中间产物，直到只剩目标",
+                "系数不匹配时整条方程乘同一因子"
+              ],
+              "when": "已知反应多于 3 个、拼装易乱时"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s2-04"
+            ],
+            "contrast": [
+              "c1s4-05"
+            ],
+            "next": [
+              "c1s3-02"
+            ]
+          },
+          "examPattern": "计算题必考组合；填空题要求填某反应的 ΔrH° 数值"
         },
         {
           "id": "c1s3-01",
@@ -912,7 +1148,42 @@
               "q": "同温同压下，下列物质的标准摩尔熵最大的是（　）<br>\\(A\\). \\(\\mathrm{H}_{2}\\mathrm{O}\\mathrm{(s)}\\)　B. \\(\\mathrm{H}_{2}\\mathrm{O}\\mathrm{(l)}\\)　C. \\(\\mathrm{H}_{2}\\mathrm{O}\\mathrm{(g)}\\)　D. 三者相同",
               "a": "<p><b>答案：C</b></p><p>第一步：同一种物质在相同温度下，熵随聚集状态改变。<br>第二步：分子运动自由度是气态＞液态＞固态，无序度依次降低，故 \\(S(\\mathrm{g})>S(\\mathrm{l})>S(\\mathrm{s})\\)。<br>第三步：因此气态水的标准摩尔熵最大，选 \\(C\\)。</p><p>易错：认为「同一种物质，熵当然一样」，忽略聚集状态的影响。</p>"
             }
-          ]
+          ],
+          "signal": "判断过程能否自发、题干出现「孤立体系」「熵增」",
+          "methods": [
+            {
+              "name": "先判体系类型",
+              "source": "教材通用",
+              "steps": [
+                "题目说孤立体系→直接用 ΔS>0 判自发",
+                "非孤立→不能只算体系熵，要算 ΔS总=ΔS体系+ΔS环境",
+                "ΔS环境=−ΔH体系/T"
+              ],
+              "when": "凡出现「能否自发」先做第一步"
+            },
+            {
+              "name": "判据适用范围抓题眼",
+              "source": "哈哥",
+              "steps": [
+                "熵增原理只对孤立体系成立，别往开口体系硬套",
+                "开口体系用 ΔG 判据",
+                "两者混用时先确认体系类型"
+              ],
+              "when": "题干同时给 ΔH、ΔS 且问自发"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s2-01"
+            ],
+            "contrast": [
+              "c1s3-02"
+            ],
+            "next": [
+              "c1s3-02"
+            ]
+          },
+          "examPattern": "判断题考「熵增原理适用于一切体系」；选择题给 ΔH、ΔS 组合问是否自发"
         },
         {
           "id": "c1s3-02",
@@ -949,7 +1220,43 @@
               "q": "\\(\\Delta H<0\\)、\\(\\Delta S>0\\) 的反应在任何温度下都自发进行。（　）<br>\\(A\\). 正确　\\(B\\). 错误",
               "a": "<p><b>答案：A</b></p><p>第一步：\\(\\Delta G=\\Delta H-T\\Delta S\\)。<br>第二步：\\(\\Delta H<0\\) 使第一项为负；\\(\\Delta S>0\\) 使 \\(-T\\Delta S<0\\)，第二项也为负。<br>第三步：两项皆为负，任意温度下 \\(\\Delta G<0\\)，故任何温度都自发，判断正确。</p><p>易错：凭「温度越高越容易自发」去套，忘了这一格与温度无关——温度只影响第二项，而第二项本来就是负的。</p>"
             }
-          ]
+          ],
+          "signal": "给了 ΔH 与 ΔS，问某温度下能否自发或求转变温度",
+          "methods": [
+            {
+              "name": "四象限判据",
+              "source": "教材通用",
+              "steps": [
+                "ΔH<0、ΔS>0：任何温度自发",
+                "ΔH>0、ΔS<0：任何温度不自发",
+                "ΔH<0、ΔS<0：低温自发",
+                "ΔH>0、ΔS>0：高温自发"
+              ],
+              "when": "定性判断"
+            },
+            {
+              "name": "转变温度 T=ΔH/ΔS",
+              "source": "史达清",
+              "steps": [
+                "令 ΔG=ΔH−TΔS=0 解出 T转",
+                "ΔH、ΔS 单位统一成 kJ 与 kJ·K⁻¹ 或 J 与 J·K⁻¹",
+                "温度高于 T转 时按熵驱动判断"
+              ],
+              "when": "题目问「温度高于多少才开始自发」"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s3-01"
+            ],
+            "contrast": [
+              "c1s4-02"
+            ],
+            "next": [
+              "c1s4-02"
+            ]
+          },
+          "examPattern": "计算题求转变温度；选择题判断「高温自发还是低温自发」"
         },
         {
           "id": "c1s3-03",
@@ -979,7 +1286,30 @@
               "q": "判断一个反应能否自发进行，正确的依据是（　）<br>\\(A\\). \\(\\Delta S_{\\text{体系}}>0\\)　\\(B\\). \\(\\Delta S_{\\text{体系}}<0\\)　\\(C\\). \\(\\Delta S_{\\text{体系}}+\\Delta S_{\\text{环境}}>0\\)　\\(D\\). \\(\\Delta H<0\\)",
               "a": "<p><b>答案：C</b></p><p>第一步：熵增原理的判据是总熵变，即 \\(\\Delta S_{\\text{总}}=\\Delta S_{\\text{体系}}+\\Delta S_{\\text{环境}}>0\\)。<br>第二步：逐项排除——单独看体系熵增（\\(A\\)）或熵减（\\(B\\)）都不能下结论，很多自发过程体系熵反而减小。<br>第三步：只看 \\(\\Delta H<0\\)（\\(D\\)）也不够，放热但熵减的反应在高温下会不自发。<br>第四步：\\(C\\) 与恒温恒压下的 \\(\\Delta G<0\\) 完全等价（\\(\\Delta S_{\\text{环境}}=-Q_p/T=-\\Delta H/T\\)），故 \\(C\\) 正确。</p><p>易错：只算体系自身的 \\(\\Delta S\\) 就下结论，忽略环境那一项。</p>"
             }
-          ]
+          ],
+          "signal": "判断题给出熵增原理的各种表述让你判断对错",
+          "methods": [
+            {
+              "name": "表述边界核对",
+              "source": "教材通用",
+              "steps": [
+                "成立范围：孤立体系（或绝热过程）",
+                "可逆过程 ΔS=0，不可逆过程 ΔS>0",
+                "不能反推：ΔS<0 的过程不等于一定不能发生（非孤立体系中）"
+              ],
+              "when": "凡考表述型判断"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s3-01"
+            ],
+            "contrast": [
+              "c1s3-02"
+            ],
+            "next": []
+          },
+          "examPattern": "判断题、选择题中的「下列说法正确的是」"
         },
         {
           "id": "c1s4-01",
@@ -1015,7 +1345,42 @@
               "q": "某温度下 \\(2\\mathrm{S}\\mathrm{O}_{2}\\mathrm{(g)}+\\mathrm{O}_{2}\\mathrm{(g)}\\rightleftharpoons2\\mathrm{S}\\mathrm{O}_{3}\\mathrm{(g)}\\)达平衡时 \\(p(\\mathrm{S}\\mathrm{O}_{2})=0.10 \\mathrm{MPa}\\)、p\\((\\mathrm{O}_{2})=0.10 \\mathrm{MPa}\\)、p\\((\\mathrm{S}\\mathrm{O}_{3})=0.80 \\mathrm{MPa}\\)（\\(p^{\\ominus}=0.10 \\mathrm{MPa}\\)）。\\(K^{\\ominus}\\)为（　）<br>\\(A\\). \\(64\\)　B. \\(8\\)　C. \\(6.4\\)　D. \\(640\\)",
               "a": "<p><b>答案：A</b></p><p>先各自除以 \\(p^{\\ominus}\\)：\\(\\mathrm{S}\\mathrm{O}_{3}\\)为 \\(8\\)，\\(\\mathrm{S}\\mathrm{O}_{2}\\)为 \\(1\\)，\\(\\mathrm{O}_{2}\\)为 \\(1\\)。\\(K^{\\ominus}=8^{2}/(1^{2}\\times1)=64\\)。</p><p>易错：忘了 \\(2\\) 次方，或没除 \\(p^{\\ominus}\\)直接算成 \\(6.4\\)。</p>"
             }
-          ]
+          ],
+          "signal": "要求写平衡常数表达式，或体系里有纯固体、纯液体、稀溶液",
+          "methods": [
+            {
+              "name": "能写谁就写谁",
+              "source": "教材通用",
+              "steps": [
+                "气体写相对分压 p/p°，溶质写 c/c°",
+                "纯固体、纯液体、溶剂水不写进表达式",
+                "表达式写成生成物幂积除以反应物幂积"
+              ],
+              "when": "任何写 K° 的题"
+            },
+            {
+              "name": "复相平衡抓题眼",
+              "source": "哈哥",
+              "steps": [
+                "看反应式里有没有 (s)、(l)：有就划掉",
+                "剩下的气体/溶质照常写",
+                "K° 只随温度变，与固体量无关"
+              ],
+              "when": "含 CaCO3(s) 分解、含水的酯化之类"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s4-02"
+            ],
+            "contrast": [
+              "c1s4-03"
+            ],
+            "next": [
+              "c1s4-03"
+            ]
+          },
+          "examPattern": "填空题写 K° 表达式；选择题考「加固体平衡是否移动」"
         },
         {
           "id": "c1s4-02",
@@ -1051,7 +1416,43 @@
               "q": "反应达到平衡时，下列各式成立的是（　）<br>\\(A\\). \\(\\Delta_{r}G^{\\ominus}=0\\)　B. \\(\\Delta_{r}G=0\\)　C. \\(\\Delta_{r}H=0\\)　D. \\(\\Delta_{r}S=0\\)",
               "a": "<p><b>答案：B</b></p><p>平衡时系统的 \\(\\Delta_{r}G_{\\mathrm{m}}=0\\)；而 \\(\\Delta_{r}G^{\\ominus}=-R\\)TlnK°，一般不为零，只有当 \\(K^{\\ominus}=1\\)时才为零。</p><p>易错：把 \\(\\Delta G^{\\ominus}\\)与 \\(\\Delta G\\)混用——前者是标准态下的量，与浓度无关。</p>"
             }
-          ]
+          ],
+          "signal": "给了 ΔrG° 要求 K°，或反之；题干同时出现「标准平衡常数」与「ΔrG°」",
+          "methods": [
+            {
+              "name": "一条公式两个方向",
+              "source": "教材通用",
+              "steps": [
+                "ΔrG°=−RTlnK°，R=8.314 J·mol⁻¹·K⁻¹，T 用 K",
+                "由 ΔrG° 求 K：先算 ΔrG°/(−RT) 再取 e 的幂",
+                "由 K 求 ΔrG°：直接代 lnK°",
+                "ΔrG° 用 kJ 时先换成 J"
+              ],
+              "when": "凡 ΔrG° 与 K° 互相换算"
+            },
+            {
+              "name": "先组合再换算",
+              "source": "史达清",
+              "steps": [
+                "若 ΔrG° 没有现成数据，先用 ΔfG° 求或由 ΔH°−TΔS° 求",
+                "算好后再一次性代进 −RTlnK°",
+                "避免中间反复取对数带来舍入误差"
+              ],
+              "when": "给了焓与熵表而非 ΔfG° 表"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s4-01"
+            ],
+            "contrast": [
+              "c1s3-02"
+            ],
+            "next": [
+              "c1s4-03"
+            ]
+          },
+          "examPattern": "计算题主考；选择题考「K° 只与温度有关」"
         },
         {
           "id": "c1s4-03",
@@ -1082,7 +1483,42 @@
               "q": "反应 \\(\\mathrm{A(g)}\\rightleftharpoons\\mathrm{B(g)}\\) 在某温度下 \\(K^{\\ominus}=4.0\\)。此刻 \\(p(\\mathrm{A})=0.50\\ \\mathrm{MPa}\\)、\\(p(\\mathrm{B})=0.10\\ \\mathrm{MPa}\\)（\\(p^{\\ominus}=0.10\\ \\mathrm{MPa}\\)），反应将（　）<br>\\(A\\). 正向进行　\\(B\\). 逆向进行　\\(C\\). 保持平衡　\\(D\\). 无法判断",
               "a": "<p><b>答案：A</b></p><p>第一步：按 \\(K^{\\ominus}\\) 的书写规则先写出反应商 \\(Q=\\dfrac{p(\\mathrm{B})/p^{\\ominus}}{p(\\mathrm{A})/p^{\\ominus}}\\)。<br>第二步：代入 \\(Q=\\dfrac{0.10/0.10}{0.50/0.10}=\\dfrac{1.0}{5.0}=0.20\\)。<br>第三步：\\(Q=0.20<K^{\\ominus}=4.0\\)，故 \\(\\Delta_r G=RT\\ln(Q/K^{\\ominus})<0\\)，反应正向进行。</p><p>易错：只比较 \\(0.10\\) 与 \\(0.50\\) 的数值大小，不先按 \\(p^{\\ominus}\\) 归一，\\(Q\\) 就算错；分压必须除以 \\(p^{\\ominus}\\) 才与 \\(K^{\\ominus}\\) 可比。</p>"
             }
-          ]
+          ],
+          "signal": "给了浓度/分压问反应方向，或比较 Q 与 K°",
+          "methods": [
+            {
+              "name": "Q 与 K 比大小",
+              "source": "教材通用",
+              "steps": [
+                "按当前浓度写 Q，形式与 K° 完全一样",
+                "Q<K° 正向，Q=K° 平衡，Q>K° 逆向",
+                "对应 ΔG<0、=0、>0"
+              ],
+              "when": "任何判方向题"
+            },
+            {
+              "name": "抓题眼定平衡态",
+              "source": "哈哥",
+              "steps": [
+                "题干出现「已达平衡」→ Q=K°",
+                "出现「刚开始」→ 先算 Q，与 K° 无关地先写表达式",
+                "出现「某时刻」→ 必算 Q"
+              ],
+              "when": "题干给了时间/状态词"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s4-01"
+            ],
+            "contrast": [
+              "c1s4-04"
+            ],
+            "next": [
+              "c1s4-04"
+            ]
+          },
+          "examPattern": "计算题判断移动方向；选择题给 Q 与 K° 关系问 ΔG 符号"
         },
         {
           "id": "c1s4-04",
@@ -1118,7 +1554,42 @@
               "q": "升温使速率常数 \\(k\\) 增大，所以升温一定使 \\(K^{\\ominus}\\) 增大。（　）<br>\\(A\\). 正确　\\(B\\). 错误",
               "a": "<p><b>答案：B</b></p><p>第一步：\\(K^{\\ominus}=k_{\\text{正}}/k_{\\text{逆}}\\)，升温时正、逆速率常数都增大。<br>第二步：两者增大的倍数不同，倍数比由活化能之差（即 \\(\\Delta_r H^{\\ominus}\\)）决定。<br>第三步：放热反应的 \\(k_{\\text{逆}}\\) 增大得更快，比值 \\(K^{\\ominus}\\) 反而减小；只有吸热反应的 \\(K^{\\ominus}\\) 才随升温增大。故「一定增大」错误。</p><p>易错：把「速率增大」与「平衡常数增大」混为一谈，忽略了 \\(K^{\\ominus}\\) 是正逆速率常数之比。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「恒温恒容充入惰性气体」「恒温恒压充入惰性气体」「缩小体积」",
+          "methods": [
+            {
+              "name": "惰性气体两类辨析",
+              "source": "哈哥",
+              "steps": [
+                "恒温恒容加惰性气体：各组分分压不变→平衡不移动",
+                "恒温恒压加惰性气体：体积变大、分压下降→向气体分子数增多方向移动",
+                "恒温恒容缩小体积：相当于加压→向气体分子数减少方向移动"
+              ],
+              "when": "凡出现惰性气体四个字，先判恒容还是恒压"
+            },
+            {
+              "name": "勒夏特列三步",
+              "source": "教材通用",
+              "steps": [
+                "写出反应并数两边气体分子数",
+                "判断改变的是浓度、压力还是温度",
+                "温度改变才动 K°，浓度压力只动 Q"
+              ],
+              "when": "一般移动方向判断"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s4-03"
+            ],
+            "contrast": [
+              "c1s4-05"
+            ],
+            "next": [
+              "c1s4-05"
+            ]
+          },
+          "examPattern": "选择题高频；判断题考「加催化剂使平衡移动」"
         },
         {
           "id": "c1s4-05",
@@ -1149,7 +1620,42 @@
               "q": "已知 \\(A(\\)g\\()\\rightleftharpoons B(\\)g) 的 \\(K^{\\ominus}=2.0\\)，则 \\(2A(\\)g\\()\\rightleftharpoons2B(\\)g) 的 \\(K^{\\ominus}\\)为（　）<br>\\(A\\). \\(2.0\\)　B. \\(4.0\\)　C. \\(0.5\\)　D. \\(1.0\\)",
               "a": "<p><b>答案：B</b></p><p>方程式乘 \\(2\\)，K 取 \\(2\\) 次方：\\(K^{\\ominus}=2.0^{2}=4.0\\)。</p><p>易错：系数变了但 K 照抄 \\(2.0\\)，忘了乘方。</p>"
             }
-          ]
+          ],
+          "signal": "给了多个反应的 K°，要你求由它们组合出的第三个反应的 K°",
+          "methods": [
+            {
+              "name": "K 的乘除规则",
+              "source": "教材通用",
+              "steps": [
+                "两反应相加→K 相乘",
+                "反应取逆→K 取倒数",
+                "方程式乘 n→K 取 n 次方"
+              ],
+              "when": "多重平衡组合题"
+            },
+            {
+              "name": "先拼方程再换 K",
+              "source": "史达清",
+              "steps": [
+                "按盖斯定律先把目标方程拼出来",
+                "边拼边同步乘除 K°",
+                "拼完后再代数值，减少出错"
+              ],
+              "when": "组合超过两个反应时"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s4-01"
+            ],
+            "contrast": [
+              "c1s2-05"
+            ],
+            "next": [
+              "c2s5-02"
+            ]
+          },
+          "examPattern": "计算题：由 Ksp 与 K稳 求沉淀转化反应 K°"
         },
         {
           "id": "c1s5-01",
@@ -1185,7 +1691,30 @@
               "q": "对反应 \\(2\\mathrm{N}_{2}\\mathrm{O}_{5}(\\)g\\()\\rightarrow4\\mathrm{N}\\mathrm{O}_{2}(\\)g\\()+\\mathrm{O}_{2}\\mathrm{(g)}\\)，若 \\(\\mathrm{N}_{2}\\mathrm{O}_{5}\\)的消耗速率为 \\(0.040\\) \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3} \\cdot \\mathrm{s}^{-1}\\)，则生成 \\(\\mathrm{O}_{2}\\)的速率为（　）<br>\\(A\\). \\(0.010\\)　B. \\(0.020\\)　C. \\(0.040\\)　D. \\(0.080\\) \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3} \\cdot \\mathrm{s}^{-1}\\)",
               "a": "<p><b>答案：B</b></p><p>v\\(=(1/2)\\times0.040=0.020\\) \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3} \\cdot \\mathrm{s}^{-1}\\)；\\(\\mathrm{O}_{2}\\)的计量数为 \\(1\\)，故生成速率等于 v，即 \\(0.020\\)。</p><p>易错：直接把 \\(0.040\\) 当答案，忘记除以 \\(\\mathrm{N}_{2}\\mathrm{O}_{5}\\)的计量数 \\(2\\)。</p>"
             }
-          ]
+          ],
+          "signal": "给了反应式问各物质速率之比，或要求统一用某物质表示速率",
+          "methods": [
+            {
+              "name": "计量数归一",
+              "source": "教材通用",
+              "steps": [
+                "v=(1/|νi|)·d[ci]/dt，对反应物取正号",
+                "速率之比＝化学计量数之比，与选哪个物质无关",
+                "不要在反应物前加负号的同时又取绝对值"
+              ],
+              "when": "任何速率表示题"
+            }
+          ],
+          "network": {
+            "prerequisite": [],
+            "contrast": [
+              "c1s5-02"
+            ],
+            "next": [
+              "c1s5-02"
+            ]
+          },
+          "examPattern": "选择题考「用不同物质表示速率数值是否相同」；填空题给速率比"
         },
         {
           "id": "c1s5-02",
@@ -1222,7 +1751,42 @@
               "q": "「\\(2\\mathrm{N}\\mathrm{O}(\\)g\\()+\\mathrm{Cl}_{2}(\\)g\\()\\rightarrow2\\mathrm{N}\\mathrm{O}\\mathrm{Cl}(\\)g) 是简单反应，故速率方程为 v=k\\([\\mathrm{N}\\mathrm{O}]^{2}[\\mathrm{Cl}_{2}]\\)。」（　）<br>\\(A\\). 正确　B. 错误",
               "a": "<p><b>答案：B</b></p><p>第一步：质量作用定律（级数等于计量数）只对基元反应成立。<br>第二步：\\(2\\mathrm{NO}+\\mathrm{Cl_2}\\rightarrow2\\mathrm{NOCl}\\) 是复杂反应，其实测速率方程对 \\(\\mathrm{NO}\\) 为二级、对 \\(\\mathrm{Cl_2}\\) 为一级，甚至可能出现负级数，不能直接按系数写出。<br>第三步：反应级数必须由实验测定，故题干说法错误。<br>所以选 \\(B\\)。</p><p>易错：把「系数」当「级数」，这是本题最常见的错误判断。</p>"
             }
-          ]
+          ],
+          "signal": "给了几组初始浓度和初速率数据表，要你定反应级数或写速率方程",
+          "methods": [
+            {
+              "name": "控制变量定级",
+              "source": "史达清",
+              "steps": [
+                "找两组只有 A 浓度不同、其余相同的实验，比速率得 A 的级数",
+                "同法再定 B 的级数",
+                "级数相加得总级数，代回任一组求 k"
+              ],
+              "when": "凡给数据表的表格题"
+            },
+            {
+              "name": "看单位反推级数",
+              "source": "哈哥",
+              "steps": [
+                "k 的单位 mol·L⁻¹·s⁻¹→零级",
+                "s⁻¹→一级",
+                "L·mol⁻¹·s⁻¹→二级"
+              ],
+              "when": "题目直接给了 k 的单位"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s5-01"
+            ],
+            "contrast": [
+              "c1s5-04"
+            ],
+            "next": [
+              "c1s5-03"
+            ]
+          },
+          "examPattern": "计算题给表格求级数与 k；选择题给 k 的单位反推级数"
         },
         {
           "id": "c1s5-03",
@@ -1259,7 +1823,42 @@
               "q": "「吸热反应的 \\(E_{\\mathrm{a}}(\\)正) 小于 \\(E_{\\mathrm{a}}(\\)逆)。」（　）<br>\\(A\\). 正确　B. 错误",
               "a": "<p><b>答案：B</b></p><p>吸热意味着 \\(\\Delta H>0\\)，而 \\(\\Delta H=E_{\\mathrm{a}}(\\)正\\()-E_{\\mathrm{a}}(\\)逆)，故 \\(E_{\\mathrm{a}}(\\)正\\()>E_{\\mathrm{a}}(\\)逆)。</p><p>易错：凭「吸热反应难发生」的印象，以为活化能小。</p>"
             }
-          ]
+          ],
+          "signal": "给了两个温度下的速率常数 k，或问「升高温度速率增大几倍」",
+          "methods": [
+            {
+              "name": "两点式求活化能",
+              "source": "教材通用",
+              "steps": [
+                "ln(k2/k1)=−(Ea/R)(1/T2−1/T1)",
+                "T 换成开尔文，R=8.314",
+                "解出 Ea 后单位是 J·mol⁻¹"
+              ],
+              "when": "给了两温度两 k"
+            },
+            {
+              "name": "抓题眼辨催化剂",
+              "source": "哈哥",
+              "steps": [
+                "催化剂降低 Ea、不改变 ΔH、不改变 K°",
+                "题干出现「催化后平衡移动吗」→答不移动",
+                "出现「催化后正逆速率」→同等加快"
+              ],
+              "when": "凡出现催化剂"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s5-02"
+            ],
+            "contrast": [
+              "c1s4-04"
+            ],
+            "next": [
+              "c1s5-04"
+            ]
+          },
+          "examPattern": "计算题求 Ea；判断题考「催化剂使 K° 增大」"
         },
         {
           "id": "c1s5-04",
@@ -1290,7 +1889,40 @@
               "q": "「一级反应的半衰期与初始浓度无关，零级反应的半衰期与初始浓度成正比。」（　）<br>\\(A\\). 正确　B. 错误",
               "a": "<p><b>答案：A</b></p><p>一级 \\(t\\tfrac{1}{2}=\\ln2/\\)k，与 \\(c_{0}\\)无关；零级 \\(t\\tfrac{1}{2}=c_{0}/(2\\)k)，与 \\(c_{0}\\)成正比。</p><p>易错：把两者的半衰期性质对调。</p>"
             }
-          ]
+          ],
+          "signal": "给了 c–t 图或半衰期，问反应级数或求 k",
+          "methods": [
+            {
+              "name": "特征反推级数",
+              "source": "史达清",
+              "steps": [
+                "半衰期与初浓度无关→一级",
+                "半衰期与初浓度成正比→零级",
+                "半衰期与初浓度成反比→二级"
+              ],
+              "when": "给了半衰期数据"
+            },
+            {
+              "name": "一级反应对数式",
+              "source": "教材通用",
+              "steps": [
+                "ln(c0/c)=kt，k 的单位 s⁻¹",
+                "由两点数据取直线斜率求 k",
+                "求某时刻浓度就代对数式，不要用线性式"
+              ],
+              "when": "一级反应计算"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s5-02"
+            ],
+            "contrast": [
+              "c1s5-02"
+            ],
+            "next": []
+          },
+          "examPattern": "计算题给半衰期求 k；选择题判断级数"
         },
         {
           "id": "c2s1-01",
@@ -1316,7 +1948,40 @@
               "q": "\\(0.5\\) \\(\\mathrm{mol}\\)葡萄糖溶于 \\(500\\) \\(\\mathrm{g}\\)水，该溶液质量摩尔浓度约为（　）\nA. \\(1.0\\) \\(\\mathrm{mol} \\cdot \\mathrm{kg}^{-1}\\)　B. \\(5.6\\) \\(\\mathrm{mol} \\cdot \\mathrm{kg}^{-1}\\)　C. \\(0.5\\) \\(\\mathrm{mol} \\cdot \\mathrm{kg}^{-1}\\)　D. \\(2.8\\) \\(\\mathrm{mol} \\cdot \\mathrm{kg}^{-1}\\)",
               "a": "<p><b>答案：</b>\\(A\\)</p><p>\\(b=n/m(\\)溶剂\\()=0.5\\) \\(\\mathrm{mol}\\)÷\\(0.500\\) \\(\\mathrm{kg}=1.0 \\mathrm{mol} \\cdot \\mathrm{kg}^{-1}\\)，分母是溶剂质量。</p>"
             }
-          ]
+          ],
+          "signal": "要求配制某浓度溶液，或给了质量分数、密度要换算成物质的量浓度",
+          "methods": [
+            {
+              "name": "换算只用一条桥",
+              "source": "教材通用",
+              "steps": [
+                "c=1000ρw/M，ρ 用 g·mL⁻¹，M 用 g·mol⁻¹",
+                "w 是质量分数（小数），不是百分数",
+                "稀释前后 n 不变：c1V1=c2V2"
+              ],
+              "when": "质量分数与物质的量浓度互转"
+            },
+            {
+              "name": "抓题眼定分母",
+              "source": "哈哥",
+              "steps": [
+                "问质量摩尔浓度 b：分母是溶剂质量（kg）",
+                "问物质的量浓度 c：分母是溶液体积（L）",
+                "两者分母不同，别混用"
+              ],
+              "when": "题目出现 mol·kg⁻¹ 或 mol·L⁻¹"
+            }
+          ],
+          "network": {
+            "prerequisite": [],
+            "contrast": [
+              "c2s2-01"
+            ],
+            "next": [
+              "c2s4-04"
+            ]
+          },
+          "examPattern": "填空题直接换算；计算题给密度与质量分数求 c"
         },
         {
           "id": "c2s2-01",
@@ -1342,7 +2007,42 @@
               "q": "相同质量摩尔浓度下，\\(\\mathrm{Na}\\mathrm{Cl}\\)溶液的蒸气压下降比蔗糖溶液大。",
               "a": "<p><b>答案：</b>正确</p><p>\\(\\mathrm{Na}\\mathrm{Cl}\\)完全解离 \\(i\\approx2\\)，有效粒子数是蔗糖的 \\(2\\) 倍，\\(\\Delta p\\)更大。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「蒸气压下降」「拉乌尔定律」，或问同一溶剂加不同溶质后蒸气压大小",
+          "methods": [
+            {
+              "name": "拉乌尔定律直接代",
+              "source": "教材通用",
+              "steps": [
+                "Δp=p°·xB，xB 是溶质的摩尔分数",
+                "只适用于不挥发性非电解质",
+                "比较大小只需比溶质摩尔分数"
+              ],
+              "when": "定性比较与简单计算"
+            },
+            {
+              "name": "抓题眼判电解质",
+              "source": "哈哥",
+              "steps": [
+                "溶质是电解质→有效粒子数乘 van’t Hoff 因子 i",
+                "Δp=p°·i·xB",
+                "非电解质 i=1"
+              ],
+              "when": "溶质为 NaCl、CaCl2 之类"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c2s1-01"
+            ],
+            "contrast": [
+              "c2s2-02"
+            ],
+            "next": [
+              "c2s2-02"
+            ]
+          },
+          "examPattern": "选择题比较几种溶液蒸气压高低；填空题代公式"
         },
         {
           "id": "c2s2-02",
@@ -1373,7 +2073,42 @@
               "q": "\\(298\\) K 时 \\(0.10\\) \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3} \\mathrm{Na}\\mathrm{Cl}\\)溶液（\\(i\\approx2\\)）的渗透压约为（\\(R=8.314 \\mathrm{J} \\cdot \\mathrm{mol}^{-1} \\cdot \\mathrm{K}^{-1}\\)）（　）<br>\\(A\\). \\(248\\) \\(\\mathrm{kPa}\\)　B. \\(495\\) \\(\\mathrm{kPa}\\)　C. \\(743\\) \\(\\mathrm{kPa}\\)　D. \\(99\\) \\(\\mathrm{kPa}\\)",
               "a": "<p><b>答案：B</b></p><p>先把浓度换成 \\(100\\) \\(\\mathrm{mol} \\cdot \\mathrm{m}^{-3}\\)，Π\\(=i\\cdot c\\)RT\\(=2\\times100\\times8.314\\times298\\approx4.95\\times10^{5}\\) \\(\\mathrm{Pa}\\approx495 \\mathrm{kPa}\\)。</p><p>易错：忘乘 \\(i\\)得 \\(248\\) \\(\\mathrm{kPa}\\)；用 \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3}\\)直接代入得小 \\(1000\\) 倍的值。</p>"
             }
-          ]
+          ],
+          "signal": "给了沸点升高或凝固点降低的数值，要你求摩尔质量",
+          "methods": [
+            {
+              "name": "先算质量摩尔浓度",
+              "source": "教材通用",
+              "steps": [
+                "ΔTf=Kf·b 或 ΔTb=Kb·b，先解出 b",
+                "b=n(溶质)/m(溶剂,kg)，把 b 换成 n",
+                "M=m(溶质)/n 得摩尔质量"
+              ],
+              "when": "凡给 ΔT 求 M"
+            },
+            {
+              "name": "电解质乘 i",
+              "source": "史达清",
+              "steps": [
+                "ΔT=i·K·b，i 用 van’t Hoff 因子",
+                "不确定 i 时按完全解离估算再讨论",
+                "非电解质 i=1 不能漏"
+              ],
+              "when": "溶质是盐或酸"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c2s2-01"
+            ],
+            "contrast": [
+              "c2s2-03"
+            ],
+            "next": [
+              "c2s2-03"
+            ]
+          },
+          "examPattern": "计算题求未知物摩尔质量；选择题比较凝固点高低"
         },
         {
           "id": "c2s2-03",
@@ -1398,7 +2133,42 @@
               "q": "\\(0.10\\) \\(\\mathrm{mol} \\cdot \\mathrm{kg}^{-1} \\mathrm{Na}_{2}\\mathrm{S}\\mathrm{O}_{4}\\)溶液（视为完全电离）的凝固点降低值约为（\\(K_{\\mathrm{f}}=1.86 \\mathrm{K} \\cdot \\mathrm{kg} \\cdot \\mathrm{mol}^{-1}\\)）（　）<br>\\(A\\). \\(0.186\\) K　B. \\(0.372\\) K　C. \\(0.558\\) K　D. \\(0.744\\) K",
               "a": "<p><b>答案：C</b></p><p>\\(\\mathrm{Na}_{2}\\mathrm{S}\\mathrm{O}_{4}\\)电离出 \\(3\\) 个离子，i\\(\\approx3\\)：\\(\\Delta T_{\\mathrm{f}}=i\\cdot K_{\\mathrm{f}}\\cdot m=3\\times1.86\\times0.10\\approx0.558\\)K。</p><p>易错：把 \\(\\mathrm{Na}_{2}\\mathrm{S}\\mathrm{O}_{4}\\)记成 \\(i=2\\)，得 \\(0.372\\) K。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「渗透压」「反渗透」「等渗溶液」",
+          "methods": [
+            {
+              "name": "van’t Hoff 公式",
+              "source": "教材通用",
+              "steps": [
+                "Π=cRT，c 单位 mol·L⁻¹，R=8.314 kPa·L·mol⁻¹·K⁻¹",
+                "电解质 Π=i·cRT",
+                "比较渗透压只比 i·c"
+              ],
+              "when": "渗透压计算与比较"
+            },
+            {
+              "name": "等渗抓题眼",
+              "source": "哈哥",
+              "steps": [
+                "等渗⇔Π 相等⇔i·c 相等",
+                "反渗透需外加压力大于 Π",
+                "求浓度时先把 i 从两边约掉再比 c"
+              ],
+              "when": "题干出现「与血浆等渗」"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c2s2-02"
+            ],
+            "contrast": [
+              "c2s2-02"
+            ],
+            "next": [
+              "c2s2-01"
+            ]
+          },
+          "examPattern": "计算题求渗透压或摩尔质量；选择题判断等渗"
         },
         {
           "id": "c2s3-01",
@@ -1434,7 +2204,42 @@
               "q": "酸越强，其共轭碱也越强。（　）<br>\\(A\\). 正确　\\(B\\). 错误",
               "a": "<p><b>答案：B</b></p><p>第一步：由 \\(K_{\\mathrm{a}}\\cdot K_{\\mathrm{b}}=K_{\\mathrm{w}}\\)，同一共轭对的乘积为常数。<br>第二步：\\(K_{\\mathrm{a}}\\) 越大（酸越强），\\(K_{\\mathrm{b}}\\) 就越小（共轭碱越弱）。<br>第三步：例如 \\(\\mathrm{HCl}\\) 是强酸，其共轭碱 \\(\\mathrm{Cl^{-}}\\) 极弱；\\(\\mathrm{HAc}\\) 是弱酸，其共轭碱 \\(\\mathrm{Ac^{-}}\\) 反而是较强的弱碱。故原句错误。</p><p>易错：凭直觉认为「强酸背后一定有个强碱」，忘记了二者的常数是倒数关系。</p>"
             }
-          ]
+          ],
+          "signal": "问某物质是酸还是碱、写出共轭酸碱对，或给了质子条件式",
+          "methods": [
+            {
+              "name": "共轭对只差一个 H⁺",
+              "source": "教材通用",
+              "steps": [
+                "酸去掉一个 H⁺ 得共轭碱，碱加一个 H⁺ 得共轭酸",
+                "电荷跟着变：HAc→Ac⁻+H⁺",
+                "写质子条件式时以溶剂为零水准"
+              ],
+              "when": "任何概念题"
+            },
+            {
+              "name": "两性物质识别",
+              "source": "史达清",
+              "steps": [
+                "既能给 H⁺ 又能接 H⁺ 的（HCO3⁻、H2O）是两性",
+                "两性物质按 Ka、Kb 大小判酸碱性",
+                "别把 NaH2PO4 当纯酸"
+              ],
+              "when": "题干给酸式盐"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c2s1-01"
+            ],
+            "contrast": [
+              "c2s3-02"
+            ],
+            "next": [
+              "c2s4-01"
+            ]
+          },
+          "examPattern": "选择题判断酸碱性；填空题写共轭对或质子条件式"
         },
         {
           "id": "c2s3-02",
@@ -1460,7 +2265,42 @@
               "q": "\\(298\\) K 时 \\(\\mathrm{H}\\mathrm{Ac}\\)的 \\(K_{\\mathrm{a}}=1.76\\times10^{-5}\\)，\\(\\mathrm{N}\\mathrm{H}_{3} \\cdot \\mathrm{H}_{2}\\mathrm{O}\\)的 \\(K_{\\mathrm{b}}=1.79\\times10^{-5}\\)，则同浓度 \\(\\mathrm{Na}\\mathrm{Ac}\\)溶液与 \\(\\mathrm{N}\\mathrm{H}_{3} \\cdot \\mathrm{H}_{2}\\mathrm{O}\\)的碱性（　）\nA. 两者相当　B. \\(\\mathrm{Na}\\mathrm{Ac}\\)更强　C. \\(\\mathrm{N}\\mathrm{H}_{3} \\cdot \\mathrm{H}_{2}\\mathrm{O}\\)更强　D. 无法比较",
               "a": "<p><b>答案：</b>C</p><p>\\(\\mathrm{Ac}-\\)的 \\(K_{\\mathrm{b}}=K_{\\mathrm{w}}/K_{\\mathrm{a}}=1.0\\times10^{-14}/1.76\\times10^{-5}\\approx5.7\\times10^{-10}\\)，远小于 \\(1.79\\times10^{-5}\\)，\\(\\mathrm{N}\\mathrm{H}_{3} \\cdot \\mathrm{H}_{2}\\mathrm{O}\\)碱性更强。</p>"
             }
-          ]
+          ],
+          "signal": "给两个弱酸/弱碱的 Ka 让你比强弱，或要你由 Ka 求 Kb",
+          "methods": [
+            {
+              "name": "Ka·Kb=Kw",
+              "source": "教材通用",
+              "steps": [
+                "共轭酸碱对：Ka·Kb=Kw=1.0×10⁻¹⁴（25 ℃）",
+                "由 Ka 求 Kb 就除 Kw",
+                "温度不同 Kw 也变，非 25 ℃ 要换值"
+              ],
+              "when": "共轭对互换"
+            },
+            {
+              "name": "强弱只看 Ka 大小",
+              "source": "哈哥",
+              "steps": [
+                "Ka 越大酸性越强，与浓度无关",
+                "Kb 越大碱性越强",
+                "别用浓度或 pH 比强弱"
+              ],
+              "when": "比较题里出现不同浓度"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c2s3-01"
+            ],
+            "contrast": [
+              "c2s4-03"
+            ],
+            "next": [
+              "c2s4-01"
+            ]
+          },
+          "examPattern": "填空/选择：由 Ka 求 Kb、排酸性强弱顺序"
         },
         {
           "id": "c2s4-01",
@@ -1497,7 +2337,42 @@
               "q": "「加水稀释弱酸溶液，电离度 \\(\\alpha\\)与 \\(c(\\mathrm{H}^{+})\\)都减小。」（　）<br>\\(A\\). 正确　B. 错误",
               "a": "<p><b>答案：B</b></p><p>第一步：弱酸解离度 \\(\\alpha=\\sqrt{K_{\\mathrm{a}}/c}\\)，稀释使 \\(c\\) 减小，\\(\\alpha\\) 增大（稀释促进电离）。<br>第二步：但 \\([\\mathrm{H^{+}}]=\\sqrt{K_{\\mathrm{a}}c}\\)，\\(c\\) 减小使 \\([\\mathrm{H^{+}}]\\) 减小、\\(\\mathrm{pH}\\) 升高。<br>第三步：两者变化方向相反，故「都减小」错误，选 \\(B\\)。</p><p>易错：把强酸的稀释行为（浓度与解离度同向减小）套到弱酸上，忽略了稀释促进电离。</p>"
             }
-          ]
+          ],
+          "signal": "给了弱酸（弱碱）的初始浓度与 Ka，要求 pH、解离度或解离常数",
+          "methods": [
+            {
+              "name": "先验近似条件再选公式",
+              "source": "教材通用",
+              "steps": [
+                "算 c/Ka，≥500 才可用 [H⁺]=√(Ka·c)",
+                "<500 时解一元二次 x²+Ka·x−Ka·c=0",
+                "解离度 α=x/c×100%"
+              ],
+              "when": "一元弱酸求 pH 必做第一步"
+            },
+            {
+              "name": "抓题眼定对象",
+              "source": "哈哥",
+              "steps": [
+                "弱酸用 Ka 与 [H⁺]，弱碱用 Kb 与 [OH⁻]",
+                "求解离度用 α=已解离/初始",
+                "温度变则 Ka 变，pH 随之变"
+              ],
+              "when": "题干给的是碱或给了不同温度"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c2s3-02"
+            ],
+            "contrast": [
+              "c2s4-04"
+            ],
+            "next": [
+              "c2s4-02"
+            ]
+          },
+          "examPattern": "计算题求 pH 与解离度；选择题考「稀释后解离度增大」"
         },
         {
           "id": "c2s4-02",
@@ -1523,7 +2398,42 @@
               "q": "\\(0.10\\) \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3}\\)二元弱酸 \\(\\mathrm{H}_{2}A\\)（\\(K_{\\mathrm{a}}\\)₁\\(=4.0\\times10^{-7}\\)，\\(K_{\\mathrm{a}}\\)₂\\(=8.0\\times10^{-10}\\)）溶液中 \\(c(A^{2-})\\)约为多少？",
               "a": "<p><b>答案：</b>\\(8.0\\times10^{-10}\\) \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3}\\)</p><p>\\(c(A^{2-})\\approx K_{\\mathrm{a}}\\)₂\\(=8.0\\times10^{-10}\\)（第二步解离极弱，几乎不消耗 \\(\\mathrm{H}^{+}\\)）。\\(c(\\mathrm{H}^{+})=\\)√\\((K_{\\mathrm{a}}\\)₁\\(\\cdot c)=\\)√\\((4.0\\times10^{-8})=2.0\\times10^{-4}\\)。</p>"
             }
-          ]
+          ],
+          "signal": "多元弱酸（H2S、H2CO3、H3PO4）求 pH 或某级离子浓度",
+          "methods": [
+            {
+              "name": "只取第一步",
+              "source": "教材通用",
+              "steps": [
+                "Ka1≫Ka2，算 [H⁺] 只用 Ka1",
+                "第二步解离量近似等于 Ka2",
+                "求 [S²⁻] 才用 Ka1·Ka2 组合式"
+              ],
+              "when": "多元弱酸求 pH"
+            },
+            {
+              "name": "抓题眼辨目标离子",
+              "source": "史达清",
+              "steps": [
+                "问 pH→只算第一步",
+                "问二级离子浓度（如 [CO3²⁻]）→代 Ka2",
+                "问 [OH⁻]→用 Kb 系列"
+              ],
+              "when": "题干明确问某个离子浓度"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c2s4-01"
+            ],
+            "contrast": [
+              "c2s4-03"
+            ],
+            "next": [
+              "c2s4-03"
+            ]
+          },
+          "examPattern": "计算题求多元弱酸 pH 与二级离子浓度；选择题比较各级解离"
         },
         {
           "id": "c2s4-03",
@@ -1549,7 +2459,42 @@
               "q": "向 \\(\\mathrm{H}\\mathrm{Ac}\\)溶液中加入少量 \\(\\mathrm{Na}\\mathrm{Ac}\\)固体，\\(\\mathrm{H}\\mathrm{Ac}\\)的解离度减小，溶液 \\(\\mathrm{pH}\\)升高。",
               "a": "<p><b>答案：</b>正确</p><p>\\(\\mathrm{Ac}-\\)同离子抑制 \\(\\mathrm{H}\\mathrm{Ac}\\)解离，α 减小而 \\(c(\\mathrm{H}^{+})\\)下降、\\(\\mathrm{pH}\\)升高。</p>"
             }
-          ]
+          ],
+          "signal": "溶液里同时有弱酸和它的盐，或问加入少量强酸强碱后 pH 变化",
+          "methods": [
+            {
+              "name": "同离子效应抑解离",
+              "source": "教材通用",
+              "steps": [
+                "同离子使平衡左移、解离度减小",
+                "算 [H⁺] 时把盐的浓度当常数",
+                "近似条件仍要验算 c/Ka"
+              ],
+              "when": "HAc+NaAc 型体系"
+            },
+            {
+              "name": "盐效应反向且次要",
+              "source": "哈哥",
+              "steps": [
+                "加入无关强电解质→离子强度增大→解离度略增（盐效应）",
+                "同离子效应远大于盐效应，一般只算前者",
+                "题干出现「加入 NaCl 固体」时才提盐效应"
+              ],
+              "when": "题干专门考盐效应"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c2s4-01"
+            ],
+            "contrast": [
+              "c2s4-04"
+            ],
+            "next": [
+              "c2s4-04"
+            ]
+          },
+          "examPattern": "选择题考「加同离子后解离度、pH 如何变」"
         },
         {
           "id": "c2s4-04",
@@ -1580,7 +2525,42 @@
               "q": "要配制 \\(\\mathrm{pH}\\approx9.25\\)的缓冲溶液，应选（已知 \\(\\mathrm{p}K_{\\mathrm{a}}(\\mathrm{H}\\mathrm{Ac})=4.75\\)、\\(\\mathrm{p}K_{\\mathrm{b}}(\\mathrm{N}\\mathrm{H}_{3} \\cdot \\mathrm{H}_{2}\\mathrm{O})=4.75\\)、\\(\\mathrm{p}K_{\\mathrm{a}}(\\mathrm{H}\\mathrm{C}\\mathrm{O}\\mathrm{O}\\mathrm{H})=3.75\\)、\\(\\mathrm{p}K_{\\mathrm{a}}(\\mathrm{H}_{2}\\mathrm{C}\\mathrm{O}_{3})=6.35\\)）（　）<br>\\(A\\). \\(\\mathrm{H}\\mathrm{Ac}\\)–\\(\\mathrm{Na}\\mathrm{Ac}\\)　B. \\(\\mathrm{N}\\mathrm{H}_{3} \\cdot \\mathrm{H}_{2}\\mathrm{O}\\)–\\(\\mathrm{N}\\mathrm{H}_{4}\\mathrm{Cl}\\)　C. \\(\\mathrm{H}\\mathrm{C}\\mathrm{O}\\mathrm{O}\\mathrm{H}\\)–\\(\\mathrm{H}\\mathrm{C}\\mathrm{O}\\mathrm{O}\\mathrm{Na}\\)　D. \\(\\mathrm{H}_{2}\\mathrm{C}\\mathrm{O}_{3}\\)–\\(\\mathrm{Na}\\mathrm{H}\\mathrm{C}\\mathrm{O}_{3}\\)",
               "a": "<p><b>答案：B</b></p><p>NH\\(4^{+}\\) 的 \\(\\mathrm{p}K_{\\mathrm{a}}=14-4.75=9.25\\)，与目标 \\(\\mathrm{pH}\\)相同，落在有效缓冲范围中央。</p><p>易错：直接把 \\(\\mathrm{p}K_{\\mathrm{b}}=4.75\\)当 \\(\\mathrm{p}K_{\\mathrm{a}}\\)用，误选 \\(\\mathrm{H}\\mathrm{Ac}\\)–\\(\\mathrm{Na}\\mathrm{Ac}\\)。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「缓冲溶液」「加入少量酸碱 pH 变化很小」，或给了 HA 与 NaA 的浓度比",
+          "methods": [
+            {
+              "name": "Henderson 式",
+              "source": "教材通用",
+              "steps": [
+                "pH=pKa+lg(c共轭碱/c酸)",
+                "pOH=pKb+lg(c共轭酸/c碱)",
+                "有效缓冲范围 pKa±1"
+              ],
+              "when": "缓冲体系算 pH"
+            },
+            {
+              "name": "配比反求",
+              "source": "史达清",
+              "steps": [
+                "由目标 pH 反解 c碱/c酸=10^(pH−pKa)",
+                "再由总体积分配两种溶液体积",
+                "选酸时优先 pKa 接近目标 pH 的弱酸"
+              ],
+              "when": "题目问「如何配制 pH=x 的缓冲液」"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c2s4-03"
+            ],
+            "contrast": [
+              "c2s4-01"
+            ],
+            "next": [
+              "c2s5-01"
+            ]
+          },
+          "examPattern": "计算题配缓冲液或求 pH；选择题判断哪组能配成缓冲液"
         },
         {
           "id": "c2s5-01",
@@ -1606,7 +2586,42 @@
               "q": "\\(25^{\\circ}\\mathrm{C}\\)时 \\(\\mathrm{Ag}\\mathrm{Cl}\\)的 \\(K_{\\mathrm{sp}}=1.8\\times10^{-10}\\)，其溶解度 \\(s\\)为多少 \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3}\\)？",
               "a": "<p><b>答案：</b>\\(\\approx1.3\\times10^{-5}\\) \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3}\\)</p><p>\\(\\mathrm{Ag}\\mathrm{Cl}(\\)s\\()\\rightleftharpoons\\mathrm{Ag}^{+}+\\mathrm{Cl}-\\)，\\(K_{\\mathrm{sp}}=s^{2}\\)，s=√\\((1.8\\times10^{-10})=1.34\\times10^{-5}\\)。</p>"
             }
-          ]
+          ],
+          "signal": "给了 Ksp 求溶解度，或给了溶解度求 Ksp，题干出现「难溶电解质」",
+          "methods": [
+            {
+              "name": "类型定幂次",
+              "source": "教材通用",
+              "steps": [
+                "AB 型：Ksp=s²",
+                "AB2/A2B 型：Ksp=4s³",
+                "AB3 型：Ksp=27s⁴，先把 s 与各离子浓度关系列清楚"
+              ],
+              "when": "凡 Ksp 与 s 互算"
+            },
+            {
+              "name": "抓题眼防单位坑",
+              "source": "哈哥",
+              "steps": [
+                "s 单位 mol·L⁻¹，别用 g/100 g 水",
+                "若题目给 g/L 先除摩尔质量",
+                "同离子存在时 s 不能直接用上述公式"
+              ],
+              "when": "题目溶解度单位不是 mol·L⁻¹"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c1s4-05"
+            ],
+            "contrast": [
+              "c2s5-02"
+            ],
+            "next": [
+              "c2s5-02"
+            ]
+          },
+          "examPattern": "计算题 Ksp 与 s 互算；选择题比较同类型难溶物溶解度"
         },
         {
           "id": "c2s5-02",
@@ -1632,7 +2647,42 @@
               "q": "溶液中 \\(Q>K_{\\mathrm{sp}}\\)时为过饱和溶液，会析出沉淀。",
               "a": "<p><b>答案：</b>正确</p><p>\\(Q>K_{\\mathrm{sp}}\\)表示超出饱和量，多余部分将以沉淀析出直至 \\(Q=K_{\\mathrm{sp}}\\)。</p>"
             }
-          ]
+          ],
+          "signal": "给了离子浓度问有无沉淀，或问「沉淀完全」的条件",
+          "methods": [
+            {
+              "name": "Q 与 Ksp 比",
+              "source": "教材通用",
+              "steps": [
+                "按离子积写 Q，形式同 Ksp",
+                "Q>Ksp 生成沉淀，Q=Ksp 饱和，Q<Ksp 不沉淀",
+                "沉淀完全按残留离子 ≤1.0×10⁻⁵ mol·L⁻¹ 判"
+              ],
+              "when": "凡沉淀判断题"
+            },
+            {
+              "name": "逆向求沉淀所需浓度",
+              "source": "史达清",
+              "steps": [
+                "由 Q=Ksp 解出临界离子浓度",
+                "浓度超过临界值才开始沉淀",
+                "含同离子时先扣掉已有浓度"
+              ],
+              "when": "题目问「至少加多少才沉淀」"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c2s5-01"
+            ],
+            "contrast": [
+              "c2s5-03"
+            ],
+            "next": [
+              "c2s5-03"
+            ]
+          },
+          "examPattern": "计算题求开始沉淀/沉淀完全的浓度；选择题判断混合后是否沉淀"
         },
         {
           "id": "c2s5-03",
@@ -1657,7 +2707,42 @@
               "q": "向含等浓度 \\(\\mathrm{Cl}-\\)与 \\(\\mathrm{I}-\\)的溶液中逐滴加 \\(\\mathrm{Ag}\\mathrm{N}\\mathrm{O}_{3}\\)（\\(K_{\\mathrm{sp}}(\\mathrm{Ag}\\mathrm{Cl})=1.8\\times10^{-10}\\)，\\(K_{\\mathrm{sp}}(\\mathrm{Ag}\\mathrm{I})=8.5\\times10^{-17}\\)），先沉淀的是（　）\nA. \\(\\mathrm{Ag}\\mathrm{Cl}\\)　B. \\(\\mathrm{Ag}\\mathrm{I}\\)　C. 同时沉淀　D. 无法判断",
               "a": "<p><b>答案：</b>\\(B\\)</p><p>同类型沉淀，\\(K_{\\mathrm{sp}}\\)越小越易达到饱和，\\(\\mathrm{Ag}\\mathrm{I}\\)先沉淀。</p>"
             }
-          ]
+          ],
+          "signal": "两种离子都可能与同一沉淀剂反应，问谁先沉淀或能否分离",
+          "methods": [
+            {
+              "name": "算临界浓度比大小",
+              "source": "史达清",
+              "steps": [
+                "分别算出使各离子开始沉淀所需沉淀剂浓度",
+                "所需浓度小者先沉淀",
+                "两者差 10⁵ 倍以上才谈得上分步分离"
+              ],
+              "when": "分步沉淀题"
+            },
+            {
+              "name": "沉淀转化看 K 大小",
+              "source": "教材通用",
+              "steps": [
+                "转化反应 K=Ksp(旧)/Ksp(新)",
+                "K 很大（≫1）则转化彻底",
+                "K 很小则不能转化"
+              ],
+              "when": "题干出现「转化为更难溶的沉淀」"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c2s5-02"
+            ],
+            "contrast": [
+              "c2s6-03"
+            ],
+            "next": [
+              "c2s6-02"
+            ]
+          },
+          "examPattern": "计算题比较沉淀顺序；选择题判断某转化能否发生"
         },
         {
           "id": "c2s6-01",
@@ -1682,7 +2767,42 @@
               "q": "\\(\\mathrm{[Cu(NH_3)_4]SO_4}\\) 中中心离子与配位数分别是（　）<br>\\(A\\). \\(\\mathrm{Cu^{2+}}\\)、\\(4\\)　\\(B\\). \\(\\mathrm{Cu^{+}}\\)、\\(4\\)　\\(C\\). \\(\\mathrm{Cu^{2+}}\\)、\\(6\\)　\\(D\\). \\(\\mathrm{SO_4^{2-}}\\)、\\(4\\)",
               "a": "<p><b>答案：A</b></p><p>第一步：把配合物拆成内界与外界——内界是配离子 \\(\\mathrm{[Cu(NH_3)_4]^{2+}}\\)，外界是 \\(\\mathrm{SO_4^{2-}}\\)。<br>第二步：外界 \\(\\mathrm{SO_4^{2-}}\\) 带 \\(-2\\) 电荷，故配离子带 \\(+2\\)；配体 \\(\\mathrm{NH_3}\\) 中性，所以中心离子为 \\(\\mathrm{Cu^{2+}}\\)。<br>第三步：配体 \\(\\mathrm{NH_3}\\) 是单齿配体，内界中共有 4 个，故配位数为 4。选 \\(A\\)。</p><p>易错：由 \\(\\mathrm{SO_4^{2-}}\\) 反推时把中心离子判成 \\(\\mathrm{Cu^{+}}\\)；或把外界离子当成中心离子（\\(D\\)）。</p>"
             }
-          ]
+          ],
+          "signal": "给了配合物化学式要你写名称、中心离子电荷或配位数",
+          "methods": [
+            {
+              "name": "先内后外拆结构",
+              "source": "教材通用",
+              "steps": [
+                "方括号内是内界：中心离子+配体",
+                "配位数＝配体个数（多齿要乘齿数）",
+                "外界离子电荷与内界电荷之和为 0"
+              ],
+              "when": "配合物命名与结构题"
+            },
+            {
+              "name": "命名顺序抓题眼",
+              "source": "哈哥",
+              "steps": [
+                "配体按「先阴离子后中性分子」排序",
+                "配体数目用一、二、三，复杂配体加「合」",
+                "中心离子氧化数用 (Ⅰ)(Ⅱ) 罗马数字标在最后"
+              ],
+              "when": "写名称题"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c2s5-01"
+            ],
+            "contrast": [
+              "c2s6-02"
+            ],
+            "next": [
+              "c2s6-02"
+            ]
+          },
+          "examPattern": "填空题写名称或化学式；选择题判断配位数"
         },
         {
           "id": "c2s6-02",
@@ -1708,7 +2828,42 @@
               "q": "已知 \\(K_{\\mathrm{f}}(\\mathrm{[Ag(NH_3)_2]^{+}})=1.1\\times10^{7}\\)。若平衡时 \\(c(\\mathrm{[Ag(NH_3)_2]^{+}})=0.10\\ \\mathrm{mol\\cdot dm^{-3}}\\)、\\(c(\\mathrm{NH_3})=0.10\\ \\mathrm{mol\\cdot dm^{-3}}\\)，求 \\(c(\\mathrm{Ag^{+}})\\)。",
               "a": "<p><b>答案：\\(c(\\mathrm{Ag^{+}})\\approx9.1\\times10^{-7}\\ \\mathrm{mol\\cdot dm^{-3}}\\)</b></p><p>第一步：写出配位平衡 \\(\\mathrm{Ag^{+}}+2\\mathrm{NH_3}\\rightleftharpoons\\mathrm{[Ag(NH_3)_2]^{+}}\\)，稳定常数 \\(K_{\\mathrm{f}}=\\dfrac{c(\\mathrm{[Ag(NH_3)_2]^{+}})}{c(\\mathrm{Ag^{+}})c^{2}(\\mathrm{NH_3})}\\)。<br>第二步：变形得 \\(c(\\mathrm{Ag^{+}})=\\dfrac{c(\\mathrm{[Ag(NH_3)_2]^{+}})}{K_{\\mathrm{f}}\\,c^{2}(\\mathrm{NH_3})}\\)。<br>第三步：代入 \\(c(\\mathrm{Ag^{+}})=\\dfrac{0.10}{1.1\\times10^{7}\\times(0.10)^{2}}=\\dfrac{0.10}{1.1\\times10^{5}}=9.1\\times10^{-7}\\)。</p><p>易错：①分母漏掉 \\(\\mathrm{NH_3}\\) 浓度的平方；②把 \\(K_{\\mathrm{f}}\\) 的表达式写成 \\(c(\\mathrm{Ag^{+}})c^{2}(\\mathrm{NH_3})/c(\\text{配离子})\\)（那是解离常数 \\(K_{\\mathrm{d}}\\)）。</p>"
             }
-          ]
+          ],
+          "signal": "给了 K稳（或 K不稳）要算配离子浓度、游离离子浓度",
+          "methods": [
+            {
+              "name": "先写生成反应再代 K稳",
+              "source": "教材通用",
+              "steps": [
+                "M+nL⇌MLn，K稳=[MLn]/([M][L]^n)",
+                "配位几乎完全时先按限量算出剩余配离子",
+                "解出游离金属离子浓度"
+              ],
+              "when": "配位平衡计算"
+            },
+            {
+              "name": "K稳 与 K不稳 互倒",
+              "source": "史达清",
+              "steps": [
+                "同一配合物 K不稳=1/K稳",
+                "与 Ksp 组合：K=Ksp·K稳 判能否溶解",
+                "组合顺序按盖斯定律拼"
+              ],
+              "when": "题干同时给 Ksp 与 K稳"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c2s6-01"
+            ],
+            "contrast": [
+              "c2s5-02"
+            ],
+            "next": [
+              "c2s6-03"
+            ]
+          },
+          "examPattern": "计算题求游离离子浓度；选择题判断沉淀能否被配体溶解"
         },
         {
           "id": "c2s6-03",
@@ -1734,7 +2889,42 @@
               "q": "向 \\(\\mathrm{[Ag(NH_3)_2]^{+}}\\) 溶液中加入 \\(\\mathrm{KI}\\) 会生成黄色 \\(\\mathrm{AgI}\\) 沉淀，原因是 \\(\\mathrm{Ag^{+}}\\) 被消耗使配位平衡右移。（　）<br>\\(A\\). 正确　\\(B\\). 错误",
               "a": "<p><b>答案：A</b></p><p>第一步：溶液中存在配位平衡 \\(\\mathrm{[Ag(NH_3)_2]^{+}}\\rightleftharpoons\\mathrm{Ag^{+}}+2\\mathrm{NH_3}\\)，游离 \\(\\mathrm{Ag^{+}}\\) 浓度虽小但存在。<br>第二步：加入 \\(\\mathrm{I^{-}}\\) 后，\\(\\mathrm{Ag^{+}}\\) 与 \\(\\mathrm{I^{-}}\\) 的离子积超过 \\(K_{\\mathrm{sp}}(\\mathrm{AgI})\\)，生成 \\(\\mathrm{AgI}\\) 沉淀，游离 \\(\\mathrm{Ag^{+}}\\) 被消耗。<br>第三步：由勒夏特列原理，\\(\\mathrm{Ag^{+}}\\) 浓度下降使配位平衡向右（解离方向）移动，不断释放 \\(\\mathrm{Ag^{+}}\\) 直至沉淀完全，故说法正确。</p><p>易错：只答「生成沉淀」而不说明「沉淀消耗游离 \\(\\mathrm{Ag^{+}}\\) → 平衡右移」这一因果链，简答题拿不到分。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「加过量配体」「加酸」「加沉淀剂」对配位平衡的影响",
+          "methods": [
+            {
+              "name": "三因素移动",
+              "source": "教材通用",
+              "steps": [
+                "加配体→正向，配离子更稳定",
+                "加酸→配体被质子化（如 NH3→NH4⁺）→逆向",
+                "加沉淀剂→游离金属离子被沉淀→正向"
+              ],
+              "when": "配位平衡移动题"
+            },
+            {
+              "name": "抓题眼辨目的",
+              "source": "哈哥",
+              "steps": [
+                "问「能否溶解 AgCl」→比较 Ksp·K稳 是否够大",
+                "问「加酸后配离子是否解离」→看配体是否有碱性",
+                "问「配位掩蔽」→降低游离离子浓度"
+              ],
+              "when": "综合应用题"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c2s6-02"
+            ],
+            "contrast": [
+              "c2s5-03"
+            ],
+            "next": [
+              "c3s2-01"
+            ]
+          },
+          "examPattern": "选择题判断移动方向；简答题解释现象"
         },
         {
           "id": "c3s1-01",
@@ -1765,7 +2955,42 @@
               "q": "在 \\(\\mathrm{Na}\\)₂\\(S\\)₂O₃ 中硫元素的氧化数为（　）\nA. \\(+2\\)　B. \\(+3\\)　C. \\(+4\\)　D. \\(+6\\)",
               "a": "<p><b>答案：</b>\\(A\\)</p><p>\\(\\mathrm{Na}\\)为 \\(+1\\)（共 \\(+2\\)），O 为 \\(-2\\)（共 \\(-6\\)），由 \\(2+2x-6=0\\)得 \\(x=+2\\)。</p>"
             }
-          ]
+          ],
+          "signal": "给了元素/化合物要你标氧化数，或判断某反应是否氧化还原",
+          "methods": [
+            {
+              "name": "规则先行",
+              "source": "教材通用",
+              "steps": [
+                "单质中元素氧化数为 0",
+                "各元素氧化数代数和为 0，多原子离子等于离子电荷",
+                "H 一般 +1，O 一般 −2，例外先记过氧化物与氟化物"
+              ],
+              "when": "标氧化数题"
+            },
+            {
+              "name": "看有无变化判氧化还原",
+              "source": "史达清",
+              "steps": [
+                "逐个元素比反应前后氧化数",
+                "有元素氧化数变化⇔氧化还原反应",
+                "氧化数升高＝被氧化＝作还原剂"
+              ],
+              "when": "判断是否氧化还原"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c2s6-03"
+            ],
+            "contrast": [
+              "c3s1-02"
+            ],
+            "next": [
+              "c3s1-02"
+            ]
+          },
+          "examPattern": "填空题标氧化数；选择题判断氧化剂/还原剂"
         },
         {
           "id": "c3s1-02",
@@ -1796,7 +3021,42 @@
               "q": "用离子电子法配平 \\(\\mathrm{Mn}\\mathrm{O}_{4}-+\\mathrm{Fe}^{2+}+\\mathrm{H}^{+}\\rightarrow\\mathrm{Mn}^{2+}+\\mathrm{Fe}^{3+}+\\mathrm{H}_{2}\\mathrm{O}\\)，写出 \\(\\mathrm{Mn}\\mathrm{O}_{4}-\\)、\\(\\mathrm{Fe}^{2+}\\)、\\(\\mathrm{H}^{+}\\)前的系数。",
               "a": "<p><b>答案：</b>\\(1\\)、\\(5\\)、\\(8\\)</p><p>\\(\\mathrm{Mn}\\mathrm{O}_{4}-+8\\mathrm{H}^{+}+5e-=\\mathrm{Mn}^{2+}+4\\mathrm{H}_{2}\\mathrm{O}\\)，\\(\\mathrm{Fe}^{2+}-e-=\\mathrm{Fe}^{3+}\\)，按电子数相等\\(\\times5\\) 相加即得 \\(\\mathrm{Mn}\\mathrm{O}_{4}-+5\\mathrm{Fe}^{2+}+8\\mathrm{H}^{+}=\\mathrm{Mn}^{2+}+5\\mathrm{Fe}^{3+}+4\\mathrm{H}_{2}\\mathrm{O}\\)。</p>"
             }
-          ]
+          ],
+          "signal": "给了未配平的氧化还原方程式，要求配平（可能含离子式）",
+          "methods": [
+            {
+              "name": "离子-电子法三步",
+              "source": "教材通用",
+              "steps": [
+                "拆成两个半反应，先配平除 H、O 外的原子",
+                "用 H2O 配 O，用 H⁺ 配 H（碱性用 OH⁻），再配电荷",
+                "两半反应乘系数使电子数相等，相加消电子"
+              ],
+              "when": "离子方程式配平"
+            },
+            {
+              "name": "先定电子数再乘",
+              "source": "史达清",
+              "steps": [
+                "标出每个变价元素氧化数变化量",
+                "最小公倍数定两半反应系数",
+                "配完回头查电荷与原子双守恒"
+              ],
+              "when": "化合价法更快，适用于分子式"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c3s1-01"
+            ],
+            "contrast": [
+              "c3s2-02"
+            ],
+            "next": [
+              "c3s2-01"
+            ]
+          },
+          "examPattern": "填空题要求配平；选择题给四个配平结果选正确"
         },
         {
           "id": "c3s2-01",
@@ -1827,7 +3087,42 @@
               "q": "原电池中发生还原反应的电极是正极，电子由正极经外电路流向负极。",
               "a": "<p><b>答案：</b>错误</p><p>负极失电子被氧化，电子经外电路由负极流向正极；正极处氧化型得电子被还原。</p>"
             }
-          ]
+          ],
+          "signal": "给了电池反应要你画原电池、判断正负极或写电极反应",
+          "methods": [
+            {
+              "name": "先分氧化还原两半",
+              "source": "教材通用",
+              "steps": [
+                "被氧化的物质在负极（阳极）",
+                "被还原的物质在正极（阴极）",
+                "电子由负极经外电路流向正极"
+              ],
+              "when": "凡电池构成题"
+            },
+            {
+              "name": "盐桥与电极材料抓题眼",
+              "source": "哈哥",
+              "steps": [
+                "负极写氧化半反应，正极写还原半反应",
+                "纯固体、纯液体不写进变量位置",
+                "盐桥作用是平衡电荷、维持电中性"
+              ],
+              "when": "写半反应或解释盐桥"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c3s1-02"
+            ],
+            "contrast": [
+              "c3s3-01"
+            ],
+            "next": [
+              "c3s2-02"
+            ]
+          },
+          "examPattern": "填空题写电极反应；选择题判断正负极与电子流向"
         },
         {
           "id": "c3s2-02",
@@ -1858,7 +3153,42 @@
               "q": "已知 \\(E^{\\ominus}(\\mathrm{Cu}^{2+}/\\mathrm{Cu})=+0.34\\)V、\\(E^{\\ominus}(\\mathrm{Zn}^{2+}/\\mathrm{Zn})=-0.76\\)V，则 \\(\\mathrm{Zn}\\)|\\(\\mathrm{Zn}^{2+}\\)‖\\(\\mathrm{Cu}^{2+}\\)|\\(\\mathrm{Cu}\\)的标准电动势为（　）\nA. \\(0.34\\) \\(V\\)　B. \\(0.76\\) \\(V\\)　C. \\(1.10\\) \\(V\\)　D. \\(-1.10\\) V",
               "a": "<p><b>答案：</b>C</p><p>\\(E^{\\ominus}\\)池\\(=E^{\\ominus}(\\)正\\()-E^{\\ominus}(\\)负\\()=0.34-(-0.76)=1.10\\) \\(V\\)。</p>"
             }
-          ]
+          ],
+          "signal": "给了两个电对的标准电极电势，要你判断氧化剂强弱或反应方向",
+          "methods": [
+            {
+              "name": "电势高者得电子",
+              "source": "教材通用",
+              "steps": [
+                "E° 越大，氧化型氧化能力越强",
+                "反应自发方向：强氧化型 + 强还原型→弱氧化型 + 弱还原型",
+                "E°池=E°(正)−E°(负)>0 才能自发"
+              ],
+              "when": "比较与判方向"
+            },
+            {
+              "name": "标准氢电极基准",
+              "source": "史达清",
+              "steps": [
+                "φ°(H⁺/H2)=0 V 是基准",
+                "所有电极电势都是相对值",
+                "半反应取逆则电势变号"
+              ],
+              "when": "题目出现「相对于标准氢电极」"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c3s2-01"
+            ],
+            "contrast": [
+              "c3s2-03"
+            ],
+            "next": [
+              "c3s2-03"
+            ]
+          },
+          "examPattern": "选择题比较氧化性；计算题求标准电动势"
         },
         {
           "id": "c3s2-03",
@@ -1889,7 +3219,42 @@
               "q": "\\(298\\ \\mathrm{K}\\) 时 \\(E^{\\ominus}(\\mathrm{Cu^{2+}/Cu})=0.34\\ \\mathrm{V}\\)，\\(c(\\mathrm{Cu^{2+}})=0.010\\ \\mathrm{mol\\cdot dm^{-3}}\\)，求 \\(E(\\mathrm{Cu^{2+}/Cu})\\)。",
               "a": "<p><b>答案：\\(E\\approx0.28\\ \\mathrm{V}\\)</b></p><p>第一步：半反应为 \\(\\mathrm{Cu^{2+}}+2\\mathrm{e^{-}}\\rightleftharpoons\\mathrm{Cu}\\)，\\(n=2\\)，还原型为纯固体，浓度取 1。<br>第二步：Nernst 方程 \\(E=E^{\\ominus}+\\dfrac{0.0592}{2}\\lg c(\\mathrm{Cu^{2+}})\\)。<br>第三步：代入 \\(E=0.34+\\dfrac{0.0592}{2}\\times\\lg(1.0\\times10^{-2})=0.34+0.0296\\times(-2)\\)。<br>第四步：\\(E=0.34-0.059=0.281\\approx0.28\\ \\mathrm{V}\\)。</p><p>易错：①纯固体、纯液体写进浓度项；②\\(n\\) 与 0.0592 的除法漏掉；③把 \\(\\lg(10^{-2})\\) 算成 \\(+2\\)。</p>"
             }
-          ]
+          ],
+          "signal": "浓度/分压不是标准态，或出现「pH 影响电极电势」「浓差电池」",
+          "methods": [
+            {
+              "name": "Nernst 三步",
+              "source": "教材通用",
+              "steps": [
+                "写出电极半反应，确定转移电子数 n",
+                "φ=φ°+(0.0592/n)·lg([氧化型]/[还原型])（25 ℃）",
+                "纯固体/纯液体取 1，气体用 p/p°"
+              ],
+              "when": "非标准态电极电势计算"
+            },
+            {
+              "name": "pH 进入表达式的坑",
+              "source": "哈哥",
+              "steps": [
+                "含 H⁺ 或 OH⁻ 的半反应，pH 直接写进对数项",
+                "如 MnO4⁻+8H⁺ 要写 [H⁺]⁸",
+                "别把 H⁺ 当溶剂漏掉"
+              ],
+              "when": "含氧酸盐作氧化剂时"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c3s2-02"
+            ],
+            "contrast": [
+              "c3s2-04"
+            ],
+            "next": [
+              "c3s2-04"
+            ]
+          },
+          "examPattern": "计算题求非标准电动势；选择题判断浓度变化对电势影响"
         },
         {
           "id": "c3s2-04",
@@ -1920,7 +3285,42 @@
               "q": "\\(298\\) K 下某电池 \\(E^{\\ominus}\\)池\\(=0.76\\) V、n\\(=2\\)，求反应的 \\(\\Delta_{r}G^{\\ominus}\\)（\\(F=96500 \\mathrm{C} \\cdot \\mathrm{mol}^{-1}\\)）。",
               "a": "<p><b>答案：</b>\\(\\approx-147\\) \\(\\mathrm{kJ} \\cdot \\mathrm{mol}^{-1}\\)</p><p>\\(\\Delta_{r}G^{\\ominus}=-n\\)FE°池\\(=-2\\times96500\\times0.76\\approx-1.47\\times10^{5}\\) \\(\\mathrm{J} \\cdot \\mathrm{mol}^{-1}\\)。</p>"
             }
-          ]
+          ],
+          "signal": "从电动势求 ΔG 或 K°，或问「电池能否自发」",
+          "methods": [
+            {
+              "name": "两个换算一条链",
+              "source": "教材通用",
+              "steps": [
+                "ΔrG°=−nFE°，F=96485 C·mol⁻¹",
+                "再代 ΔrG°=−RTlnK° 求 K°",
+                "E°>0 则 ΔrG°<0，反应自发"
+              ],
+              "when": "电动势与热力学量互算"
+            },
+            {
+              "name": "先算 n 再代",
+              "source": "史达清",
+              "steps": [
+                "配平后的总反应中转移电子数即 n",
+                "n 取错则 ΔG 与 K° 全错",
+                "组合式 lnK°=nFE°/(RT)"
+              ],
+              "when": "复杂配平反应"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c3s2-03"
+            ],
+            "contrast": [
+              "c1s4-02"
+            ],
+            "next": [
+              "c3s3-01"
+            ]
+          },
+          "examPattern": "计算题求 K°；选择题判断 E° 与 ΔG 符号对应"
         },
         {
           "id": "c3s3-01",
@@ -1951,7 +3351,42 @@
               "q": "电解时与直流电源负极相连的电极是阴极，该极上发生还原反应。",
               "a": "<p><b>答案：</b>正确</p><p>电解池中阴极接电源负极，阳离子移向阴极得电子被还原。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「电解池」「分解电压」「外加电压」",
+          "methods": [
+            {
+              "name": "分解电压＝反电动势",
+              "source": "教材通用",
+              "steps": [
+                "理论分解电压等于对应原电池的电动势",
+                "实际还需克服超电势与内阻",
+                "E(实)>E(理) 才电解得起来"
+              ],
+              "when": "分解电压计算"
+            },
+            {
+              "name": "原电池 vs 电解池对照",
+              "source": "哈哥",
+              "steps": [
+                "原电池：负极氧化、正极还原，自发",
+                "电解池：阳极氧化、阴极还原，被强制",
+                "电解池用阴阳极，原电池用正负极，两套叫法别混"
+              ],
+              "when": "概念判断题"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c3s2-04"
+            ],
+            "contrast": [
+              "c3s2-01"
+            ],
+            "next": [
+              "c3s3-02"
+            ]
+          },
+          "examPattern": "选择题判断阴阳极；计算题求最小分解电压"
         },
         {
           "id": "c3s3-02",
@@ -1981,7 +3416,42 @@
               "q": "用惰性电极电解 \\(\\mathrm{Cu}\\)Cl₂ 水溶液，阳极产物主要是（　）\nA. \\(\\mathrm{Cu}\\)　B. \\(\\mathrm{Cl}_{2}\\)　C. \\(\\mathrm{O}_{2}\\)　D. \\(\\mathrm{H}_{2}\\)",
               "a": "<p><b>答案：</b>\\(B\\)</p><p>阳极上 \\(\\mathrm{Cl}-\\)的放电电势低于 \\(\\mathrm{O}\\mathrm{H}-\\)，故优先氧化为 \\(\\mathrm{Cl}_{2}\\)；阴极析出 \\(\\mathrm{Cu}\\)。</p>"
             }
-          ]
+          ],
+          "signal": "给了电解质溶液要你判断电解产物或离子放电顺序",
+          "methods": [
+            {
+              "name": "阳极看材料",
+              "source": "教材通用",
+              "steps": [
+                "阳极为活泼金属（除 Pt、石墨）→电极本身溶解",
+                "惰性阳极→阴离子放电顺序：S²⁻>I⁻>Br⁻>Cl⁻>OH⁻>含氧酸根",
+                "阴极阳离子顺序：Ag⁺>Cu²⁺>H⁺>……>Al³⁺"
+              ],
+              "when": "电解产物判断"
+            },
+            {
+              "name": "浓度可翻盘",
+              "source": "史达清",
+              "steps": [
+                "浓度很大时可能改变放电顺序（如浓 NaCl 阳极出 Cl2）",
+                "水溶液中 Al³⁺、Mg²⁺ 不放电，出 H2",
+                "产物写完回查电极反应配平"
+              ],
+              "when": "题干给了「浓」「稀」"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c3s3-01"
+            ],
+            "contrast": [
+              "c3s2-02"
+            ],
+            "next": [
+              "c3s4-01"
+            ]
+          },
+          "examPattern": "选择题判断两极产物；填空题写电极反应式"
         },
         {
           "id": "c3s4-01",
@@ -2012,7 +3482,42 @@
               "q": "钢铁在酸性较强的介质中发生析氢腐蚀，其阴极反应为 \\(2\\mathrm{H}^{+}+2e-=\\mathrm{H}_{2}\\uparrow\\)。",
               "a": "<p><b>答案：</b>正确</p><p>酸性介质中以 \\(\\mathrm{H}^{+}\\)得电子析氢为主；中性或弱酸性介质则以吸氧腐蚀为主。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「钢铁在潮湿空气中生锈」「酸性介质」「中性或弱碱性介质」",
+          "methods": [
+            {
+              "name": "先判介质再定类型",
+              "source": "教材通用",
+              "steps": [
+                "酸性介质（pH<4）→析氢腐蚀，阴极放 H2",
+                "中性/弱碱性→吸氧腐蚀，阴极耗 O2",
+                "两种腐蚀阳极都是 Fe 失电子"
+              ],
+              "when": "腐蚀类型判断题"
+            },
+            {
+              "name": "抓题眼写电极反应",
+              "source": "哈哥",
+              "steps": [
+                "阳极：Fe−2e⁻→Fe²⁺",
+                "析氢阴极：2H⁺+2e⁻→H2",
+                "吸氧阴极：O2+2H2O+4e⁻→4OH⁻"
+              ],
+              "when": "要写电极反应式"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c3s3-02"
+            ],
+            "contrast": [
+              "c3s4-02"
+            ],
+            "next": [
+              "c3s4-02"
+            ]
+          },
+          "examPattern": "选择题判断析氢还是吸氧；填空题写腐蚀电极反应"
         },
         {
           "id": "c3s4-02",
@@ -2043,7 +3548,40 @@
               "q": "下列防腐蚀措施中属于电化学保护法的是（　）\nA. 表面刷漆　B. 牺牲阳极法　C. 表面镀铬　D. 加缓蚀剂",
               "a": "<p><b>答案：</b>\\(B\\)</p><p>牺牲阳极法把更活泼金属作阳极腐蚀掉，使被保护金属作阴极，属电化学保护。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「牺牲阳极」「外加电流」「镀层破损」「不锈钢」",
+          "methods": [
+            {
+              "name": "牺牲阳极谁被腐蚀",
+              "source": "教材通用",
+              "steps": [
+                "接上电势更低的金属（Zn、Mg）作阳极",
+                "被保护的金属作阴极不腐蚀",
+                "Zn 块要定期更换"
+              ],
+              "when": "牺牲阳极法"
+            },
+            {
+              "name": "镀层破损加速原理解释",
+              "source": "史达清",
+              "steps": [
+                "镀层金属更活泼（如 Fe 上镀 Zn）→镀层先腐蚀，Fe 受保护",
+                "镀层金属较不活泼（如 Fe 上镀 Sn）→破损后 Fe 作阳极，腐蚀更快",
+                "判断谁作阳极看活动性顺序"
+              ],
+              "when": "镀层与基体活动性比较题"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "c3s4-01"
+            ],
+            "contrast": [
+              "c3s4-01"
+            ],
+            "next": []
+          },
+          "examPattern": "选择题判断哪种防护方法正确；简答题解释镀锡铁破损后更易锈"
         }
       ]
     },
@@ -2077,7 +3615,40 @@
               "q": "函数 y=ln(x−2)/√(3−x) 的定义域是（　）\nA. (2,3)　B. [2,3)　C. (2,3]　D. [2,3]",
               "a": "<p><b>答案：</b>A</p><p>对数要求 x−2>0 即 x>2，偶次根号在分母要求 3−x>0 即 x<3，取交得 (2,3)。</p>"
             }
-          ]
+          ],
+          "signal": "题干给了 f(g(x)) 的表达式或分段定义，问定义域、值域或反函数",
+          "methods": [
+            {
+              "name": "定义域三查",
+              "source": "教材通用",
+              "steps": [
+                "查分母不为 0",
+                "查偶次根号内 ≥0",
+                "查对数真数 >0，再取交集"
+              ],
+              "when": "任何求定义域题"
+            },
+            {
+              "name": "复合函数由外向内拆",
+              "source": "宋浩（待核实）",
+              "steps": [
+                "先看最外层函数对内部的要求，如 ln(·) 要求 ·>0",
+                "再把内部表达式代进去解不等式",
+                "分段函数的分界点单独代入检验"
+              ],
+              "when": "给 f(x) 求 f(g(x)) 的定义域"
+            }
+          ],
+          "network": {
+            "prerequisite": [],
+            "contrast": [
+              "m1s1-02"
+            ],
+            "next": [
+              "m1s3-01"
+            ]
+          },
+          "examPattern": "填空题直接求定义域；选择题给四个区间选正确的；考「定义域与表达式是否同一函数」"
         },
         {
           "id": "m1s1-02",
@@ -2103,7 +3674,42 @@
               "q": "函数 \\(f(x)=\\sin^{2}x\\) 是周期函数，且其最小正周期为 \\(\\pi\\)。（　）<br>A. 正确　B. 错误",
               "a": "<p><b>答案：A</b></p><p>\\(\\sin^{2}x=\\frac{1-\\cos 2x}{2}\\)，周期为 \\(2\\pi/2=\\pi\\)。</p><p>易错：由 \\(\\sin x\\) 的周期 \\(2\\pi\\) 直接判成 \\(2\\pi\\)，未注意平方后周期减半。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「奇函数」「偶函数」「周期为 T」「有界」，或要求判断函数性质",
+          "methods": [
+            {
+              "name": "定义域先对称",
+              "source": "教材通用",
+              "steps": [
+                "先确认定义域关于原点对称，否则非奇非偶",
+                "代 f(−x) 与 f(x) 比较：相等为偶，互为相反数为奇",
+                "奇函数若在 0 处有定义则 f(0)=0"
+              ],
+              "when": "判断奇偶性"
+            },
+            {
+              "name": "周期性凑同形式",
+              "source": "宋浩（待核实）",
+              "steps": [
+                "把 f(x+T) 化成与 f(x) 相同的表达式",
+                "常用 sin、cos 的最小正周期 2π/ω",
+                "周期函数的导数仍是同周期函数"
+              ],
+              "when": "判断或证明周期性"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s1-01"
+            ],
+            "contrast": [
+              "m1s1-01"
+            ],
+            "next": [
+              "m2s1-02"
+            ]
+          },
+          "examPattern": "选择题判断奇偶性；填空题求周期；用奇偶性简化计算"
         },
         {
           "id": "m1s2-01",
@@ -2135,7 +3741,40 @@
               "q": "无界数列必发散。（　）<br>A. 正确　B. 错误",
               "a": "<p><b>答案：A</b></p><p>收敛数列必有界，所以无界数列不可能收敛，只能发散。</p><p>易错：把逆命题「发散数列必无界」也当成对的（\\(1,0,1,0,\\dots\\) 发散但有界）。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「用定义证明极限」「ε-N」「收敛数列的性质」",
+          "methods": [
+            {
+              "name": "ε-N 三步模板",
+              "source": "教材通用",
+              "steps": [
+                "先写出要证的 |an−A|<ε",
+                "解出 n>N(ε) 的显式表达",
+                "取 N=[N(ε)]+1，回到定义叙述"
+              ],
+              "when": "凡要求用定义证明"
+            },
+            {
+              "name": "先放大再解",
+              "source": "框框（保底套路）",
+              "steps": [
+                "把 |an−A| 放大成只含 n 的简单式",
+                "再令放大的式子 <ε 解出 n",
+                "放大方向必须越来越松，不能反向"
+              ],
+              "when": "直接解不等式困难时"
+            }
+          ],
+          "network": {
+            "prerequisite": [],
+            "contrast": [
+              "m1s2-02"
+            ],
+            "next": [
+              "m1s3-01"
+            ]
+          },
+          "examPattern": "证明题用定义；选择题考收敛数列的有界性、保号性"
         },
         {
           "id": "m1s2-02",
@@ -2161,7 +3800,42 @@
               "q": "用数列极限的 \\(\\varepsilon-N\\) 定义证明：若 \\(\\lim_{n\\to\\infty}\\left|x_{n}\\right|=0\\)，则 \\(\\lim_{n\\to\\infty}x_{n}=0\\)。",
               "a": "<p><b>答案：</b></p><p>任给 \\(\\varepsilon>0\\)，由 \\(\\lim\\left|x_{n}\\right|=0\\) 知存在 \\(N\\)，当 \\(n>N\\) 时 \\(\\left|\\left|x_{n}\\right|-0\\right|=\\left|x_{n}\\right|<\\varepsilon\\)。又 \\(\\left|x_{n}-0\\right|=\\left|x_{n}\\right|\\)，故当 \\(n>N\\) 时 \\(\\left|x_{n}-0\\right|<\\varepsilon\\)，即 \\(\\lim x_{n}=0\\)。</p><p>易错：写「\\(\\left|x_{n}\\right|\\to 0\\)，所以 \\(x_{n}\\to 0\\)」当证明——这恰恰是待证结论，必须回到 \\(\\varepsilon-N\\) 定义。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「ε-δ」「用定义证明 lim f(x)=A」",
+          "methods": [
+            {
+              "name": "ε-δ 模板",
+              "source": "教材通用",
+              "steps": [
+                "写出 0<|x−x0|<δ 时 |f(x)−A|<ε",
+                "从 |f(x)−A| 出发放缩，找出 δ 与 ε 的关系",
+                "取 δ=min{δ1,δ2} 处理多个约束"
+              ],
+              "when": "凡用定义证函数极限"
+            },
+            {
+              "name": "先控 |x−x0|<1 再放缩",
+              "source": "框框（保底套路）",
+              "steps": [
+                "先限制 δ≤1，把 |x| 估成有界量",
+                "把放缩后的式子解出 δ",
+                "最终 δ 取 1 与解出值中的较小者"
+              ],
+              "when": "含 x²、1/x 等难直接解的情形"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s2-01"
+            ],
+            "contrast": [
+              "m1s2-03"
+            ],
+            "next": [
+              "m1s3-01"
+            ]
+          },
+          "examPattern": "证明题专考；选择题考 ε-δ 叙述的正误判断"
         },
         {
           "id": "m1s2-03",
@@ -2192,7 +3866,42 @@
               "q": "函数 \\(f(x)=\\frac{\\sin x}{x}\\) 在 \\(x=0\\) 处无定义，但 \\(\\lim_{x\\to 0} f(x)=\\) ______",
               "a": "<p><b>答案：1</b></p><p>这是第一个重要极限。函数在 \\(x=0\\) 无定义不影响极限存在，只说明 \\(x=0\\) 是可去间断点。</p><p>易错：看到「无定义」就答「极限不存在」。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「f(x0) 无定义但极限存在」「函数值与极限值不等」",
+          "methods": [
+            {
+              "name": "极限只看去心邻域",
+              "source": "教材通用",
+              "steps": [
+                "极限与 f(x0) 是否有定义无关",
+                "也与 f(x0) 取值无关",
+                "判断极限存在性只需看 x→x0 时函数的变化趋势"
+              ],
+              "when": "概念辨析题"
+            },
+            {
+              "name": "举反例判定",
+              "source": "武忠祥",
+              "steps": [
+                "构造 f(x)=(x²−1)/(x−1) 在 x=1 处无定义但极限为 2",
+                "用分段函数构造极限≠函数值的例子",
+                "回答「不一定」类问题必须给反例"
+              ],
+              "when": "判断命题真假"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s2-02"
+            ],
+            "contrast": [
+              "m1s6-01"
+            ],
+            "next": [
+              "m1s6-01"
+            ]
+          },
+          "examPattern": "选择题考「极限存在是否必有定义」；判断题考「极限值等于函数值」"
         },
         {
           "id": "m1s3-01",
@@ -2228,7 +3937,53 @@
               "q": "求 \\(\\lim_{n\\to\\infty}\\sqrt{n}\\cdot\\left(\\sqrt{n+1}-\\sqrt{n-2}\\right)\\)。",
               "a": "<p><b>答案：\\(\\frac{3}{2}\\)</b></p><p>乘共轭得 \\(\\sqrt{n}\\cdot\\frac{3}{\\sqrt{n+1}+\\sqrt{n-2}}=\\frac{3}{\\sqrt{1+1/n}+\\sqrt{1-2/n}}\\to\\frac{3}{2}\\)。</p><p>易错：共轭乘完后分子写成 1（应为 \\((n+1)-(n-2)=3\\)）。</p>"
             }
-          ]
+          ],
+          "signal": "给了分式或根式的极限，分子分母都趋于 0 或都趋于无穷",
+          "methods": [
+            {
+              "name": "四步化简链",
+              "source": "武忠祥",
+              "steps": [
+                "先代入，确认未定式类型",
+                "能因式分解、有理化的先做掉",
+                "能等价无穷小替换的因子先换",
+                "最后才用四则运算或洛必达"
+              ],
+              "when": "任何 0/0 或 ∞/∞ 型计算题"
+            },
+            {
+              "name": "抓大头比最高次",
+              "source": "宋浩（待核实）",
+              "steps": [
+                "x→∞ 时分母分子同除最高次幂",
+                "只看最高次项系数之比",
+                "指数函数增长快于幂函数，幂函数快于对数"
+              ],
+              "when": "x→∞ 的有理式极限"
+            },
+            {
+              "name": "有理化去根号",
+              "source": "框框（保底套路）",
+              "steps": [
+                "含 √A−√B 时乘共轭 √A+√B",
+                "含 √A−B 时也乘共轭",
+                "有理化后约掉致零因子再代入"
+              ],
+              "when": "根号差型 0/0"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s2-02"
+            ],
+            "contrast": [
+              "m1s5-02"
+            ],
+            "next": [
+              "m1s3-02"
+            ]
+          },
+          "examPattern": "计算题必考；选择题给四个极限值选正确的"
         },
         {
           "id": "m1s3-02",
@@ -2259,7 +4014,42 @@
               "q": "若 \\(\\lim_{x\\to 1}\\frac{x^{2}+ax+b}{x-1}=3\\)，则 \\(a=\\) ______，\\(b=\\) ______",
               "a": "<p><b>答案：\\(a=1\\)，\\(b=-2\\)</b></p><p>极限存在而分母 \\(\\to 0\\)，故分子必须 \\(\\to 0\\)：\\(1+a+b=0\\)。因式分解 \\(x^{2}+ax+b=(x-1)(x+1+a)\\)，极限为 \\(2+a=3\\)，得 \\(a=1\\)，\\(b=-2\\)。</p><p>易错：只用一次洛必达，忘记「分子极限必须为 \\(0\\)」这个必要条件。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「已知极限值，求参数 a、b」，或极限式中含待定字母",
+          "methods": [
+            {
+              "name": "先定阶再定值",
+              "source": "武忠祥",
+              "steps": [
+                "由极限存在先判断分子必须比到某阶更高",
+                "令最低阶项系数为 0，得一个方程",
+                "再用洛必达或泰勒比对系数得第二个方程"
+              ],
+              "when": "含参极限反求"
+            },
+            {
+              "name": "通分合成单一分式",
+              "source": "宋浩（待核实）",
+              "steps": [
+                "把和差形式通分成一个分式",
+                "分子按 x 的幂次整理",
+                "令低次项系数全为 0"
+              ],
+              "when": "∞−∞ 型含参"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s3-01"
+            ],
+            "contrast": [
+              "m2s7-02"
+            ],
+            "next": [
+              "m2s7-02"
+            ]
+          },
+          "examPattern": "计算题：给极限值反求 a、b；选择题给参数范围"
         },
         {
           "id": "m1s4-01",
@@ -2295,7 +4085,42 @@
               "q": "求 \\(\\lim_{x\\to\\infty}\\left(1+\\frac{1}{x+1}\\right)^{x}\\)。",
               "a": "<p><b>答案：\\(e\\)</b></p><p>原式 \\(=\\lim\\left[\\left(1+\\frac{1}{x+1}\\right)^{x+1}\\right]^{\\frac{x}{x+1}}=e^{1}=e\\)。</p><p>易错：直接写 \\(e\\) 而不检查指数——若指数是 \\(2x\\)，答案就是 \\(e^{2}\\)。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现 sin x/x、x→0，(1+1/x)^x、x→∞，或 1 的无穷次方",
+          "methods": [
+            {
+              "name": "凑两个重要极限",
+              "source": "教材通用",
+              "steps": [
+                "lim(sin x)/x=1（x→0），要求括号内与整体一致",
+                "lim(1+1/x)^x=e（x→∞）",
+                "改成 (1+t)^(1/t)→e（t→0）更好凑"
+              ],
+              "when": "凡出现 sin 与 x 同时趋于 0，或 1^∞"
+            },
+            {
+              "name": "1^∞ 三步取对数",
+              "source": "武忠祥",
+              "steps": [
+                "判定为 1^∞ 型",
+                "写成 e^{lim[g(x)·ln f(x)]}",
+                "再用等价无穷小 ln(1+u)~u 化简"
+              ],
+              "when": "底数趋 1、指数趋无穷"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s3-01"
+            ],
+            "contrast": [
+              "m1s5-02"
+            ],
+            "next": [
+              "m2s8-02"
+            ]
+          },
+          "examPattern": "计算题必考；选择题考「重要极限的变形是否成立」"
         },
         {
           "id": "m1s4-02",
@@ -2321,7 +4146,42 @@
               "q": "用夹逼定理求 \\(\\lim_{n\\to\\infty}\\left[\\frac{1}{\\sqrt{n^{2}+1}}+\\frac{1}{\\sqrt{n^{2}+2}}+\\cdots+\\frac{1}{\\sqrt{n^{2}+n}}\\right]\\)。",
               "a": "<p><b>答案：\\(1\\)</b></p><p>共 \\(n\\) 项，每项介于 \\(\\frac{1}{\\sqrt{n^{2}+n}}\\) 与 \\(\\frac{1}{\\sqrt{n^{2}+1}}\\) 之间，故 \\(\\frac{n}{\\sqrt{n^{2}+n}}\\le S_{n}\\le\\frac{n}{\\sqrt{n^{2}+1}}\\)；两端都 \\(\\to 1\\)，夹逼得 \\(S_{n}\\to 1\\)。</p><p>易错：以为每项 \\(\\to 0\\) 所以和 \\(\\to 0\\)，忽略了项数也趋于无穷。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「n 项和求极限」「递推数列 a(n+1)=f(an)」「证明极限存在」",
+          "methods": [
+            {
+              "name": "夹逼三步",
+              "source": "教材通用",
+              "steps": [
+                "把和式放大与缩小成同极限的两端",
+                "常用放缩：每项用最大项、最小项代替",
+                "两端极限相同则中间极限等于它"
+              ],
+              "when": "n 项和、含 n 的根式"
+            },
+            {
+              "name": "单调有界两步",
+              "source": "武忠祥",
+              "steps": [
+                "先证有界（数学归纳法或直接估计）",
+                "再证单调（作差 an+1−an 或作商）",
+                "两句结论合起来即收敛，再对递推式取极限求值"
+              ],
+              "when": "递推数列证明收敛"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s4-01"
+            ],
+            "contrast": [
+              "m1s2-01"
+            ],
+            "next": [
+              "m1s7-01"
+            ]
+          },
+          "examPattern": "证明题：证明数列收敛并求极限；计算题用夹逼求 n 项和极限"
         },
         {
           "id": "m1s4-03",
@@ -2347,7 +4207,40 @@
               "q": "柯西收敛原理可用于判断数列收敛而不必先求出极限值。",
               "a": "<p><b>答案：</b>正确</p><p>柯西条件只涉及项与项之间的距离，不需要预先知道极限，这是它与定义判别法的本质区别。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「柯西收敛原理」「充要条件」",
+          "methods": [
+            {
+              "name": "只作结论记忆",
+              "source": "教材通用",
+              "steps": [
+                "数列收敛⇔对任意 ε>0 存在 N，当 m,n>N 时 |am−an|<ε",
+                "考试中极少要求用它证明",
+                "遇到时优先改用单调有界或夹逼"
+              ],
+              "when": "选学内容，考到多为了解"
+            },
+            {
+              "name": "判断题优先找反例",
+              "source": "框框（保底套路）",
+              "steps": [
+                "遇到「是否一定收敛」先用调和级数、1/n 类反例",
+                "反例成立则该命题错",
+                "没有反例再想原理"
+              ],
+              "when": "判断命题真假"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s4-02"
+            ],
+            "contrast": [
+              "m1s2-01"
+            ],
+            "next": []
+          },
+          "examPattern": "很少单独考；若考多为判断「柯西列是否必收敛」"
         },
         {
           "id": "m1s5-01",
@@ -2383,7 +4276,52 @@
               "q": "有界函数与无穷小的乘积仍是无穷小。（　）<br>A. 正确　B. 错误",
               "a": "<p><b>答案：A</b></p><p>设 \\(\\left|g(x)\\right|\\le M\\)，\\(\\alpha(x)\\to 0\\)，则 \\(\\left|\\alpha g\\right|\\le M\\left|\\alpha\\right|\\to 0\\)。</p><p>易错：把「有界」换成「无穷大」也照搬——无穷大乘无穷小不能直接定。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「无穷小」「无穷大」「有界变量乘无穷小」，或判断无穷小阶",
+          "methods": [
+            {
+              "name": "有界×无穷小=无穷小",
+              "source": "教材通用",
+              "steps": [
+                "sin x、cos x、arctan x 都是有界量",
+                "有界量乘趋于 0 的量仍趋于 0",
+                "无穷大乘无穷小不能用此结论，需具体分析"
+              ],
+              "when": "含三角、反三角的乘积"
+            },
+            {
+              "name": "无穷大取倒数变无穷小",
+              "source": "宋浩（待核实）",
+              "steps": [
+                "判断 1/f(x) 是否为无穷小",
+                "f→∞ ⇔ 1/f→0",
+                "∞/∞ 型先同除最大项"
+              ],
+              "when": "判断无穷大或求其阶"
+            },
+            {
+              "name": "抓题眼分无界与无穷大",
+              "source": "武忠祥",
+              "steps": [
+                "无界不一定是无穷大（如 x·sin x）",
+                "无穷大要求绝对值最终恒大于任意 M",
+                "回答「是否无穷大」类命题要区分二者"
+              ],
+              "when": "概念辨析题"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s3-01"
+            ],
+            "contrast": [
+              "m1s5-02"
+            ],
+            "next": [
+              "m1s5-02"
+            ]
+          },
+          "examPattern": "选择题考「无界是否必为无穷大」；计算题用有界性化简"
         },
         {
           "id": "m1s5-02",
@@ -2419,7 +4357,52 @@
               "q": "「等价无穷小一定同阶，同阶无穷小一定等价。」（　）<br>A. 正确　B. 错误",
               "a": "<p><b>答案：B</b></p><p>前半句对，后半句错：同阶只要求 \\(\\beta/\\alpha\\to c\\ne 0\\)，\\(c\\) 可以是 2、\\(\\frac{1}{2}\\) 等，不一定等于 1，例如 \\(x\\) 与 \\(\\sin 2x\\)。</p><p>易错：这是选择题和判断题最爱设的「半对半错」陷阱。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「等价无穷小」「比较阶」「替换后求极限」",
+          "methods": [
+            {
+              "name": "替换三原则",
+              "source": "武忠祥",
+              "steps": [
+                "只对乘除中的因子整体替换",
+                "加减法不能随意替换（会丢高阶项）",
+                "替换后必须检查剩余部分极限存在"
+              ],
+              "when": "凡想用 sin x~x、ln(1+x)~x"
+            },
+            {
+              "name": "等价表按阶记",
+              "source": "宋浩（待核实）",
+              "steps": [
+                "x→0：sin x~x，tan x~x，1−cos x~x²/2",
+                "ln(1+x)~x，e^x−1~x，(1+x)^a−1~ax",
+                "记住阶数：差一阶的加减会留下高阶项"
+              ],
+              "when": "计算题速算"
+            },
+            {
+              "name": "加减法改用泰勒",
+              "source": "框框（保底套路）",
+              "steps": [
+                "加减法中把每个函数展开到足够阶",
+                "同阶相消后再取极限",
+                "分母是 x³ 就展到 x³ 项"
+              ],
+              "when": "等价替换失效、结果反常时"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s5-01"
+            ],
+            "contrast": [
+              "m2s7-01"
+            ],
+            "next": [
+              "m2s8-01"
+            ]
+          },
+          "examPattern": "计算题高频；选择题考「哪个替换是错的」"
         },
         {
           "id": "m1s6-01",
@@ -2455,7 +4438,42 @@
               "q": "设 \\(f(x)=\\begin{cases}\\frac{1-\\cos x}{x^{2}},&x\\ne 0\\\\ a,&x=0\\end{cases}\\) 在 \\(x=0\\) 处连续，求 \\(a\\)。",
               "a": "<p><b>答案：\\(a=\\frac{1}{2}\\)</b></p><p>\\(1-\\cos x\\sim\\frac{x^{2}}{2}\\)，所以 \\(\\lim_{x\\to 0} f(x)=\\frac{1}{2}\\)，连续要求 \\(a=\\frac{1}{2}\\)。</p><p>易错：把 \\(1-\\cos x\\) 换成 \\(x^{2}\\)，得 \\(a=1\\)。</p>"
             }
-          ]
+          ],
+          "signal": "题干给了分段函数，问「在 x=0 处连续」「求 a 使连续」",
+          "methods": [
+            {
+              "name": "连续三条件逐查",
+              "source": "教材通用",
+              "steps": [
+                "左极限存在",
+                "右极限存在且与左极限相等",
+                "该点函数值等于极限值"
+              ],
+              "when": "分段点求参数"
+            },
+            {
+              "name": "分段点两侧各算一次",
+              "source": "武忠祥",
+              "steps": [
+                "分界点左用左表达式求极限，右侧用右表达式",
+                "令左右极限都等于 f(x0) 得方程",
+                "解出参数后回代检验"
+              ],
+              "when": "求 a、b 使函数连续"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s2-03"
+            ],
+            "contrast": [
+              "m1s6-02"
+            ],
+            "next": [
+              "m1s6-02"
+            ]
+          },
+          "examPattern": "计算题求参数；选择题判断连续性与可导性关系"
         },
         {
           "id": "m1s6-02",
@@ -2491,7 +4509,42 @@
               "q": "函数 \\(y=\\frac{x^{2}-1}{x^{2}-3x+2}\\) 的间断点情况是（　）<br>A. \\(x=1\\) 为可去间断点，\\(x=2\\) 为无穷间断点<br>B. \\(x=1\\) 为无穷间断点，\\(x=2\\) 为可去间断点<br>C. \\(x=1\\)、\\(x=2\\) 都是可去间断点<br>D. \\(x=1\\)、\\(x=2\\) 都是无穷间断点",
               "a": "<p><b>答案：A</b></p><p>\\(y=\\frac{(x-1)(x+1)}{(x-1)(x-2)}\\)。\\(x=1\\)：约分后极限为 \\(\\frac{1+1}{1-2}=-2\\)，可去；\\(x=2\\)：约分后分母为 0、分子不为 0，极限无穷。</p><p>易错：不约分就判「两个都是无穷」。</p>"
             }
-          ]
+          ],
+          "signal": "题干问「x=0 是什么间断点」「第一类还是第二类」",
+          "methods": [
+            {
+              "name": "先算左右极限",
+              "source": "教材通用",
+              "steps": [
+                "左右极限都存在且相等但无定义/不相等→可去间断点",
+                "左右极限都存在但不等→跳跃间断点",
+                "至少一侧不存在→∞ 为无穷间断点，振荡无极限为振荡间断点"
+              ],
+              "when": "间断点分类题"
+            },
+            {
+              "name": "抓题眼辨振荡",
+              "source": "武忠祥",
+              "steps": [
+                "出现 sin(1/x)、cos(1/x) 且 x→0→振荡间断点",
+                "出现 1/x 型且一侧趋于 ∞→无穷间断点",
+                "lim 存在但不等于函数值→可去，不属于第二类"
+              ],
+              "when": "含三角或分式的分段点"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s6-01"
+            ],
+            "contrast": [
+              "m1s6-01"
+            ],
+            "next": [
+              "m1s7-01"
+            ]
+          },
+          "examPattern": "选择题给四个分段函数判断间断点类型；填空题填类型名称"
         },
         {
           "id": "m1s7-01",
@@ -2528,7 +4581,42 @@
               "q": "设 \\(f\\) 在 \\([0,1]\\) 上连续，\\(f(0)=-1\\)，\\(f(1)=1\\)，则方程 \\(f(x)=0\\) 在 \\((0,1)\\) 内（　）<br>A. 无根　B. 至少有一个根　C. 恰有一个根　D. 有无穷多个根",
               "a": "<p><b>答案：B</b></p><p>端点异号 + 闭区间连续，由零点定理得至少一根；个数无法确定（可能多个）。</p><p>易错：把「至少一个」答成「恰有一个」，唯一性还需要单调或 \\(f'\\) 不变号。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「闭区间上连续」「至少存在一点 ξ」「证明存在 ξ 使…」",
+          "methods": [
+            {
+              "name": "零点定理两步",
+              "source": "教材通用",
+              "steps": [
+                "令 F(x)=要证的式子",
+                "验证 F(a)、F(b) 异号",
+                "由零点定理得存在 ξ 使 F(ξ)=0"
+              ],
+              "when": "证明方程有根"
+            },
+            {
+              "name": "最值定理兜底",
+              "source": "武忠祥",
+              "steps": [
+                "先说明 f 在闭区间连续",
+                "故取得最大值 M 与最小值 m",
+                "再用 m≤f(x)≤M 放缩证明不等式"
+              ],
+              "when": "证明不等式或界"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s6-01"
+            ],
+            "contrast": [
+              "m2s6-01"
+            ],
+            "next": [
+              "m2s6-01"
+            ]
+          },
+          "examPattern": "证明题必考「存在 ξ 使 f(ξ)=0」；选择题考定理成立条件"
         },
         {
           "id": "m1s7-02",
@@ -2554,7 +4642,40 @@
               "q": "若函数 f 在区间 I 上连续，则 f 在 I 上必一致连续。",
               "a": "<p><b>答案：</b>错误</p><p>只在闭区间上成立。反例：1/x 在 (0,1) 上连续但非一致连续。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「一致连续」「是否一致连续」",
+          "methods": [
+            {
+              "name": "先判能否用康托尔定理",
+              "source": "教材通用",
+              "steps": [
+                "闭区间上连续⇒一致连续",
+                "开区间上连续不一定一致连续",
+                "判定时先看区间是否闭、函数是否有界"
+              ],
+              "when": "选学的判定题"
+            },
+            {
+              "name": "找斜率无界的反例",
+              "source": "武忠祥",
+              "steps": [
+                "在开区间上用 |f(x1)−f(x2)| 可任意大构造反例",
+                "如 1/x 在 (0,1) 上不一致连续",
+                "sin(1/x) 类振荡也可作反例"
+              ],
+              "when": "判断「是否一致连续」"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s7-01"
+            ],
+            "contrast": [
+              "m1s7-01"
+            ],
+            "next": []
+          },
+          "examPattern": "选学内容；考到多为判断题，用闭区间连续性一下结论"
         },
         {
           "id": "m2s1-01",
@@ -2585,7 +4706,42 @@
               "q": "设 f′(x₀)=2，求 lim_{h→0}[f(x₀−h)−f(x₀)]/h。",
               "a": "<p><b>答案：</b>−2</p><p>[f(x₀−h)−f(x₀)]/(−h)→f′(x₀)，故原式=−f′(x₀)=−2。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「用定义求 f′(x0)」「lim [f(x0+h)−f(x0)]/h」，或 f 在 x0 点不满足求导公式条件",
+          "methods": [
+            {
+              "name": "定义式三步",
+              "source": "教材通用",
+              "steps": [
+                "写出 lim [f(x0+Δx)−f(x0)]/Δx",
+                "把 f 的表达式代进去，分子有理化或因式分解",
+                "约掉 Δx 后令 Δx→0"
+              ],
+              "when": "凡要求用定义，或公式不能直接用的点"
+            },
+            {
+              "name": "凑标准形式的变形",
+              "source": "武忠祥",
+              "steps": [
+                "把题给的极限配成 [f(x0+h)−f(x0)]/h 的整体",
+                "不为 1 的系数要按比例分摊到 f 上",
+                "再乘以 f′(x0)，不要直接代入"
+              ],
+              "when": "给极限值反求 f′(x0)"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s6-01"
+            ],
+            "contrast": [
+              "m2s1-02"
+            ],
+            "next": [
+              "m2s2-01"
+            ]
+          },
+          "examPattern": "计算题用定义求导；选择题考「f′ 存在与 f 连续的关系」"
         },
         {
           "id": "m2s1-02",
@@ -2616,7 +4772,42 @@
               "q": "曲线 y=x³ 在点 (1,1) 处的切线斜率为（　）\nA. 1　B. 2　C. 3　D. 0",
               "a": "<p><b>答案：</b>C</p><p>y′=3x²，在 x=1 处为 3，即切线斜率。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「可导必连续」「f 在 x0 连续是否可导」，或问切线、法线方程",
+          "methods": [
+            {
+              "name": "连续不可导反例",
+              "source": "教材通用",
+              "steps": [
+                "|x| 在 0 处连续但左右导数不等→不可导",
+                "x^(1/3) 在 0 处连续但导数为无穷",
+                "回答「是否可导」先算左右导数"
+              ],
+              "when": "概念判断题"
+            },
+            {
+              "name": "切线斜率直接写",
+              "source": "武忠祥",
+              "steps": [
+                "切线斜率 k=f′(x0)",
+                "法线斜率 −1/f′(x0)（f′(x0)≠0 时）",
+                "代入点斜式写出方程"
+              ],
+              "when": "求切线/法线"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m2s1-01"
+            ],
+            "contrast": [
+              "m2s1-01"
+            ],
+            "next": [
+              "m2s5-01"
+            ]
+          },
+          "examPattern": "选择题考「可导与连续的关系」；计算题求切线方程"
         },
         {
           "id": "m2s2-01",
@@ -2652,7 +4843,42 @@
               "q": "\\((\\tan x)'=\\) ______",
               "a": "<p><b>答案：\\(\\sec^{2}x\\)</b></p><p>也可写成 \\(\\frac{1}{\\cos^{2}x}\\)。它是商法则 \\(\\left(\\frac{\\sin x}{\\cos x}\\right)'\\) 的结果。</p><p>易错：写成 \\(\\sec x\\) 或 \\(\\frac{\\sin x}{\\cos^{2}x}\\)。</p>"
             }
-          ]
+          ],
+          "signal": "给了和差积商、反三角、幂指函数让求导",
+          "methods": [
+            {
+              "name": "基本表+四则",
+              "source": "教材通用",
+              "steps": [
+                "先查基本导数表，再套和差积商法则",
+                "商的法则 (u/v)′=(u′v−uv′)/v²",
+                "反函数求导 dy/dx=1/(dx/dy)"
+              ],
+              "when": "一般求导题"
+            },
+            {
+              "name": "模板法全表背默",
+              "source": "框框（保底套路）",
+              "steps": [
+                "把 16 个基本导数公式抄写三遍默写一遍",
+                "考试时先写公式再代数，不跳步",
+                "结果能化简就化简，方便下一问"
+              ],
+              "when": "时间紧张时的保底路径"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m2s1-01"
+            ],
+            "contrast": [
+              "m2s2-02"
+            ],
+            "next": [
+              "m2s2-02"
+            ]
+          },
+          "examPattern": "计算题必考；选择题给四个求导结果选正确的"
         },
         {
           "id": "m2s2-02",
@@ -2688,7 +4914,53 @@
               "q": "求 \\(y=e^{\\sin 2x}\\) 的导数。",
               "a": "<p><b>答案：\\(y'=2\\cos 2x\\cdot e^{\\sin 2x}\\)</b></p><p>两层：外层 \\(e^{u}\\) 的导数仍是 \\(e^{u}\\)，内层 \\(\\sin 2x\\) 求导得 \\(2\\cos 2x\\)。</p><p>易错：内层只写到 \\(\\cos 2x\\)，漏掉 2。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现 sin(3x+1)、e^(x²)、根号套根号，或形如 x^x、x^sin x",
+          "methods": [
+            {
+              "name": "洋葱法则：外一层内一层",
+              "source": "宋浩（待核实）",
+              "steps": [
+                "从最外层函数开始，对外层求导",
+                "再乘上内层函数的导数（内一层）",
+                "层层向里剥，直到最内层是 x，每层都要乘"
+              ],
+              "when": "任何复合函数求导，层数越多越要写全"
+            },
+            {
+              "name": "幂指函数先取对数",
+              "source": "教材通用",
+              "steps": [
+                "y=x^x 两边取 ln 得 ln y=x·ln x",
+                "两边对 x 求导得 y′/y",
+                "再乘回 y 得 y′=x^x(ln x+1)"
+              ],
+              "when": "底数与指数都含 x"
+            },
+            {
+              "name": "四步检查链",
+              "source": "武忠祥",
+              "steps": [
+                "先判是否复合、几层",
+                "每层求导后立刻写乘号",
+                "检查有没有漏乘内层导数",
+                "最后验算：逆运算或用数值代入粗查"
+              ],
+              "when": "易错的复合求导"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m2s2-01"
+            ],
+            "contrast": [
+              "m2s5-01"
+            ],
+            "next": [
+              "m2s3-01"
+            ]
+          },
+          "examPattern": "计算题必考；漏乘内层导数是失分主因"
         },
         {
           "id": "m2s3-01",
@@ -2724,7 +4996,42 @@
               "q": "设 \\(y=\\sin^{2}x\\)，求 \\(y^{(n)}\\)。",
               "a": "<p><b>答案：\\(y^{(n)}=-2^{n-1}\\cdot\\cos\\left(2x+\\frac{n\\pi}{2}\\right)\\)</b></p><p>先降幂：\\(y=\\frac{1-\\cos 2x}{2}\\)，常数项求导后消失，剩下 \\(-\\frac{1}{2}\\cos 2x\\) 的 \\(n\\) 阶导：\\(-2^{n-1}\\cos\\left(2x+\\frac{n\\pi}{2}\\right)\\)。</p><p>易错：忘记先降幂，直接对 \\(\\sin^{2}x\\) 硬求高阶导。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「y″」「n 阶导数」「求 y^(n)」",
+          "methods": [
+            {
+              "name": "找规律归纳三步",
+              "source": "教材通用",
+              "steps": [
+                "先算 y′、y″、y‴",
+                "观察系数与符号规律",
+                "写出 y^(n) 通式后用 n=1 检验"
+              ],
+              "when": "求 n 阶导数"
+            },
+            {
+              "name": "拆成部分分式再求",
+              "source": "武忠祥",
+              "steps": [
+                "有理分式先拆成 ∑A/(x−a)^k",
+                "再用公式 (1/(x−a))^(n)=(−1)^n·n!/(x−a)^(n+1)",
+                "同类项合并"
+              ],
+              "when": "分母可因式分解的有理函数"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m2s2-02"
+            ],
+            "contrast": [
+              "m2s7-01"
+            ],
+            "next": [
+              "m2s7-01"
+            ]
+          },
+          "examPattern": "计算题求 y^(n)；填空题填 n 阶导数通式"
         },
         {
           "id": "m2s4-01",
@@ -2755,7 +5062,42 @@
               "q": "设 \\(f(x)=e^{\\sin(1/x)}\\)，则 \\(\\mathrm{d}f=\\)（　）<br>A. \\(e^{\\sin(1/x)}\\cos(1/x)\\mathrm{d}x\\)　B. \\(\\frac{1}{x^{2}}e^{\\sin(1/x)}\\cos(1/x)\\mathrm{d}x\\)<br>C. \\(-\\frac{1}{x^{2}}e^{\\sin(1/x)}\\cos(1/x)\\mathrm{d}x\\)　D. \\(-\\frac{1}{x^{2}}e^{\\sin(1/x)}\\mathrm{d}x\\)",
               "a": "<p><b>答案：C</b></p><p>\\(f'(x)=e^{\\sin(1/x)}\\cdot\\cos(1/x)\\cdot\\left(-\\frac{1}{x^{2}}\\right)\\)。三层复合，符号来自 \\((1/x)'=-1/x^{2}\\)。</p><p>易错：只写到 \\(\\cos(1/x)\\)，漏掉 \\(-1/x^{2}\\)。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「微分 dy」「一阶微分形式不变性」「近似计算」",
+          "methods": [
+            {
+              "name": "先求导再乘 dx",
+              "source": "教材通用",
+              "steps": [
+                "dy=f′(x)dx",
+                "复合时 dy=f′(u)du，u 可继续是中间变量",
+                "微分形式不变性：换元后仍写成 dy=f′(u)du"
+              ],
+              "when": "求微分"
+            },
+            {
+              "name": "近似计算套增量式",
+              "source": "框框（保底套路）",
+              "steps": [
+                "f(x0+Δx)≈f(x0)+f′(x0)Δx",
+                "选 x0 使 f(x0) 好算",
+                "Δx 取得足够小才准"
+              ],
+              "when": "求近似值题"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m2s2-02"
+            ],
+            "contrast": [
+              "m2s3-01"
+            ],
+            "next": [
+              "m2s5-01"
+            ]
+          },
+          "examPattern": "填空题求 dy；选择题考「微分形式不变性是否成立」"
         },
         {
           "id": "m2s5-01",
@@ -2791,7 +5133,42 @@
               "q": "曲线 \\(e^{x+y}-\\sin(xy)=e\\) 在点 \\((0,1)\\) 处的切线方程。",
               "a": "<p><b>答案：\\(y=(1/e-1)x+1\\)</b></p><p>两边求导：\\(e^{x+y}(1+y')-\\cos(xy)(y+xy')=0\\)。代入 \\((0,1)\\)：\\(e(1+y')-1=0\\)，\\(y'=1/e-1\\)。切线 \\(y-1=(1/e-1)(x-0)\\)。</p><p>易错：把 \\(e^{x+y}\\) 求导只写 \\(e^{x+y}\\)，漏乘 \\((1+y')\\)。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「由方程 F(x,y)=0 确定 y=y(x)」「求隐函数的二阶导数」",
+          "methods": [
+            {
+              "name": "两边对 x 求导",
+              "source": "教材通用",
+              "steps": [
+                "方程两边对 x 求导，y 视为 x 的函数，记住乘 y′",
+                "解出 y′",
+                "再对 y′ 的表达式求一次导得 y″，代入 y′ 化简"
+              ],
+              "when": "隐函数一阶、二阶导数"
+            },
+            {
+              "name": "先代值再求二阶",
+              "source": "武忠祥",
+              "steps": [
+                "求 y″ 时先把已知点的 (x0,y0) 与 y′(x0) 代入",
+                "只对含 y′ 的部分再求导",
+                "避免把整个表达式展成一大坨"
+              ],
+              "when": "给点求 y″(x0)"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m2s2-02"
+            ],
+            "contrast": [
+              "m2s5-02"
+            ],
+            "next": [
+              "m2s5-02"
+            ]
+          },
+          "examPattern": "计算题求 y′、y″；求隐函数在一点的切线方程"
         },
         {
           "id": "m2s5-02",
@@ -2827,7 +5204,42 @@
               "q": "设 \\(x=e^{-t}, y=t\\cdot e^{-t}\\)，求 \\(\\frac{\\mathrm{d}^{2}y}{\\mathrm{d}x^{2}}\\)。",
               "a": "<p><b>答案：\\(-e^{t}\\)</b></p><p>\\(\\frac{\\mathrm{d}x}{\\mathrm{d}t}=-e^{-t}\\)，\\(\\frac{\\mathrm{d}y}{\\mathrm{d}t}=e^{-t}-te^{-t}\\)，故 \\(\\frac{\\mathrm{d}y}{\\mathrm{d}x}=t-1\\)。\\(\\frac{\\mathrm{d}(t-1)}{\\mathrm{d}t}=1\\)，再除以 \\(\\frac{\\mathrm{d}x}{\\mathrm{d}t}=-e^{-t}\\)，得 \\(-e^{t}\\)。</p><p>易错：把 \\(\\frac{\\mathrm{d}y}{\\mathrm{d}x}\\) 当成常数 0 再求二阶导。</p>"
             }
-          ]
+          ],
+          "signal": "题干给了 x=x(t)、y=y(t)，要求 dy/dx 或二阶导数",
+          "methods": [
+            {
+              "name": "一阶用参数公式",
+              "source": "教材通用",
+              "steps": [
+                "dy/dx=(dy/dt)/(dx/dt)",
+                "要求 dx/dt≠0",
+                "结果仍写成 t 的函数"
+              ],
+              "when": "参数方程求一阶导"
+            },
+            {
+              "name": "二阶再除一次",
+              "source": "武忠祥",
+              "steps": [
+                "d²y/dx²=[d(dy/dx)/dt]/(dx/dt)",
+                "先对一阶导关于 t 求导，再除以 dx/dt",
+                "千万不要把 d²y/dt² 直接除以 d²x/dt²"
+              ],
+              "when": "参数方程求二阶导"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m2s5-01"
+            ],
+            "contrast": [
+              "m2s5-01"
+            ],
+            "next": [
+              "m2s5-03"
+            ]
+          },
+          "examPattern": "计算题必考；二阶导数是高频失分点"
         },
         {
           "id": "m2s5-03",
@@ -2853,7 +5265,42 @@
               "q": "球的体积 V=4πr³/3，当半径以 2 cm/s 增大、r=5 cm 时，体积变化率 dV/dt 为（　）\nA. 100π cm³/s　B. 200π cm³/s　C. 50π cm³/s　D. 400π cm³/s",
               "a": "<p><b>答案：</b>B</p><p>dV/dt=4πr²·(dr/dt)=4π×25×2=200π cm³/s。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「速率」「变化率」「同时变化」，且给了两个量的关系式",
+          "methods": [
+            {
+              "name": "链式关联三量",
+              "source": "教材通用",
+              "steps": [
+                "写出两量的关系式（如面积 A=πr²）",
+                "两边对 t 求导，得 dA/dt 与 dr/dt 的关系",
+                "代入瞬时值求未知变化率"
+              ],
+              "when": "相关变化率题"
+            },
+            {
+              "name": "先画图标已知",
+              "source": "框框（保底套路）",
+              "steps": [
+                "画出示意图标出已知量与待求量",
+                "写出几何关系再求导",
+                "负号表示减小，别丢"
+              ],
+              "when": "梯子滑动、水位上升类"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m2s5-02"
+            ],
+            "contrast": [
+              "m2s4-01"
+            ],
+            "next": [
+              "m2s6-01"
+            ]
+          },
+          "examPattern": "应用题求某时刻的变化率；高频为气球、梯子、圆锥模型"
         },
         {
           "id": "m2s6-01",
@@ -2890,7 +5337,42 @@
               "q": "验证函数 \\(f(x)=x^{2}-2x-3\\) 在 \\([-1,3]\\) 上满足罗尔定理，并求出定理中的 \\(\\xi\\)。",
               "a": "<p><b>答案：\\(\\xi=1\\)</b></p><p>\\(f\\) 是多项式，在 \\([-1,3]\\) 连续、\\((-1,3)\\) 可导；\\(f(-1)=1+2-3=0\\)，\\(f(3)=9-6-3=0\\)，端点值相等。\\(f'(x)=2x-2=0\\) 得 \\(x=1\\in(-1,3)\\)，故 \\(\\xi=1\\)。</p><p>易错：解出 \\(f'(x)=0\\) 后不检查它是否落在开区间内。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「f(a)=f(b)=0」「证明存在 ξ 使 f′(ξ)=0」",
+          "methods": [
+            {
+              "name": "先验三条件",
+              "source": "教材通用",
+              "steps": [
+                "闭区间连续",
+                "开区间可导",
+                "端点函数值相等 f(a)=f(b)"
+              ],
+              "when": "凡用罗尔定理"
+            },
+            {
+              "name": "构造辅助函数",
+              "source": "武忠祥",
+              "steps": [
+                "把结论改写成 f′(ξ)+g′(ξ)f(ξ)=0 的形式",
+                "凑 [e^{g(x)}f(x)]′ 型，令 F(x)=e^{g(x)}f(x)",
+                "验证 F 满足罗尔三条件"
+              ],
+              "when": "结论含 f′ 与 f 的线性组合"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s7-01"
+            ],
+            "contrast": [
+              "m2s6-02"
+            ],
+            "next": [
+              "m2s6-02"
+            ]
+          },
+          "examPattern": "证明题必考；构造不出辅助函数时题目给不出结论"
         },
         {
           "id": "m2s6-02",
@@ -2921,7 +5403,42 @@
               "q": "证明：当 \\(x>0\\) 时，\\(\\frac{x}{1+x}<\\ln(1+x)<x\\)。",
               "a": "<p><b>答案：</b></p><p>对 \\(f(t)=\\ln(1+t)\\) 在 \\([0,x]\\) 上用拉格朗日中值定理：\\(\\ln(1+x)=\\frac{x}{1+\\xi}\\)，其中 \\(0<\\xi<x\\)。由 \\(\\frac{1}{1+x}<\\frac{1}{1+\\xi}<1\\)，两边乘 \\(x>0\\) 得 \\(\\frac{x}{1+x}<\\frac{x}{1+\\xi}<x\\)，即得证。</p><p>易错：用拉格朗日时把 \\(\\xi\\) 当成端点直接代入，忘记它夹在 \\(0\\) 与 \\(x\\) 之间。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「证明不等式」「至少存在 ξ 使 f(b)−f(a)=f′(ξ)(b−a)」",
+          "methods": [
+            {
+              "name": "中值定理证不等式",
+              "source": "武忠祥",
+              "steps": [
+                "对 f 在 [a,b] 用拉格朗日得 f(b)−f(a)=f′(ξ)(b−a)",
+                "利用 f′(ξ) 的范围（如 0<f′<1）放缩",
+                "得出不等式"
+              ],
+              "when": "含两个函数值之差的估计"
+            },
+            {
+              "name": "辅助函数作差法",
+              "source": "教材通用",
+              "steps": [
+                "令 F(x)=左边−右边，化为证明 F(x)≥0",
+                "求 F′(x) 判单调性",
+                "用端点值确定符号"
+              ],
+              "when": "直接放缩困难时"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m2s6-01"
+            ],
+            "contrast": [
+              "m2s6-03"
+            ],
+            "next": [
+              "m2s7-02"
+            ]
+          },
+          "examPattern": "证明题：证不等式、证存在 ξ；计算量小但思路要求高"
         },
         {
           "id": "m2s6-03",
@@ -2947,7 +5464,42 @@
               "q": "写出柯西中值定理的条件与结论。",
               "a": "<p><b>答案：</b></p><p>设 \\(f\\)、\\(g\\) 在 \\([a,b]\\) 上连续、在 \\((a,b)\\) 内可导，且 \\(g'(x)\\ne 0\\)（\\(x\\in(a,b)\\)），则存在 \\(\\xi\\in(a,b)\\)，使 \\(\\frac{f(b)-f(a)}{g(b)-g(a)}=\\frac{f'(\\xi)}{g'(\\xi)}\\)。</p><p>易错：漏掉 \\(g'(x)\\ne 0\\) 与 \\(g(b)\\neg(a)\\) 的条件；它就是洛必达法则的理论依据。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「两个函数」「f(b)−f(a) 与 g(b)−g(a) 之比」",
+          "methods": [
+            {
+              "name": "比值形式直接套",
+              "source": "教材通用",
+              "steps": [
+                "[f(b)−f(a)]/[g(b)−g(a)]=f′(ξ)/g′(ξ)",
+                "要求 g(b)≠g(a) 且 g′(ξ)≠0",
+                "ξ 是同一个点"
+              ],
+              "when": "柯西中值定理题"
+            },
+            {
+              "name": "退化为拉格朗日检查",
+              "source": "框框（保底套路）",
+              "steps": [
+                "取 g(x)=x 就退化成拉格朗日",
+                "题目只给一个函数时别硬用柯西",
+                "两函数比值的结论才用柯西"
+              ],
+              "when": "判断该用哪个中值定理"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m2s6-02"
+            ],
+            "contrast": [
+              "m2s6-01"
+            ],
+            "next": [
+              "m2s7-02"
+            ]
+          },
+          "examPattern": "证明题；常与拉格朗日一起出现在压轴题"
         },
         {
           "id": "m2s7-01",
@@ -2978,7 +5530,43 @@
               "q": "函数 \\(f(x)=x\\cdot\\ln(1+x)\\) 带佩亚诺余项的麦克劳林展开式中 \\(x^{3}\\) 的系数为 ______",
               "a": "<p><b>答案：\\(-\\frac{1}{2}\\)</b></p><p>\\(\\ln(1+x)=x-\\frac{x^{2}}{2}+\\frac{x^{3}}{3}-\\cdots\\)，乘 \\(x\\) 得 \\(x^{2}-\\frac{x^{3}}{2}+\\frac{x^{4}}{3}-\\cdots\\)，故 \\(x^{3}\\) 系数为 \\(-\\frac{1}{2}\\)。</p><p>易错：忘记乘外面的 \\(x\\)，直接把 \\(\\ln(1+x)\\) 的 \\(x^{3}\\) 系数 \\(\\frac{1}{3}\\) 当答案。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「麦克劳林展开」「佩亚诺余项」「求 x→0 的极限且分母为高阶」",
+          "methods": [
+            {
+              "name": "展开阶数=分母阶数",
+              "source": "武忠祥",
+              "steps": [
+                "看分母最低阶，如 x³ 就展到 x³ 项",
+                "分子各函数按同一阶展开",
+                "同阶项合并后取极限"
+              ],
+              "when": "凡 x→0 的泰勒型极限"
+            },
+            {
+              "name": "记五个常用展开",
+              "source": "教材通用",
+              "steps": [
+                "e^x=1+x+x²/2+x³/6+o(x³)",
+                "sin x=x−x³/6+o(x³)，cos x=1−x²/2+x⁴/24+o(x⁴)",
+                "ln(1+x)=x−x²/2+x³/3+o(x³)",
+                "(1+x)^a=1+ax+a(a−1)x²/2+o(x²)"
+              ],
+              "when": "速算必备"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m2s3-01"
+            ],
+            "contrast": [
+              "m1s5-02"
+            ],
+            "next": [
+              "m2s7-02"
+            ]
+          },
+          "examPattern": "计算题必考；选择题考「展开到几阶才够」"
         },
         {
           "id": "m2s7-02",
@@ -3009,7 +5597,42 @@
               "q": "求 lim_{x→0}(x−sin x)/x³。",
               "a": "<p><b>答案：</b>1/6</p><p>sin x=x−x³/6+o(x³)，故 x−sin x=x³/6+o(x³)，原式=1/6。用洛必达需三次，泰勒一步到位。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现「拉格朗日余项」「证明不等式用泰勒」「洛必达做不下去」",
+          "methods": [
+            {
+              "name": "带余项估计",
+              "source": "武忠祥",
+              "steps": [
+                "在 x0 处展开到 n 阶，写出拉格朗日余项",
+                "把余项按 ξ 的范围放缩",
+                "得不等式或极限"
+              ],
+              "when": "证明题与估值题"
+            },
+            {
+              "name": "洛必达失效就上泰勒",
+              "source": "框框（保底套路）",
+              "steps": [
+                "先试洛必达：求一次导看是否更简单",
+                "循环或更复杂时立刻改泰勒",
+                "按分母阶数展到同阶，一步到位"
+              ],
+              "when": "求导越多越乱时"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m2s7-01"
+            ],
+            "contrast": [
+              "m2s8-02"
+            ],
+            "next": [
+              "m2s8-02"
+            ]
+          },
+          "examPattern": "证明题证不等式；计算题中泰勒兜底"
         },
         {
           "id": "m2s8-01",
@@ -3040,7 +5663,53 @@
               "q": "求 \\(\\lim_{x\\to 0}\\frac{e^{x}-x-1}{x^{2}}\\)。",
               "a": "<p><b>答案：\\(\\frac{1}{2}\\)</b></p><p>\\(0/0\\) 型，洛必达一次得 \\(\\frac{e^{x}-1}{2x}\\)，仍是 \\(0/0\\)；再洛必达得 \\(\\frac{e^{x}}{2}\\to\\frac{1}{2}\\)。</p><p>易错：只洛必达一次就代值，把剩余 \\(0/0\\) 当成已算完。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现 0/0 或 ∞/∞ 型，且分子分母可导",
+          "methods": [
+            {
+              "name": "先化简再洛必达",
+              "source": "武忠祥",
+              "steps": [
+                "先代入确认未定式类型",
+                "能等价无穷小替换的因子先换",
+                "能约分的先约分",
+                "再对剩余部分使用洛必达"
+              ],
+              "when": "含 sin x、ln(1+x) 等可等价因子时"
+            },
+            {
+              "name": "洛必达三条件检查",
+              "source": "武忠祥",
+              "steps": [
+                "必须是 0/0 或 ∞/∞ 型",
+                "在去心邻域内可导且 g′≠0",
+                "lim f′/g′ 存在或为无穷；不存在则洛必达失效，不能反推原极限不存在"
+              ],
+              "when": "每次用之前都要过一遍"
+            },
+            {
+              "name": "暴力求导保底",
+              "source": "框框（保底套路）",
+              "steps": [
+                "时间紧时直接连求两三次导",
+                "每一步都检查是否已化成非未定式",
+                "得到确定值就停手"
+              ],
+              "when": "考场上没思路时的保底路径"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m1s5-02"
+            ],
+            "contrast": [
+              "m2s8-02"
+            ],
+            "next": [
+              "m2s8-02"
+            ]
+          },
+          "examPattern": "计算题必考；选择题考「此处能否用洛必达」"
         },
         {
           "id": "m2s8-02",
@@ -3071,7 +5740,50 @@
               "q": "若 \\(\\lim_{x\\to a}\\frac{f'(x)}{g'(x)}\\) 不存在，则 \\(\\lim_{x\\to a}\\frac{f(x)}{g(x)}\\) 一定不存在。（　）<br>A. 正确　B. 错误",
               "a": "<p><b>答案：B</b></p><p>反例：\\(\\lim_{x\\to\\infty}\\frac{\\sin x}{x}=0\\) 存在，但 \\(\\frac{\\cos x}{1}\\) 的极限不存在。洛必达失效只说明不能再用这条法则，原极限仍可能用别的方法求出。</p><p>易错：考场上洛必达一卡壳就判「极限不存在」，应先试试等价无穷小或夹逼。</p>"
             }
-          ]
+          ],
+          "signal": "题干出现 0·∞、∞−∞、1^∞、0^0、∞^0，或洛必达求导后循环",
+          "methods": [
+            {
+              "name": "五类未定式化归",
+              "source": "武忠祥",
+              "steps": [
+                "0·∞ 化成分式：把一侧写成 1/另一侧",
+                "∞−∞ 先通分或提公因子",
+                "1^∞、0^0、∞^0 一律取对数化指数"
+              ],
+              "when": "凡非 0/0 与 ∞/∞ 的未定式"
+            },
+            {
+              "name": "泰勒兜底法",
+              "source": "武忠祥",
+              "steps": [
+                "确定分母最低阶",
+                "将分子展开到同阶",
+                "合并同阶项后取极限"
+              ],
+              "when": "洛必达循环、求导后更复杂、或含振荡因子时"
+            },
+            {
+              "name": "先换元再判型",
+              "source": "宋浩（待核实）",
+              "steps": [
+                "令 t=1/x 把 x→∞ 换成 t→0",
+                "换元后重新判未定式类型",
+                "能化简的先化简再动洛必达"
+              ],
+              "when": "含 1/x、根号套 1/x 的式子"
+            }
+          ],
+          "network": {
+            "prerequisite": [
+              "m2s8-01"
+            ],
+            "contrast": [
+              "m2s7-02"
+            ],
+            "next": []
+          },
+          "examPattern": "计算题必考压轴；洛必达失效的识别是选择题考点"
         }
       ],
       "defaultSubject": true
@@ -3090,8 +5802,8 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "2.5.0";
-  var DATA_VERSION = "2026-10-22";
+  var APP_VERSION = "2.6.0";
+  var DATA_VERSION = "2026-10-23";
 
   var LEVEL_ORDER = ["A", "B", "C"];
   var LEVEL_NAME = { A: "A 级 · 基础必守", B: "B 级 · 常考主力", C: "C 级 · 拔高覆盖" };
@@ -3160,7 +5872,7 @@
   });
 
   var SID = null;
-  var filters = { level: "全部", form: "全部", source: "全部" };
+  var filters = { level: "全部", form: "全部", source: "全部", signal: "全部" };
 
   function cur() {
     for (var i = 0; i < DATA.subjects.length; i++) {
@@ -3468,6 +6180,7 @@
     filters.level = "全部";
     filters.form = "全部";
     filters.source = "全部";
+    filters.signal = "全部";
   }
 
   function sourcesOf(list) {
@@ -3495,6 +6208,7 @@
       return list.some(function (k) { return (k.forms || []).indexOf(f) !== -1; });
     })));
     facet("来源层级", "source", ["全部"].concat(sourcesOf(list)));
+    if (filters.signal !== "全部") facet("题型信号", "signal", ["全部", filters.signal]);
 
     function facet(label, key, options) {
       var row = el("div", "facet");
@@ -3538,6 +6252,20 @@
     if (k.section) tags.appendChild(txt("span", "badge sec", k.section));
     if (k.source) tags.appendChild(txt("span", "badge src", k.source));
     tags.appendChild(txt("span", k.refs ? "badge refs" : "badge none", k.refs ? k.refs : "试卷未出现"));
+    if (k.signal) {
+      var sig = txt("span", "badge sig", "信号：" + k.signal);
+      sig.title = "题干出现这类特征时用本节方法；点一下只看同信号的知识点";
+      sig.setAttribute("data-signal", k.signal);
+      sig.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        filters.signal = (filters.signal === k.signal) ? "全部" : k.signal;
+        renderFilters();
+        renderGroups();
+        focusSignal(filters.signal);
+      });
+      tags.appendChild(sig);
+    }
     (k.forms || []).forEach(function (f) { tags.appendChild(txt("span", "form", f)); });
     sum.appendChild(tags);
 
@@ -3567,6 +6295,7 @@
     if (k.content) body.appendChild(field("内容", k.content));
     if (k.trap) body.appendChild(field("易错点", k.trap));
     if (k.action) body.appendChild(field("最低拿分动作", k.action));
+    if (k.methods && k.methods.length) body.appendChild(buildMethods(k));
     if (k.links && k.links.length) {
       var f = field("关联", "");
       var p = f.querySelector("p");
@@ -3581,6 +6310,11 @@
       });
       body.appendChild(f);
     }
+    if (k.network) {
+      var nbx = buildNetwork(k);
+      if (nbx) body.appendChild(nbx);
+    }
+    if (k.examPattern) body.appendChild(field("考法模式", k.examPattern));
     if (k.note) {
       var nf = field("强调度", "");
       var np = nf.querySelector("p");
@@ -3591,6 +6325,75 @@
     if (k.examples && k.examples.length) body.appendChild(buildExamples(k));
     d.appendChild(body);
     return d;
+  }
+
+  /* 新增字段：解题方法 / 知识网络 / 信号聚焦。字段缺失或为空时整块不渲染，旧数据照常显示。 */
+  function buildMethods(k) {
+    var f = el("div", "field");
+    f.appendChild(txt("span", "k", "解题方法"));
+    var box = el("div", "mthbox");
+    k.methods.forEach(function (m, i) {
+      if (!m) return;
+      var one = el("div", "mth");
+      var head = el("div", "mthhead");
+      head.appendChild(txt("span", "mthno", "方法" + (i + 1)));
+      if (m.name) head.appendChild(txt("span", "mthname", m.name));
+      if (m.source) head.appendChild(txt("span", "badge src", m.source));
+      one.appendChild(head);
+      var steps = m.steps || [];
+      if (steps.length) {
+        var ol = el("ol", "mthsteps");
+        steps.forEach(function (s) { if (s) ol.appendChild(txt("li", "", s)); });
+        one.appendChild(ol);
+      }
+      if (m.when) one.appendChild(txt("p", "mthwhen", "适用条件：" + m.when));
+      box.appendChild(one);
+    });
+    f.appendChild(box);
+    return f;
+  }
+
+  function pointLink(id) {
+    var target = findPoint(id);
+    if (!target) return document.createTextNode(id);
+    var a = el("a", "ref");
+    a.href = "#k-" + id;
+    a.textContent = id + " " + target.name;
+    return a;
+  }
+
+  function buildNetwork(k) {
+    var f = el("div", "field");
+    f.appendChild(txt("span", "k", "知识网络"));
+    var box = el("div", "netbox");
+    var defs = [["prerequisite", "前置"], ["contrast", "对比"], ["next", "后续"]];
+    defs.forEach(function (pair) {
+      var ids = (k.network && k.network[pair[0]]) || [];
+      if (!ids.length) return;
+      var line = el("div", "netline");
+      line.appendChild(txt("span", "netlab", pair[1] + "："));
+      ids.forEach(function (id, i) {
+        if (!id) return;
+        if (i) line.appendChild(document.createTextNode(" · "));
+        line.appendChild(pointLink(id));
+      });
+      box.appendChild(line);
+    });
+    if (!box.childNodes.length) return null;
+    f.appendChild(box);
+    return f;
+  }
+
+  function focusSignal(sg) {
+    var box = byId("groups");
+    if (!box) return;
+    var cards = box.querySelectorAll(".card");
+    for (var i = 0; i < cards.length; i++) {
+      var kid = cards[i].id.replace(/^k-/, "");
+      var p = findPoint(kid);
+      var on = !!(sg && sg !== "全部" && p && p.signal === sg);
+      cards[i].classList.toggle("sigfocus", on);
+    }
   }
 
   function buildExamples(k) {
@@ -3644,6 +6447,7 @@
     if (filters.level !== "全部" && k.level !== filters.level) return false;
     if (filters.form !== "全部" && (k.forms || []).indexOf(filters.form) === -1) return false;
     if (filters.source !== "全部" && k.source !== filters.source) return false;
+    if (filters.signal !== "全部" && k.signal !== filters.signal) return false;
     return true;
   }
 
@@ -3684,6 +6488,7 @@
     });
 
     renderMath(box);
+    focusSignal(filters.signal);
   }
 
   function renderProgress() {
@@ -4900,7 +7705,7 @@
     var path = String(u || "").split("#")[0].split("?")[0];
     var parts = path.split("/"), last = parts[parts.length - 1] || "";
     try { last = decodeURIComponent(last); } catch (e) {}
-    if (!last || last.indexOf(".") === -1) last = "复习界面.html";
+    if (!last || last.indexOf(".") === -1) last = "review.html";
     return last.replace(/[\\/:*?"<>|\s]+/g, "_");
   }
 
@@ -5012,7 +7817,7 @@
     box.appendChild(stat);
 
     var json = el("p", "supdJson");
-    json.textContent = '{ "version": "2.5.0", "url": "https://…/复习界面.html", "notes": "本次更新说明", "date": "2026-10-23" }';
+    json.textContent = '{ "version": "2.6.0", "url": "https://…/review.html", "notes": "本次更新说明", "date": "2026-10-23" }';
     box.appendChild(json);
     box.appendChild(snote("只接受 http/https 地址；版本按 x.y.z 逐段比较，远端高于本机 v" + APP_VERSION + " 才提示。检查失败不会影响离线使用。"));
     box.appendChild(snote("掌握进度与收藏保存在浏览器本地，替换 HTML 文件不会丢失；手机端把新文件存到同一位置覆盖旧文件即可。"));
