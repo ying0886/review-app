@@ -2,9 +2,22 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.0.0
-  DATA_VERSION: 2026-10-24
-  本次变更: 顶部栏新增「目录」「搜索」两个入口（仍为单文件、离线可用、零新依赖）——
+  APP_VERSION: 3.2.0
+  DATA_VERSION: 2026-10-26
+  本次变更: 数据更新（APP_VERSION 3.2.0 / DATA_VERSION 2026-10-26，只换数据块，不动结构、样式与逻辑）——
+             ①高数 §2.7「泰勒公式、麦克劳林展开与佩亚诺余项」(m2s7-01) 新增解题技巧「已知各阶导数反求多项式」：
+               多项式在某点的泰勒展开无余项，给 f(x₀)、f′(x₀)…f⁽ⁿ⁾(x₀) 就能直接写出 f(x)，再代入求值，不必逐项积分；
+             ②同条补一道对应例题（4 次多项式由 x=2 处各阶导数反求，f(−1)=125），A 级例题 2→3 道；
+             ③改动经 _build/subjects.json → build.mjs 重建、check.mjs 全通过；不涉及渲染、CSS、同步与快照格式。
+  上次变更: 新增「笔记」模块（仍单文件、离线、零新依赖，APP_VERSION 3.1.0 / DATA_VERSION 不变）——
+             ①notes 并入 v2 快照（SNAP.notes = { sid: { noteKey: { text, t } } }，schema 仍为 2；旧档缺 notes 读时补 {}）；
+             ②知识点卡片与每道例题就地笔记：✎ 按钮（有笔记显示角标）＋纯文本 textarea，有内容默认展开；
+               宽屏（≥900px 且非手机横屏）有笔记的卡片正文两栏、笔记在右栏 sticky，例题跨整行；窄屏排在正文之后；
+             ③合并按 t 逐条取大（同刻本地优先），清空写空文本墓碑而不删键，避免另一台设备的旧笔记复活；
+             ④笔记纳入搜索（navBuildIndex 加「我的笔记」）、筛选（笔记：全部/有笔记）、同步状态行与导出导入；
+                打印隐藏按钮与输入框边框，笔记块 break-inside:avoid；
+             ⑤已知限制：旧版本客户端推送的快照不含 notes，会抹掉笔记——请所有设备都升级到 v3.1.0 后再互相同步。
+  上次变更: (3.0.0) 顶部栏新增「目录」「搜索」两个入口（仍为单文件、离线可用、零新依赖）——
              ①「目录」抽屉按 级别 A/B/C → 章节 分组列出当前科目全部知识点（编号 / 名称 / 章节 / 级别徽标），
                分组可折叠（A 默认展开），打开时高亮并滚动到正文当前视口所在的知识点；
              ②「搜索」抽屉输入即过滤（90ms 防抖），匹配编号、名称、章节、内容、易错点、最低拿分动作、
@@ -39,14 +52,14 @@
   上一版本变更(2.1.0): ①新增「例题收藏集」：每道例题题头星标收藏，顶部「我的收藏」抽屉集中查看/定位/取消，按科目分 key 存在 localStorage；
             ②内嵌 KaTeX 0.19.0（内核 + auto-render + 20 个 woff2 字体，base64 写进本文件），高数 42 条知识点 + 91 道例题全部改成 LaTeX 渲染、离线可用；
               化学数据保持原文本写法（其公式多为 ΔH、pH、10⁻⁵、kJ·mol⁻¹ 这类线性符号，现有字体下已清楚），需要时可另开一轮转换
-  上一版本文件名: backup/review_v2.7.0_2026-10-26.html
+  上一版本文件名: backup/review_v3.1.0_2026-10-26.html
 -->
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.0.0">
+<meta name="app-version" content="3.2.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -526,7 +539,8 @@
   @media (max-width:560px){
     .flabel{width:100%}
     .nm{flex:1 1 100%}
-    .tags{order:3}
+    .tags{order:3;min-width:0}
+    .badge.sig{min-width:0}   /* v3.1.0 附带修复：窄屏下长「信号」徽标不再把页面撑出横向滚动 */
     .mwrap{order:2}
     .scope{display:none}
     .subjects{max-width:calc(100% - 165px);flex:1 1 auto}
@@ -733,6 +747,77 @@
     .tocgrp>summary{min-height:38px;padding:7px 0}
     .navtabs{padding-top:4px}
     .navtab{min-height:32px;padding:6px 9px;font-size:12.5px}
+  }
+
+  /* ---------- [note] 就地笔记（v3.1.0 新增，追加在样式表末尾） ---------- */
+  .notebtn{
+    margin-left:0;align-self:center;flex:0 0 auto;
+    min-width:32px;height:32px;padding:0 5px;
+    display:inline-flex;align-items:center;justify-content:center;gap:2px;
+    background:transparent;border:1px solid transparent;border-radius:6px;
+    color:var(--ink2);font-size:15px;line-height:1;cursor:pointer;
+    transition:color .15s ease,background .15s ease,border-color .15s ease;
+  }
+  .notebtn:hover{background:var(--accentBg);border-color:var(--line2);color:var(--accent)}
+  .notebtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .notebtn[aria-expanded="true"]{color:var(--accent);border-color:var(--line2);background:var(--accentBg)}
+  .notebtn .favcount{margin-left:0}
+  .noteico{font-size:14px}
+
+  .notebox{
+    margin:10px 0 0;padding:10px 12px;
+    background:var(--card);border:1px solid var(--line);border-radius:8px;
+  }
+  .notebox[hidden]{display:none !important}
+  .notehead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 7px}
+  .notelab{font-size:12px;color:var(--ink2);letter-spacing:.03em}
+  .notestat{
+    font-size:11.5px;color:var(--ink2);font-variant-numeric:tabular-nums;
+    opacity:0;transition:opacity .25s ease;
+  }
+  .notestat.on{opacity:1}
+  .notedel{margin-left:auto;min-height:32px;padding:0 10px;font-size:12.5px}
+  .noteinput{
+    display:block;width:100%;box-sizing:border-box;min-height:64px;
+    resize:none;overflow:hidden;
+    padding:7px 9px;
+    font:inherit;font-size:13.5px;line-height:1.65;color:var(--ink);
+    background:var(--bg);border:1px solid var(--line2);border-radius:6px;
+    white-space:pre-wrap;
+  }
+  .noteinput:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .noteinput::placeholder{color:var(--ink2);opacity:.75}
+
+  /* 宽屏（>=900px 且非手机横屏）：有笔记的卡片正文两栏，笔记在右栏 sticky，例题独占整行 */
+  @media screen and (min-width:900px) and (min-height:541px){
+    .card.hasnote>.body{
+      display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,330px);
+      column-gap:22px;align-items:start;
+    }
+    .card.hasnote>.body>*{grid-column:1;min-width:0}
+    .card.hasnote>.body>.examples{grid-column:1 / -1}
+    .card.hasnote>.body>.notebox{
+      grid-column:2;grid-row:1;position:sticky;top:72px;align-self:start;
+      margin-top:0;
+    }
+  }
+  /* 手机横屏（max-height:540px 已是两列 grid）：笔记块跨满整行，不嵌套冲突 */
+  @media screen and (max-height:540px) and (max-width:899px){
+    .card.hasnote>.body>.notebox{grid-column:1 / -1}
+  }
+  @media print{
+    .notebtn,.notedel,.notestat{display:none !important}
+    .card.hasnote>.body{display:block !important}
+    .notebox{
+      background:#fff !important;border:1px solid #bbb;margin:8px 0 0;padding:6px 8px;
+      break-inside:avoid;page-break-inside:avoid;
+    }
+    .notelab{color:#000 !important}
+    .noteinput{
+      border:0 !important;background:#fff !important;color:#000 !important;
+      height:auto !important;min-height:0 !important;overflow:visible !important;
+      padding:0 !important;font-size:13px !important;
+    }
   }
 </style>
 </head>
@@ -5692,6 +5777,11 @@
               "type": "填空",
               "q": "函数 \\(f(x)=x\\cdot\\ln(1+x)\\) 带佩亚诺余项的麦克劳林展开式中 \\(x^{3}\\) 的系数为 ______",
               "a": "<p><b>答案：\\(-\\frac{1}{2}\\)</b></p><p>\\(\\ln(1+x)=x-\\frac{x^{2}}{2}+\\frac{x^{3}}{3}-\\cdots\\)，乘 \\(x\\) 得 \\(x^{2}-\\frac{x^{3}}{2}+\\frac{x^{4}}{3}-\\cdots\\)，故 \\(x^{3}\\) 系数为 \\(-\\frac{1}{2}\\)。</p><p>易错：忘记乘外面的 \\(x\\)，直接把 \\(\\ln(1+x)\\) 的 \\(x^{3}\\) 系数 \\(\\frac{1}{3}\\) 当答案。</p>"
+            },
+            {
+              "type": "计算",
+              "q": "已知 \\(f(x)\\) 是 4 次多项式，且 \\(f(2)=-1,\\ f'(2)=0,\\ f''(2)=-2,\\ f'''(2)=-12,\\ f^{(4)}(x)=24\\)，求 \\(f(-1)\\)。",
+              "a": "<p><b>答案：</b>\\(f(-1)=125\\)</p><p>4 次多项式在 \\(x_0=2\\) 处的泰勒展开精确、无余项：\\(f(x)=\\sum_{k=0}^{4}\\frac{f^{(k)}(2)}{k!}(x-2)^{k}\\)。代入 \\(f(2)=-1,\\ f'(2)=0,\\ f''(2)=-2,\\ f'''(2)=-12,\\ f^{(4)}(2)=24\\)，系数依次为 \\(-1,\\ 0,\\ -1,\\ -2,\\ 1\\)，即 \\(f(x)=(x-2)^{4}-2(x-2)^{3}-(x-2)^{2}-1\\)。于是 \\(f(-1)=(-3)^{4}-2(-3)^{3}-(-3)^{2}-1=81+54-9-1=125\\)。</p><p>易错：\\(f^{(4)}\\) 项的系数还要除以 \\(4!\\)（本题 \\(24/24=1\\)），直接写 24 就把系数放大成 24 倍；或逐项积分再定常数，多绕一大圈。</p>"
             }
           ],
           "signal": "题干出现「麦克劳林展开」「佩亚诺余项」「求 x→0 的极限且分母为高阶」",
@@ -5716,6 +5806,17 @@
                 "(1+x)^a=1+ax+a(a−1)x²/2+o(x²)"
               ],
               "when": "速算必备"
+            },
+            {
+              "name": "已知各阶导数反求多项式",
+              "source": "补充技巧",
+              "steps": [
+                "题干给某点的 f(x₀)、f′(x₀)、f″(x₀)… 并说明是 n 次多项式",
+                "直接在 x₀ 处写泰勒展开——多项式无余项，展开式即恒等式",
+                "系数＝f⁽ᵏ⁾(x₀)/k! 逐项填：f(2)=−1、f″(2)=−2、f‴(2)=−12、f⁽⁴⁾(2)=24 → f(x)=(x−2)⁴−2(x−2)³−(x−2)²−1",
+                "把所求点代入：x=−1 时 81+54−9−1=125"
+              ],
+              "when": "给的是某点各阶导数而非函数表达式；求另一点的函数值、或比较系数"
             }
           ],
           "network": {
@@ -5965,8 +6066,8 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.0.0";
-  var DATA_VERSION = "2026-10-24";
+  var APP_VERSION = "3.2.0";
+  var DATA_VERSION = "2026-10-26";
 
   var LEVEL_ORDER = ["A", "B", "C"];
   var LEVEL_NAME = { A: "A 级 · 基础必守", B: "B 级 · 常考主力", C: "C 级 · 拔高覆盖" };
@@ -6035,7 +6136,7 @@
   });
 
   var SID = null;
-  var filters = { level: "全部", form: "全部", source: "全部", signal: "全部" };
+  var filters = { level: "全部", form: "全部", source: "全部", signal: "全部", notes: "全部" };
 
   function cur() {
     for (var i = 0; i < DATA.subjects.length; i++) {
@@ -6344,6 +6445,7 @@
     filters.form = "全部";
     filters.source = "全部";
     filters.signal = "全部";
+    filters.notes = "全部";
   }
 
   function sourcesOf(list) {
@@ -6371,6 +6473,7 @@
       return list.some(function (k) { return (k.forms || []).indexOf(f) !== -1; });
     })));
     facet("来源层级", "source", ["全部"].concat(sourcesOf(list)));
+    facet("笔记", "notes", ["全部", "有笔记"]);   // [note]
     if (filters.signal !== "全部") facet("题型信号", "signal", ["全部", filters.signal]);
 
     function facet(label, key, options) {
@@ -6431,6 +6534,7 @@
     }
     (k.forms || []).forEach(function (f) { tags.appendChild(txt("span", "form", f)); });
     sum.appendChild(tags);
+    sum.appendChild(buildNoteBtn(k.id));   // [note] .mwrap 之前的笔记按钮
 
     var mw = el("span", "mwrap");
     var lab = el("label");
@@ -6485,6 +6589,9 @@
       np.appendChild(sp);
       body.appendChild(nf);
     }
+    var noteBoxKp = buildNoteBox(k.id);   // [note] 知识点笔记块（窄屏排在正文之后、例题之前）
+    body.appendChild(noteBoxKp);
+    if (hasNote(SID, noteKeyKp(k.id))) { d.classList.add("hasnote"); noteBoxKp.hidden = false; }
     if (k.examples && k.examples.length) body.appendChild(buildExamples(k));
     d.appendChild(body);
     return d;
@@ -6574,6 +6681,7 @@
       h.appendChild(txt("span", "extype", ex.type));
       h.appendChild(txt("span", "exno", "第 " + (i + 1) + " 题"));
       h.appendChild(buildFavBtn(k.id, i));
+      h.appendChild(buildNoteBtn(k.id, i));   // [note]
       item.appendChild(h);
 
       var q = el("p", "exq");
@@ -6589,6 +6697,7 @@
       a.innerHTML = safeHtml(ex.a);
       sol.appendChild(a);
       item.appendChild(sol);
+      item.appendChild(buildNoteBox(k.id, i));   // [note] 例题笔记（.exsol 之后）
 
       box.appendChild(item);
     });
@@ -6611,6 +6720,7 @@
     if (filters.form !== "全部" && (k.forms || []).indexOf(filters.form) === -1) return false;
     if (filters.source !== "全部" && k.source !== filters.source) return false;
     if (filters.signal !== "全部" && k.signal !== filters.signal) return false;
+    if (filters.notes === "有笔记" && !noteCardHas(k.id)) return false;   // [note]
     return true;
   }
 
@@ -6651,6 +6761,7 @@
     });
 
     renderMath(box);
+    noteAutosizeAll(box);   // [note]
     focusSignal(filters.signal);
   }
 
@@ -6988,7 +7099,7 @@
   function cloneSnap(o) { return JSON.parse(JSON.stringify(o)); }
 
   function emptySnap() {
-    return { schema: 2, deviceId: deviceInfo().id, updatedAt: nowMs(), mastery: {}, favs: {}, prefs: {} };
+    return { schema: 2, deviceId: deviceInfo().id, updatedAt: nowMs(), mastery: {}, favs: {}, prefs: {}, notes: {} };
   }
   function entryOf(map, sid, kid) { var m = map && map[sid]; return m && m[kid] ? m[kid] : null; }
 
@@ -7019,6 +7130,7 @@
     var raw = lsRaw(LS_SNAP), o = null;
     if (raw) { try { o = JSON.parse(raw); } catch (e) { o = null; } }
     if (validSnap(o)) {
+      o = snapFillNotes(o);   // [note] 旧档没有 notes 就补 {}，不报错
       if (o.deviceId) return o;
       o.deviceId = deviceInfo().id;
       lsSet(LS_SNAP, o);
@@ -7072,8 +7184,8 @@
 
   function mergeSnapshot(local, remote) {
     if (!local && !remote) return null;
-    if (!local) return cloneSnap(remote);
-    if (!remote) return cloneSnap(local);
+    if (!local) return snapFillNotes(cloneSnap(remote));
+    if (!remote) return snapFillNotes(cloneSnap(local));
     var lt = normT(local.updatedAt), rt = normT(remote.updatedAt);
     var newer = lt >= rt ? local : remote;
     var out = {
@@ -7082,6 +7194,7 @@
       updatedAt: Math.max(lt, rt),
       mastery: mergeMap(local.mastery, remote.mastery),
       favs: mergeMap(local.favs, remote.favs),
+      notes: mergeTextMap(local.notes, remote.notes),   // [note] 逐条按 t 取大；空文本墓碑参与比较
       prefs: {}
     };
     var p = newer.prefs || {};
@@ -7111,7 +7224,8 @@
         }
       }
     }
-    return JSON.stringify(a.prefs || {}) === JSON.stringify(b.prefs || {});
+    if (JSON.stringify(a.prefs || {}) !== JSON.stringify(b.prefs || {})) return false;
+    return sameNotes(a.notes, b.notes);   // [note]
   }
 
   /* [sync] ---------------- 同步通道适配层 ---------------- */
@@ -7499,7 +7613,7 @@
       ["通道", ad ? ad.name : "未配置"],
       ["状态", ad ? (SYNC_BUSY ? "同步中" : (meta.pending ? "有本地改动待推送" : (meta.lastError ? "上次失败" : "空闲"))) : "未配置同步通道"],
       ["上次同步", fmtTime(meta.lastSyncAt)],
-      ["本地条目", countEntries(s.mastery) + " 掌握 / " + countEntries(s.favs) + " 收藏"],
+      ["本地条目", countEntries(s.mastery) + " 掌握 / " + countEntries(s.favs) + " 收藏 / " + countNotesAll(s.notes) + " 笔记"],
       ["远端条目", meta.remoteCount === undefined || meta.remoteCount === null ? "—" : (meta.remoteCount.mastery + " 掌握 / " + meta.remoteCount.favs + " 收藏")],
       ["上次错误", meta.lastError ? meta.lastError : "无"]
     ];
@@ -7609,7 +7723,8 @@
     syncBodyEl.appendChild(syncStatEl);
 
     syncBodyEl.appendChild(snote("若手机端无法同步，请把本文件部署到 https 静态托管（如 GitHub Pages）后再用；" +
-      "iOS Safari 对 file:// 页面的跨域请求限制较严。", true));
+      "iOS Safari 对 file:// 页面的跨域请求限制较严。" +
+      "笔记随快照同步；请让所有设备都升级到 v3.1.0 后再互相同步（旧版推送的快照不含笔记，会抹掉笔记）。", true));
 
     // [update] 「应用更新」区块与同步配置合并渲染（抽屉每次打开都重建，值从 review.update.* 读取）
     syncBodyEl.appendChild(renderUpdateSection());
@@ -8196,9 +8311,12 @@
     if (e.key === "Escape" && syncDrawer && !syncDrawer.hidden) closeSync();
   });
   // [sync] 触发时机 3：切到后台/锁屏前立即推送
+  // [note] 先落地未保存的笔记，再推送同步
   document.addEventListener("visibilitychange", function () {
+    flushAllNotes();
     if (document.visibilityState === "hidden" && syncAdapter()) syncNow("push");
   });
+  window.addEventListener("beforeunload", function () { flushAllNotes(); });
   // [sync] 触发时机 1：首屏渲染完成后 1.5s 拉一次（不阻塞加载）
   setTimeout(function () {
     if (!syncAdapter()) { refreshSyncDot(); return; }
@@ -8293,10 +8411,12 @@
       add("内容", k.content);
       add("易错点", k.trap);
       add("拿分动作", k.action);
+      add("我的笔记", noteText(SID, noteKeyKp(k.id)));   // [note]
       (k.examples || []).forEach(function (ex, i) {
         if (!ex) return;
         add("例题 " + (i + 1) + " 题干", ex.q);
         add("例题 " + (i + 1) + " 解析", ex.a);
+        add("例题 " + (i + 1) + " 笔记", noteText(SID, noteKeyEx(k.id, i)));   // [note]
       });
       var hay = [], i;
       for (i = 0; i < fields.length; i++) hay.push(navLower(fields[i].text));
@@ -8583,6 +8703,329 @@
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && !navDrawer.hidden) closeNav();
   });
+
+  
+  /* ---------------- [note] 就地笔记（v3.1.0 新增） ----------------
+     存储：SNAP.notes[sid][noteKey] = { text, t }，noteKey = "kp:<kid>" / "ex:<kid>:<i>"。
+     规则：笔记是用户纯文本 → 一律用 value / textContent 写入（不过 innerHTML、不参与 KaTeX）；
+           清空＝写空文本墓碑（保留键与 t），不删键，避免另一台设备的旧笔记在合并时复活。
+     兼容：旧快照没有 notes，loadSnap() 读时补 {}；旧版本客户端推送的快照不含 notes，会抹掉笔记，
+           这是跨版本同步的已知限制（同步抽屉的说明文字里已提示）。 */
+  var NOTE_MAX = 20000;          // 单条笔记最大字符数
+  var NOTE_SAVE_DELAY = 300;     // 输入防抖
+  var notePend = {};             // noteKey -> { sid, text, timer } 未落地的输入
+  var noteStatTimers = {};
+
+  function noteKeyKp(kid) { return "kp:" + kid; }
+  function noteKeyEx(kid, i) { return "ex:" + kid + ":" + i; }
+  function noteKeyKid(key) { return key.indexOf("kp:") === 0 ? String(key).slice(3) : String(String(key).split(":")[1] || ""); }
+  function noteKeyIdx(key) { return key.indexOf("ex:") === 0 ? parseInt(String(key).split(":")[2], 10) : -1; }
+  function noteEmpty(v) { return String(v == null ? "" : v).replace(/\s+/g, "") === ""; }
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+
+  function noteMap(sid) { var s = snap(); return (s.notes && s.notes[sid]) || {}; }
+  function noteText(sid, key) { var e = noteMap(sid)[key]; return (e && typeof e.text === "string") ? e.text : ""; }
+  function hasNote(sid, key) { return !noteEmpty(noteText(sid, key)); }
+
+  /* 统计非空笔记条数（墓碑不算）。结构：{ sid: { noteKey: {text,t} } } */
+  function countNotesAll(notes) {
+    var n = 0, sid, k, m;
+    notes = notes || {};
+    for (sid in notes) if (has0(notes, sid)) {
+      m = notes[sid] || {};
+      for (k in m) if (has0(m, k) && !noteEmpty(m[k] && m[k].text)) n++;
+    }
+    return n;
+  }
+  function noteCount(sid) { return countNotesAll(noteMap(sid)); }
+
+  /* 旧快照兼容：缺 notes 或类型不对就补 {}（不报错、不弹提示） */
+  function snapFillNotes(o) {
+    if (!o || typeof o !== "object") return o;
+    if (!o.notes || typeof o.notes !== "object" || Object.prototype.toString.call(o.notes) === "[object Array]") o.notes = {};
+    return o;
+  }
+
+  /* [sync] 笔记合并：逐条按 t 取大，t 相同本地优先；返回新对象，绝不修改入参 */
+  function pickText(a, b) {
+    if (!a && !b) return null;
+    if (!a) return { text: String(b.text == null ? "" : b.text), t: normT(b.t) };
+    if (!b) return { text: String(a.text == null ? "" : a.text), t: normT(a.t) };
+    return normT(a.t) >= normT(b.t)
+      ? { text: String(a.text == null ? "" : a.text), t: normT(a.t) }
+      : { text: String(b.text == null ? "" : b.text), t: normT(b.t) };
+  }
+
+  function mergeTextMap(L, R) {
+    var out = {}, sids = {}, sid, k, n, e;
+    L = L || {}; R = R || {};
+    for (sid in L) if (has0(L, sid)) sids[sid] = 1;
+    for (sid in R) if (has0(R, sid)) sids[sid] = 1;
+    for (sid in sids) if (has0(sids, sid)) {
+      var lm = L[sid] || {}, rm = R[sid] || {}, keys = {}, m = {};
+      for (k in lm) if (has0(lm, k)) keys[k] = 1;
+      for (k in rm) if (has0(rm, k)) keys[k] = 1;
+      n = 0;
+      for (k in keys) if (has0(keys, k)) {
+        e = pickText(lm[k], rm[k]);
+        if (e) { m[k] = e; n++; }
+      }
+      if (n) out[sid] = m;
+    }
+    return out;
+  }
+
+  function noteKeyCount(map) {
+    var n = 0, sid, k;
+    map = map || {};
+    for (sid in map) if (has0(map, sid)) {
+      var m = map[sid] || {};
+      for (k in m) if (has0(m, k)) n++;
+    }
+    return n;
+  }
+
+  /* 结构级比较（sameProgress 用）：键集合与每条 text/t 都一致才算相同 */
+  function sameNotes(A, B) {
+    A = A || {}; B = B || {};
+    if (noteKeyCount(A) !== noteKeyCount(B)) return false;
+    var sid, k, ea, eb;
+    for (sid in A) if (has0(A, sid)) {
+      var am = A[sid] || {}, bm = B[sid] || {};
+      for (k in am) if (has0(am, k)) {
+        ea = am[k] || {}; eb = bm[k];
+        if (!eb) return false;
+        if (String(ea.text == null ? "" : ea.text) !== String(eb.text == null ? "" : eb.text)) return false;
+        if (normT(ea.t) !== normT(eb.t)) return false;
+      }
+    }
+    return true;
+  }
+
+  /* 写一条笔记；返回是否落盘成功。超长截断、配额满要明说，不静默失败。 */
+  function setNote(sid, key, text) {
+    var s = snap(), tx = String(text == null ? "" : text), cut = false, t = nowMs();
+    if (tx.length > NOTE_MAX) { tx = tx.slice(0, NOTE_MAX); cut = true; }
+    if (!s.notes) s.notes = {};
+    if (!s.notes[sid]) s.notes[sid] = {};
+    s.notes[sid][key] = { text: tx, t: t };   // 空文本＝墓碑，保留键与时间戳
+    s.updatedAt = t;
+    try { window.localStorage.setItem(LS_SNAP, JSON.stringify(s)); }
+    catch (e) { toastSync("笔记未能保存（本地存储已满），请先导出进度备份", 4200); return false; }
+    if (cut) toastSync("笔记超过 " + NOTE_MAX + " 字，已截断保存", 3200);
+    navIdx.sid = null; navIdx.list = null;    // 搜索索引里有「我的笔记」，改完失效重算
+    syncMarkDirty();
+    return true;
+  }
+
+  /* ---------- UI ---------- */
+  function noteUp(node, cls) {
+    while (node && node !== document) {
+      if (node.classList && node.classList.contains(cls)) return node;
+      node = node.parentNode;
+    }
+    return null;
+  }
+
+  function noteCardHas(kid) {
+    if (hasNote(SID, noteKeyKp(kid))) return true;
+    var p = findPoint(kid), list = (p && p.examples) || [];
+    for (var i = 0; i < list.length; i++) if (hasNote(SID, noteKeyEx(kid, i))) return true;
+    return false;
+  }
+
+  /* 角标数：知识点按钮＝该卡片笔记条数（知识点＋各例题），例题按钮＝0/1 */
+  function noteBadgeN(kid, i) {
+    if (i === undefined || i === null || i < 0) {
+      var n = hasNote(SID, noteKeyKp(kid)) ? 1 : 0;
+      var p = findPoint(kid), list = (p && p.examples) || [];
+      for (var j = 0; j < list.length; j++) if (hasNote(SID, noteKeyEx(kid, j))) n++;
+      return n;
+    }
+    return hasNote(SID, noteKeyEx(kid, i)) ? 1 : 0;
+  }
+
+  function noteBadgeSpan(n) {
+    var b = txt("span", "favcount", n ? String(n) : "");
+    b.hidden = !n;
+    return b;
+  }
+
+  function buildNoteBtn(kid, i) {
+    var isKp = (i === undefined || i === null || i < 0);
+    var key = isKp ? noteKeyKp(kid) : noteKeyEx(kid, i);
+    var b = el("button", "notebtn");
+    b.type = "button";
+    b.setAttribute("data-notebtn", key);
+    b.setAttribute("aria-expanded", "false");
+    var p = findPoint(kid);
+    b.setAttribute("aria-label", isKp ? ("笔记：" + ((p && p.name) || kid))
+      : ("笔记：" + kid + " 第 " + (Number(i) + 1) + " 题"));
+    b.title = "写 / 看笔记（纯文本，随进度一起同步）";
+    b.appendChild(txt("span", "noteico", "\u270E"));
+    b.appendChild(noteBadgeSpan(noteBadgeN(kid, i)));
+    b.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      var card = noteUp(b, "card");
+      if (card) card.open = true;
+      var k2 = b.getAttribute("data-notebtn");
+      var box = card ? card.querySelector('.notebox[data-notekey="' + k2 + '"]') : null;
+      if (!box) return;
+      var opening = !!box.hidden;
+      box.hidden = !opening;
+      b.setAttribute("aria-expanded", opening ? "true" : "false");
+      if (card && k2.indexOf("kp:") === 0) {
+        if (opening) card.classList.add("hasnote"); else card.classList.remove("hasnote");
+      }
+      if (opening) {
+        var ta = box.querySelector(".noteinput");
+        noteAutosize(ta);
+        if (ta) { try { ta.focus(); } catch (e) {} }
+      }
+    });
+    return b;
+  }
+
+  function noteAutosize(ta) {
+    if (!ta) return;
+    try {
+      ta.style.height = "auto";
+      var h = ta.scrollHeight + 2;
+      ta.style.height = (h < 64 ? 64 : h) + "px";
+    } catch (e) {}
+  }
+  function noteAutosizeAll(root) {
+    if (!root) return;
+    var list = root.querySelectorAll(".noteinput"), i;
+    for (i = 0; i < list.length; i++) {
+      var box = noteUp(list[i], "notebox");
+      if (box && box.hidden) continue;
+      noteAutosize(list[i]);
+    }
+  }
+
+  function noteBoxOf(key) { return document.querySelector('.notebox[data-notekey="' + key + '"]'); }
+
+  function noteStash(key, sid, text) {
+    var p = notePend[key] || {};
+    p.sid = sid; p.text = text;
+    notePend[key] = p;
+  }
+
+  /* 立即落地一条待保存的笔记（防抖 / change / blur / 页面隐藏 / 卸载时调用） */
+  function noteFlush(key) {
+    var p = notePend[key];
+    if (!p) return;
+    if (p.timer) { clearTimeout(p.timer); p.timer = null; }
+    delete notePend[key];
+    if (p.text === undefined) return;
+    if (!setNote(p.sid == null ? SID : p.sid, key, p.text)) return;
+    var box = noteBoxOf(key);
+    var stat = box ? box.querySelector(".notestat") : null;
+    if (stat) {
+      var d = new Date();
+      stat.textContent = "已保存 " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+      stat.classList.add("on");
+      if (noteStatTimers[key]) clearTimeout(noteStatTimers[key]);
+      noteStatTimers[key] = setTimeout(function () { stat.classList.remove("on"); }, 2000);
+    }
+    noteSyncBadges(key);
+    if (syncStatEl) renderSyncStat();
+  }
+
+  function flushAllNotes() {
+    var keys = [], k;
+    for (k in notePend) if (has0(notePend, k)) keys.push(k);
+    for (var i = 0; i < keys.length; i++) noteFlush(keys[i]);
+  }
+
+  function noteBadgeOf(key) {
+    return noteBadgeN(noteKeyKid(key), noteKeyIdx(key));
+  }
+  function noteSetBadge(btn, n) {
+    var b = btn.querySelector(".favcount");
+    if (!b) return;
+    b.textContent = n ? String(n) : "";
+    b.hidden = !n;
+  }
+  function noteSyncBadges(key) {
+    var btns = document.querySelectorAll('.notebtn[data-notebtn="' + key + '"]');
+    var n = noteBadgeOf(key);
+    for (var i = 0; i < btns.length; i++) noteSetBadge(btns[i], n);
+  }
+
+  function buildNoteBox(kid, i) {
+    var isKp = (i === undefined || i === null || i < 0);
+    var key = isKp ? noteKeyKp(kid) : noteKeyEx(kid, i);
+    var box = el("div", "notebox");
+    box.setAttribute("data-notekey", key);
+    box.setAttribute("data-notesid", SID);
+
+    var head = el("div", "notehead");
+    head.appendChild(txt("span", "notelab", "我的笔记"));
+    var stat = txt("span", "notestat", "");
+    stat.setAttribute("aria-live", "polite");
+    head.appendChild(stat);
+    var del = txt("button", "btn small notedel", "清空");
+    del.type = "button";
+    head.appendChild(del);
+    box.appendChild(head);
+
+    var ta = el("textarea", "noteinput");
+    ta.rows = 3;
+    ta.value = noteText(SID, key);            // 纯文本写入，不走 HTML
+    ta.placeholder = "写下理解、易错提醒、老师强调的点…（纯文本）";
+    ta.setAttribute("aria-label", isKp ? "知识点笔记内容" : "例题笔记内容");
+    box.appendChild(ta);
+
+    box.hidden = !hasNote(SID, key);           // 有内容默认展开，没有就等点 ✎
+    bindNoteBox(box, key, SID, del, ta);
+    return box;
+  }
+
+  function bindNoteBox(box, key, sid, del, ta) {
+    var arm = false, armTimer = null;
+
+    function pend() {
+      var p = notePend[key] || {};
+      p.sid = sid; p.text = ta.value;
+      if (p.timer) clearTimeout(p.timer);
+      p.timer = setTimeout(function () { noteFlush(key); }, NOTE_SAVE_DELAY);
+      notePend[key] = p;
+    }
+
+    ta.addEventListener("input", function () { noteAutosize(ta); pend(); });
+    ta.addEventListener("change", function () { noteStash(key, sid, ta.value); noteFlush(key); });
+    ta.addEventListener("blur", function () { noteStash(key, sid, ta.value); noteFlush(key); });
+    ta.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") e.stopPropagation();   // 写笔记时 Esc 不关抽屉
+    });
+
+    del.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (!arm) {
+        arm = true;
+        del.textContent = "确认清空";
+        armTimer = setTimeout(function () {
+          arm = false; del.textContent = "清空";
+        }, 3000);
+        return;
+      }
+      if (armTimer) { clearTimeout(armTimer); armTimer = null; }
+      arm = false; del.textContent = "清空";
+      ta.value = "";
+      noteAutosize(ta);
+      noteStash(key, sid, "");
+      noteFlush(key);
+      box.hidden = true;
+      var card = noteUp(box, "card");
+      var btn = card ? card.querySelector('[data-notebtn="' + key + '"]') : null;
+      if (btn) btn.setAttribute("aria-expanded", "false");
+      if (card && key.indexOf("kp:") === 0) card.classList.remove("hasnote");
+    });
+  }
 
   /* ---------------- 启动 ---------------- */
   try {
