@@ -2,9 +2,20 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 2.7.0
+  APP_VERSION: 3.0.0
   DATA_VERSION: 2026-10-24
-  本次变更: 化学 44 条补入「老师前三章讲义」证据层（Slide.pdf 157 页 = 第一章讲义 / Slide (1).pdf 144 页 = 第二章讲义 /
+  本次变更: 顶部栏新增「目录」「搜索」两个入口（仍为单文件、离线可用、零新依赖）——
+             ①「目录」抽屉按 级别 A/B/C → 章节 分组列出当前科目全部知识点（编号 / 名称 / 章节 / 级别徽标），
+               分组可折叠（A 默认展开），打开时高亮并滚动到正文当前视口所在的知识点；
+             ②「搜索」抽屉输入即过滤（90ms 防抖），匹配编号、名称、章节、内容、易错点、最低拿分动作、
+               例题题干与解析，大小写不敏感，结果最多 80 条并显示「共 N 条」，无结果提示「未找到相关知识点」，
+               回车跳第一条、Esc 关闭、可一键清空；
+             ③两个入口共用一个抽屉的两个 tab（标题依次为「知识点目录」/「搜索知识点」），复用 .drawer/.drawerScrim
+               与现有配色变量，宽 min(440px,100vw) 内部可滚，适配深色与手机横竖屏；
+             ④跳转统一走 jumpToPoint()：目标被筛选隐藏时先复位筛选再定位，自动展开分组与卡片、滚到视口中间、
+               加 .flash 高亮 1.5s 后自动褪色；
+             不改 DATA 结构、不加网络请求、不影响科目切换/筛选/勾选/进度/收藏/同步/主题/打印/KaTeX。
+  上次变更: (2.7.0) 化学 44 条补入「老师前三章讲义」证据层（Slide.pdf 157 页 = 第一章讲义 / Slide (1).pdf 144 页 = 第二章讲义 /
              2.pdf 65 页 = 习题课 + 错题人数表；三份均为扫描页，已离线 OCR 成可检索文本，存 新大学化学/ppt文本/）——
              ①8 条「补充覆盖」升级为「已确认」：c2s1-01、c2s2-01、c2s5-01/02/03、c2s6-01/02/03（讲义明确讲授，第二章讲义把 50 页/35% 给了 §2.5+§2.6）；
              ②23 条新增 note「强调度」字段（展开卡片末尾显示）：讲义页码区间 + 全文提及次数 + 卷面考没考 + 有无讲义PPT，可据此判「讲义重点但没考」；
@@ -28,14 +39,14 @@
   上一版本变更(2.1.0): ①新增「例题收藏集」：每道例题题头星标收藏，顶部「我的收藏」抽屉集中查看/定位/取消，按科目分 key 存在 localStorage；
             ②内嵌 KaTeX 0.19.0（内核 + auto-render + 20 个 woff2 字体，base64 写进本文件），高数 42 条知识点 + 91 道例题全部改成 LaTeX 渲染、离线可用；
               化学数据保持原文本写法（其公式多为 ΔH、pH、10⁻⁵、kJ·mol⁻¹ 这类线性符号，现有字体下已清楚），需要时可另开一轮转换
-  上一版本文件名: backup/复习界面_v2.6.0_2026-10-23.html
+  上一版本文件名: backup/review_v2.7.0_2026-10-26.html
 -->
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="2.7.0">
+<meta name="app-version" content="3.0.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -627,6 +638,102 @@
     .ubacts .btn{min-height:30px;padding:0 9px;font-size:12px}
     .supdCheck{min-height:32px;font-size:12.5px;margin-bottom:6px}
   }
+  /* ---------- [nav] 知识点目录 + 搜索（v3.0.0 新增，追加在样式表末尾） ---------- */
+  .navtabs{display:flex;gap:4px;padding:6px 14px 0;border-bottom:1px solid var(--line);flex:0 0 auto}
+  .navtab{
+    appearance:none;background:transparent;border:0;border-bottom:2px solid transparent;
+    color:var(--ink2);font:inherit;font-size:13.5px;padding:8px 10px;min-height:38px;
+    cursor:pointer;white-space:nowrap;
+  }
+  .navtab:hover{color:var(--ink)}
+  .navtab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+  .navtab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .navpane{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:10px 14px 30px}
+  .navpane[hidden]{display:none !important}
+
+  /* 目录：级别分组 */
+  .tocgrp{margin:4px 0 0;border-top:1px solid var(--line)}
+  .tocgrp:first-child{border-top:0}
+  .tocgrp>summary{
+    list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;
+    min-height:44px;padding:9px 0;
+  }
+  .tocgrp>summary::-webkit-details-marker{display:none}
+  .tocbar{width:3px;height:14px;border-radius:2px;background:var(--accent);flex:0 0 auto}
+  .tocgrp[data-level="A"] .tocbar{background:var(--lvA)}
+  .tocgrp[data-level="B"] .tocbar{background:var(--lvB)}
+  .tocgrp[data-level="C"] .tocbar{background:var(--lvC)}
+  .tocgrp[open]>summary .caret{transform:rotate(90deg)}
+  .tocsec{
+    display:flex;align-items:center;gap:8px;margin:8px 0 2px;
+    font-size:11.5px;letter-spacing:.03em;color:var(--ink2);
+    font-variant-numeric:tabular-nums;
+  }
+  .tocsec::after{content:"";flex:1 1 auto;height:1px;background:var(--line)}
+  .tocitem{
+    display:flex;align-items:baseline;flex-wrap:wrap;gap:3px 8px;width:100%;box-sizing:border-box;
+    text-align:left;background:transparent;border:0;border-radius:4px;
+    padding:8px;min-height:44px;font:inherit;color:var(--ink);cursor:pointer;
+  }
+  .tocitem:hover{background:var(--chip)}
+  .tocitem:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .tocitem[aria-current="true"]{background:var(--chipOn)}
+  .tocid{font-size:11.5px;color:var(--ink2);font-variant-numeric:tabular-nums;flex:0 0 auto}
+  .tocname{flex:1 1 auto;min-width:0;font-size:13.5px;line-height:1.5;overflow-wrap:anywhere;color:var(--ink)}
+  .tocitem .badge,.navhit .badge{flex:0 0 auto}
+  .tocitem[data-level="A"] .badge.lv,.navhit[data-level="A"] .badge.lv{color:var(--lvA)}
+  .tocitem[data-level="B"] .badge.lv,.navhit[data-level="B"] .badge.lv{color:var(--lvB)}
+  .tocitem[data-level="C"] .badge.lv,.navhit[data-level="C"] .badge.lv{color:var(--lvC)}
+
+  /* 搜索 */
+  .navsearch{display:flex;align-items:center;gap:6px;margin:0 0 2px}
+  .navinput{
+    flex:1 1 auto;min-width:0;box-sizing:border-box;padding:8px 10px;min-height:40px;
+    font:inherit;font-size:14px;color:var(--ink);
+    background:var(--bg);border:1px solid var(--line2);border-radius:6px;
+  }
+  .navinput:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .navsearch .btn{flex:0 0 auto}
+  .navmeta{
+    margin:8px 0 6px;min-height:17px;font-size:12px;color:var(--ink2);
+    font-variant-numeric:tabular-nums;
+  }
+  .navempty{padding:22px 2px;color:var(--ink2);font-size:13.5px;line-height:1.85}
+  .navhit{
+    display:block;width:100%;box-sizing:border-box;text-align:left;
+    margin:0 0 8px;padding:9px 11px;
+    background:var(--bg);border:1px solid var(--line2);border-radius:6px;
+    font:inherit;color:var(--ink);cursor:pointer;
+  }
+  .navhit:hover{border-color:var(--accent)}
+  .navhit:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .navhithead{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;font-size:11.5px;color:var(--ink2)}
+  .navhitname{display:block;margin:3px 0 0;font-size:14px;font-weight:600;line-height:1.5;overflow-wrap:anywhere}
+  .navhitsnip{display:block;margin:4px 0 0;font-size:12.5px;line-height:1.75;color:var(--ink2);overflow-wrap:anywhere}
+
+  /* 跳转高亮 */
+  .card.flash{background:var(--accentBg);outline:2px solid var(--accent);outline-offset:2px}
+  @media print{
+    .card.flash{background:#fff !important;outline:0 !important}
+    .navtabs,.navpane{display:none !important}
+  }
+  @media (max-width:560px){
+    /* 顶部多了「目录 / 搜索」两个按钮：收紧间距与内边距，保证 360/375 宽度下仍是一行，
+       顶栏高度与 v2.7.0 完全一致（不挤压下方筛选与卡片） */
+    .acts{gap:4px}
+    .acts .btn{padding:0 8px}
+  }
+  /* 视口窄于 354px 时 6 个按钮一行放不下：允许换行并右对齐，宁可顶栏多一行也不横向溢出 */
+  @media (max-width:359px){
+    .acts{flex-wrap:wrap;justify-content:flex-end}
+  }
+  @media screen and (orientation:landscape) and (max-height:540px){
+    .navpane{padding:8px 12px 24px}
+    .tocitem{min-height:38px;padding:6px 7px}
+    .tocgrp>summary{min-height:38px;padding:7px 0}
+    .navtabs{padding-top:4px}
+    .navtab{min-height:32px;padding:6px 9px;font-size:12.5px}
+  }
 </style>
 </head>
 <body>
@@ -647,6 +754,8 @@
     <span class="bar"><i id="progBar"></i></span>
   </div>
   <div class="acts">
+    <button class="btn" id="tocBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="navDrawer" title="知识点目录">目录</button>
+    <button class="btn" id="searchBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="navDrawer" title="搜索知识点">搜索</button>
     <button class="btn" id="favBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="favDrawer" title="我的收藏 · 当前科目">我的收藏<span class="favcount" id="favCount" hidden>0</span></button>
     <button class="btn" id="themeBtn" type="button">深色</button>
     <button class="btn" id="printBtn" type="button">打印</button>
@@ -695,6 +804,30 @@
     <button class="btn small" id="syncClose" type="button">关闭</button>
   </div>
   <div class="drawerBody" id="syncBody"></div>
+</aside>
+
+<div class="drawerScrim" id="navScrim" hidden></div>
+<aside class="drawer" id="navDrawer" role="dialog" aria-modal="true" aria-labelledby="navTitle" tabindex="-1" hidden>
+  <div class="drawerHead">
+    <h2 id="navTitle">知识点目录</h2>
+    <span class="drawerHint" id="navHint"></span>
+    <button class="btn small" id="navClose" type="button">关闭</button>
+  </div>
+  <div class="navtabs" role="tablist" aria-label="目录与搜索">
+    <button class="navtab" id="navTabToc" type="button" role="tab" aria-selected="true" aria-controls="navTocPane">目录</button>
+    <button class="navtab" id="navTabSearch" type="button" role="tab" aria-selected="false" aria-controls="navSearchPane" tabindex="-1">搜索</button>
+  </div>
+  <div class="navpane" id="navTocPane" role="tabpanel" aria-labelledby="navTabToc">
+    <div id="navTocBody"></div>
+  </div>
+  <div class="navpane" id="navSearchPane" role="tabpanel" aria-labelledby="navTabSearch" hidden>
+    <div class="navsearch">
+      <input class="navinput" id="navInput" type="text" autocomplete="off" spellcheck="false" placeholder="搜编号、名称、章节、内容、易错点…" aria-label="搜索知识点">
+      <button class="btn small" id="navClear" type="button">清空</button>
+    </div>
+    <div class="navmeta" id="navMeta"></div>
+    <div id="navHits"></div>
+  </div>
 </aside>
 
 <script type="application/json" id="review-data">
@@ -5832,7 +5965,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "2.7.0";
+  var APP_VERSION = "3.0.0";
   var DATA_VERSION = "2026-10-24";
 
   var LEVEL_ORDER = ["A", "B", "C"];
@@ -6576,6 +6709,7 @@
     renderOverview();
     renderFavBadge();
     if (!favDrawer.hidden) renderFavDrawer();
+    if (navDrawer && !navDrawer.hidden) renderNav();
   }
 
   /* ---------------- 收藏 ---------------- */
@@ -8071,6 +8205,384 @@
     var meta = syncMeta();
     syncNow(meta.pending ? "push" : "full");
   }, 1500);
+
+  /* ---------------- [nav] 知识点目录 + 搜索（v3.0.0 新增） ----------------
+     数据全部取自 DATA：pts()（= cur().knowledgePoints），不硬编码任何知识点；
+     跳转统一走 jumpToPoint()，抽屉复用 .drawer / .drawerScrim 样式。 */
+  var NAV_MAX = 80;          // 搜索结果最多渲染条数
+  var NAV_FLASH_MS = 1500;   // 跳转后高亮时长
+  var NAV_DEBOUNCE = null;
+  var NAV_FLASH_TIMER = null;
+
+  var navBtnToc = byId("tocBtn");
+  var navBtnSearch = byId("searchBtn");
+  var navDrawer = byId("navDrawer");
+  var navScrim = byId("navScrim");
+  var navTitle = byId("navTitle");
+  var navHint = byId("navHint");
+  var navTabToc = byId("navTabToc");
+  var navTabSearch = byId("navTabSearch");
+  var navTocPane = byId("navTocPane");
+  var navSearchPane = byId("navSearchPane");
+  var navTocBody = byId("navTocBody");
+  var navHits = byId("navHits");
+  var navMeta = byId("navMeta");
+  var navInput = byId("navInput");
+  var navClear = byId("navClear");
+  var lastNavBtn = null;
+  var navTab = "toc";
+  // 目录分组折叠状态：跨次打开保留（默认 A 展开、B/C 折叠，与正文分组一致）
+  var tocOpen = { A: true, B: false, C: false };
+  // 搜索索引按科目缓存，切科目自动失效
+  var navIdx = { sid: null, list: null };
+
+  /* 章节顺序：以数据自身出现顺序为准（数据按「章→节」生成，见 _build/gen-v3.mjs），
+     再按编号尾号排序，避免 "c1s2-10" 排在 "c1s2-2" 前面 */
+  function navSectionRank() {
+    var map = {}, order = 0, list = pts(), i, sec;
+    for (i = 0; i < list.length; i++) {
+      sec = list[i].section || "";
+      if (!Object.prototype.hasOwnProperty.call(map, sec)) { map[sec] = order; order++; }
+    }
+    return map;
+  }
+  function navIdNum(id) {
+    var m = String(id).match(/(\d+)$/);
+    return m ? parseInt(m[1], 10) : 0;
+  }
+  function navTocSort(list, rank) {
+    return list.slice().sort(function (a, b) {
+      var ra = rank[a.section] === undefined ? 9999 : rank[a.section];
+      var rb = rank[b.section] === undefined ? 9999 : rank[b.section];
+      if (ra !== rb) return ra - rb;
+      var na = navIdNum(a.id), nb = navIdNum(b.id);
+      if (na !== nb) return na - nb;
+      return a.id < b.id ? -1 : (a.id > b.id ? 1 : 0);
+    });
+  }
+
+  /* 当前视口顶端所在的知识点（打开目录时用来高亮，跟随正文而非目录） */
+  function navCurrentKid() {
+    var cards = document.querySelectorAll("#groups .card");
+    var bar = document.querySelector(".topbar");
+    var offset = bar ? bar.getBoundingClientRect().height + 8 : 80;
+    var best = null, i, r;
+    for (i = 0; i < cards.length; i++) {
+      r = cards[i].getBoundingClientRect();
+      if (r.bottom > offset) { best = cards[i]; break; }
+    }
+    if (!best && cards.length) best = cards[cards.length - 1];
+    return best ? String(best.id || "").replace(/^k-/, "") : "";
+  }
+
+  function navLower(s) { return String(s == null ? "" : s).toLowerCase(); }
+
+  /* 搜索索引：编号 / 名称 / 章节 / 内容 / 易错点 / 最低拿分动作 / 例题题干与解析 */
+  function navBuildIndex() {
+    if (navIdx.sid === SID && navIdx.list) return navIdx.list;
+    var rows = [];
+    pts().forEach(function (k) {
+      var fields = [];
+      function add(label, v) {
+        if (v === null || v === undefined || v === "") return;
+        fields.push({ label: label, text: String(v) });
+      }
+      add("编号", k.id);
+      add("名称", k.name);
+      add("章节", k.section);
+      add("内容", k.content);
+      add("易错点", k.trap);
+      add("拿分动作", k.action);
+      (k.examples || []).forEach(function (ex, i) {
+        if (!ex) return;
+        add("例题 " + (i + 1) + " 题干", ex.q);
+        add("例题 " + (i + 1) + " 解析", ex.a);
+      });
+      var hay = [], i;
+      for (i = 0; i < fields.length; i++) hay.push(navLower(fields[i].text));
+      rows.push({ k: k, fields: fields, hay: hay.join("\n"), pos: rows.length });
+    });
+    navIdx.sid = SID;
+    navIdx.list = rows;
+    return rows;
+  }
+
+  /* 命中片段：先纯文本化（避免把 (...) 截成半截公式），再截关键词两侧 */
+  function navSnippet(text, q) {
+    var s = plainLabel(text).replace(/\s+/g, " ").replace(/^ | $/g, "");
+    if (!s) return "";
+    var i = navLower(s).indexOf(q);
+    if (i < 0) i = 0;
+    var start = i > 22 ? i - 22 : 0;
+    var seg = s.slice(start, start + 72);
+    if (start > 0) seg = "…" + seg;
+    if (start + 72 < s.length) seg = seg + "…";
+    return seg;
+  }
+
+  /* ---------------- 目录 ---------------- */
+  function renderToc() {
+    navTocBody.innerHTML = "";
+    var list = pts();
+    var nodeCur = navCurrentKid();
+    var curItem = null;
+
+    navHint.textContent = (cur().name || "") + " · " + list.length + " 条";
+
+    if (!list.length) {
+      navTocBody.appendChild(txt("p", "navempty", "该科目暂无知识点。"));
+      return;
+    }
+
+    var rank = navSectionRank();
+    LEVEL_ORDER.forEach(function (lv) {
+      var inLevel = list.filter(function (k) { return k.level === lv; });
+      if (!inLevel.length) return;
+      inLevel = navTocSort(inLevel, rank);
+
+      var g = el("details", "tocgrp");
+      g.setAttribute("data-level", lv);
+      g.open = !!tocOpen[lv];
+      g.addEventListener("toggle", function () { tocOpen[lv] = g.open; });
+
+      var s = el("summary");
+      s.appendChild(el("span", "tocbar"));
+      s.appendChild(txt("span", "gtitle", LEVEL_NAME[lv] || (lv + " 级")));
+      s.appendChild(txt("span", "gcount", inLevel.length + " 条"));
+      s.appendChild(txt("span", "caret", "▸"));
+      g.appendChild(s);
+
+      var lastSec = null;
+      inLevel.forEach(function (k) {
+        var sec = k.section || "";
+        if (sec !== lastSec) {
+          lastSec = sec;
+          if (sec) {
+            var lab = el("div", "tocsec");
+            lab.appendChild(txt("span", "", sec));
+            g.appendChild(lab);
+          }
+        }
+        var it = el("button", "tocitem");
+        it.type = "button";
+        it.setAttribute("data-level", k.level);
+        it.setAttribute("data-kid", k.id);
+        it.title = "跳到该知识点";
+        it.appendChild(txt("span", "tocid", k.id));
+        it.appendChild(txt("span", "tocname", k.name || ""));
+        it.appendChild(txt("span", "badge lv", k.level));
+        it.addEventListener("click", function () { jumpToPoint(k.id); });
+        if (nodeCur === k.id) { it.setAttribute("aria-current", "true"); curItem = it; }
+        g.appendChild(it);
+      });
+      navTocBody.appendChild(g);
+    });
+
+    // 当前项所在的级别分组若折叠，先展开，再把当前项滚到抽屉中部
+    if (curItem) {
+      var owner = curItem.parentNode;
+      if (owner && owner.tagName === "DETAILS" && !owner.open) {
+        owner.open = true;
+        tocOpen[owner.getAttribute("data-level")] = true;
+      }
+      var ir = curItem.getBoundingClientRect(), pr = navTocPane.getBoundingClientRect();
+      var delta = (ir.top - pr.top) - (pr.height / 2 - ir.height / 2);
+      if (delta > 0) navTocPane.scrollTop += delta;
+    } else {
+      navTocPane.scrollTop = 0;
+    }
+    // 名称/章节若含公式，渲染一次（数据当前均为纯文本，这里只做兜底）
+    renderMath(navTocBody);
+  }
+
+  /* ---------------- 搜索 ---------------- */
+  function renderSearch() {
+    var q = navLower(navInput.value).replace(/^\s+|\s+$/g, "");
+    navHits.innerHTML = "";
+
+    if (!q) {
+      navMeta.textContent = "";
+      navHits.appendChild(txt("p", "navempty",
+        "输入关键词即时过滤：编号、名称、章节、内容、易错点、最低拿分动作、例题题干与解析都能搜。回车跳第一个结果，Esc 关闭。"));
+      return;
+    }
+
+    var rows = navBuildIndex(), hits = [], i, j;
+    for (i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      if (row.hay.indexOf(q) === -1) continue;
+      var head = navLower(row.k.id).indexOf(q) !== -1 ||
+                 navLower(row.k.name).indexOf(q) !== -1 ||
+                 navLower(row.k.section).indexOf(q) !== -1;
+      var label = "", snip = "";
+      for (j = 0; j < row.fields.length; j++) {
+        if (navLower(row.fields[j].text).indexOf(q) !== -1) {
+          label = row.fields[j].label;
+          snip = navSnippet(row.fields[j].text, q);
+          break;
+        }
+      }
+      hits.push({ row: row, score: head ? 2 : 1, label: label, snip: snip, pos: row.pos });
+    }
+    hits.sort(function (a, b) {
+      if (a.score !== b.score) return b.score - a.score;
+      return a.pos - b.pos;
+    });
+
+    var total = hits.length;
+    if (!total) {
+      navMeta.textContent = "共 0 条";
+      navHits.appendChild(txt("p", "navempty",
+        "未找到相关知识点。换个关键词试试：编号（如 c1s2-01）、章节（如 §2.3）、概念名、易错点或题干里的词。"));
+      return;
+    }
+
+    var shown = Math.min(total, NAV_MAX);
+    navMeta.textContent = "共 " + total + " 条" + (total > shown ? "，显示前 " + shown + " 条" : "");
+
+    for (i = 0; i < shown; i++) {
+      var h = hits[i], k = h.row.k;
+      var it = el("div", "navhit");
+      it.setAttribute("data-level", k.level);
+      it.setAttribute("data-kid", k.id);
+      it.setAttribute("role", "button");
+      it.setAttribute("tabindex", "0");
+      it.title = "跳到该知识点";
+
+      var ih = el("div", "navhithead");
+      ih.appendChild(txt("span", "tocid", k.id));
+      ih.appendChild(txt("span", "", k.section || ""));
+      ih.appendChild(txt("span", "badge lv", k.level));
+      it.appendChild(ih);
+
+      it.appendChild(txt("span", "navhitname", k.name || ""));
+      if (h.snip) it.appendChild(txt("span", "navhitsnip", h.label + "：" + h.snip));
+
+      navBindHit(it, k.id);
+      navHits.appendChild(it);
+    }
+    renderMath(navHits);
+  }
+
+  function navBindHit(node, kid) {
+    node.addEventListener("click", function () { jumpToPoint(kid); });
+    node.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+        e.preventDefault();
+        jumpToPoint(kid);
+      }
+    });
+  }
+
+  /* ---------------- 统一跳转 ---------------- */
+  /* 先关抽屉（避免遮挡、同时解除 body 滚动锁），再定位：
+     ①目标卡片被筛选隐藏 / 不存在 → 复位筛选后重建；
+     ②折叠的 A/B/C 分组自动展开（否则 hidden 元素滚不动）；
+     ③卡片展开、滚到视口中间、高亮 1.5s 后自动褪色。 */
+  function jumpToPoint(kid) {
+    closeNav(true);
+    var card = byId("k-" + kid);
+    if (!card) {
+      resetFilters();
+      renderAll();
+      card = byId("k-" + kid);
+    }
+    if (!card) return;
+
+    var p = card.parentNode;
+    while (p && p !== document.body) {
+      if (p.tagName === "DETAILS") p.open = true;
+      p = p.parentNode;
+    }
+    card.open = true;
+    card.scrollIntoView({ block: "center", behavior: "smooth" });
+    card.classList.add("flash");
+    if (NAV_FLASH_TIMER) clearTimeout(NAV_FLASH_TIMER);
+    NAV_FLASH_TIMER = setTimeout(function () {
+      card.classList.remove("flash");
+      NAV_FLASH_TIMER = null;
+    }, NAV_FLASH_MS);
+  }
+
+  /* ---------------- 抽屉开合与 tab ---------------- */
+  function setNavTab(name, rebuild) {
+    navTab = name === "search" ? "search" : "toc";
+    var isToc = navTab === "toc";
+    navTabToc.setAttribute("aria-selected", isToc ? "true" : "false");
+    navTabSearch.setAttribute("aria-selected", isToc ? "false" : "true");
+    navTabToc.setAttribute("tabindex", isToc ? "0" : "-1");
+    navTabSearch.setAttribute("tabindex", isToc ? "-1" : "0");
+    navTitle.textContent = isToc ? "知识点目录" : "搜索知识点";
+    navTocPane.hidden = !isToc;
+    navSearchPane.hidden = isToc;
+    if (rebuild) renderNav();
+  }
+
+  function renderNav() {
+    if (navTab === "toc") renderToc();
+    else renderSearch();
+  }
+
+  function openNav(tab) {
+    closeOverview();
+    closeFav(true);
+    navScrim.hidden = false;
+    navDrawer.hidden = false;
+    document.body.classList.add("drawerOpen");
+    navBtnToc.setAttribute("aria-expanded", "true");
+    navBtnSearch.setAttribute("aria-expanded", "true");
+    setNavTab(tab, true);
+    if (navTab === "search") navInput.focus();
+    else byId("navClose").focus();
+  }
+
+  function closeNav(keepFocus) {
+    if (navDrawer.hidden) return;
+    navDrawer.hidden = true;
+    navScrim.hidden = true;
+    document.body.classList.remove("drawerOpen");
+    navBtnToc.setAttribute("aria-expanded", "false");
+    navBtnSearch.setAttribute("aria-expanded", "false");
+    if (!keepFocus && lastNavBtn) lastNavBtn.focus();
+  }
+
+  navBtnToc.addEventListener("click", function () {
+    lastNavBtn = navBtnToc;
+    if (navDrawer.hidden) openNav("toc"); else closeNav();
+  });
+  navBtnSearch.addEventListener("click", function () {
+    lastNavBtn = navBtnSearch;
+    if (navDrawer.hidden) openNav("search"); else closeNav();
+  });
+  byId("navClose").addEventListener("click", function () { closeNav(); });
+  navScrim.addEventListener("click", function () { closeNav(); });
+  navTabToc.addEventListener("click", function () { setNavTab("toc", true); });
+  navTabSearch.addEventListener("click", function () {
+    setNavTab("search", true);
+    navInput.focus();
+  });
+  navClear.addEventListener("click", function () {
+    navInput.value = "";
+    renderSearch();
+    navInput.focus();
+  });
+  navInput.addEventListener("input", function () {
+    if (NAV_DEBOUNCE) clearTimeout(NAV_DEBOUNCE);
+    NAV_DEBOUNCE = setTimeout(function () {
+      NAV_DEBOUNCE = null;
+      renderSearch();
+    }, 90);
+  });
+  navInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      var first = navHits.querySelector(".navhit");
+      if (first) jumpToPoint(first.getAttribute("data-kid"));
+    }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !navDrawer.hidden) closeNav();
+  });
 
   /* ---------------- 启动 ---------------- */
   try {
