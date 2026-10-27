@@ -2,9 +2,32 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.2.0
+  APP_VERSION: 3.5.0
   DATA_VERSION: 2026-10-26
-  本次变更: 数据更新（APP_VERSION 3.2.0 / DATA_VERSION 2026-10-26，只换数据块，不动结构、样式与逻辑）——
+  本次变更: 「例题全清」收尾（APP_VERSION 3.5.0 / DATA_VERSION 不变，只改 examples 的 q/a/type）——
+             ①补满 C 级单题：m1s1-01、m1s1-02、m1s2-02、m1s4-02、m1s4-03、m1s7-02 各加 1 题（判断/选择轮换，避免与原题同法）；
+             ②消除同型重复：m1s3-02 第二题 填空→计算（反求 a、b 两参数）、m1s5-01 第三题 判断→简答（无界≠无穷大，举 x_n=n[1+(−1)^n] 反例）、
+               c1s2-01 第三题 选择→计算（同一 ΔU 沿两条途径求功）、c1s4-03 第二题 选择→计算（由浓度算 Q 再判方向）、
+               c3s1-01 第二题 选择→填空（Fe₃O₄ 中 Fe 的分数氧化数）、c3s2-02 第二题 选择→判断（E° 大则氧化型强、还原型弱）、
+               c3s2-04 第二题 计算→判断（E池>0 ⇒ K°>1，含 ν 漏乘陷阱）、c3s3-01 第二题 判断→选择（电解池阴阳极与电源连接）；
+             ③至此两科目全部 76 条知识点的例题均已按「小梯度组」重排，例题总数 183 道（本次 177→183）；
+             ④改动经 _build/subjects.json → build.mjs 重建、check.mjs 全通过；DATA 结构、样式、逻辑与快照格式均未动。
+  上次变更: 例题重复修正（APP_VERSION 3.4.0 / DATA_VERSION 不变，只改 examples 的 q/a/type）——
+             ①m1s3-01「极限的四则运算、有理化与抓大头」原三题全是 ∞−∞ 乘共轭，改为 选择/计算/计算：
+               选择考抓大头与 x→−∞ 时 √(x²)=|x|=−x 的符号坑，计算考单根号 ∞−∞ 有理化，计算考双根号差 √(n²+n)−√(n²−n)；
+             ②c3s3-02 原两题问法几乎相同（电解 CuCl₂ 阳极产物），第二题改为判断「铜作阳极是否析出 O₂」——考「阳极看材料、活泼金属自身溶解」；
+             ③m1s6-01 原三题都是分段点求 a，第三题改为判断「左右极限相等即连续」的反例（sin x/x 的可去间断点）；
+             ④m1s6-02 原三题都是选择判类型，第三题改为简答「求间断点并分类」，须自己约分求极限；
+             ⑤其余 §1 与化学 §3 知识点例题本轮未动；改动经 build.mjs 重建、check.mjs 全通过。
+  上次变更: 例题质量改造（APP_VERSION 3.3.0 / DATA_VERSION 不变 = 2026-10-26，只改数据块 examples，不动结构、样式、逻辑与快照格式）——
+             ①高数 §2 共 17 条知识点例题 38→40 道、化学 §2 共 16 条 22→35 道，逐条重排为「小梯度组」：
+               第 1 题基础再现、第 2 题易错辨析（把该条 trap 做成错解或选项）、第 3 题变式/综合（换情境或逆问题）；
+             ②同一知识点不再出现两道以上同题型，题型在 选择/判断/填空/计算/简答 之间轮换，方法不重复并在解析里点名；
+             ③解析统一「答案：→第一步/第二步…→易错：」结构，易错句直接点本条 trap；A 级 2~3 道、B 级恰好 2 道、C 级 1~2 道（build 门禁）；
+             ④顺带修复旧例题里的 LaTeX 转义粘连 13 处（反斜杠丢失成 }mathrm、双反斜杠、\\f 类控制字符），涉及 c3s1-01/c3s2-01/c3s2-02/
+               c3s3-02/c3s4-01/c3s4-02/m1s1-01 的例题，修复后公式渲染正常；
+             ⑤m2s7-01（泰勒）与化学 §3、两科目 §1 章例题本轮不动，留待下一批；改动经 _build/subjects.json → build.mjs 重建、check.mjs 全通过。
+  上次变更: 数据更新（APP_VERSION 3.2.0（APP_VERSION 3.2.0 / DATA_VERSION 2026-10-26，只换数据块，不动结构、样式与逻辑）——
              ①高数 §2.7「泰勒公式、麦克劳林展开与佩亚诺余项」(m2s7-01) 新增解题技巧「已知各阶导数反求多项式」：
                多项式在某点的泰勒展开无余项，给 f(x₀)、f′(x₀)…f⁽ⁿ⁾(x₀) 就能直接写出 f(x)，再代入求值，不必逐项积分；
              ②同条补一道对应例题（4 次多项式由 x=2 处各阶导数反求，f(−1)=125），A 级例题 2→3 道；
@@ -52,14 +75,14 @@
   上一版本变更(2.1.0): ①新增「例题收藏集」：每道例题题头星标收藏，顶部「我的收藏」抽屉集中查看/定位/取消，按科目分 key 存在 localStorage；
             ②内嵌 KaTeX 0.19.0（内核 + auto-render + 20 个 woff2 字体，base64 写进本文件），高数 42 条知识点 + 91 道例题全部改成 LaTeX 渲染、离线可用；
               化学数据保持原文本写法（其公式多为 ΔH、pH、10⁻⁵、kJ·mol⁻¹ 这类线性符号，现有字体下已清楚），需要时可另开一轮转换
-  上一版本文件名: backup/review_v3.1.0_2026-10-26.html
+  上一版本文件名: backup/review_v3.4.0_2026-10-26.html
 -->
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.2.0">
+<meta name="app-version" content="3.5.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -1019,9 +1042,9 @@
               "a": "<p><b>答案：B</b></p><p>第一步：\\(\\Delta H=Q_{p}\\) 成立有前提——恒压、且只做体积功。<br>第二步：\\(\\Delta H\\) 只由始末态决定，与走哪条路无关；而 \\(Q_{p}\\) 是沿「恒压只做体积功」这条特定途径传递的热。<br>第三步：同一对始末态，换一条途径（如先恒容再恒压）的热量可以不同，而 \\(\\Delta H\\) 完全相同，故「数值相等」推不出「性质相同」。<br>所以说法错误，选 \\(B\\)。</p><p>易错：这是判断题最常见的原句，看到「所以 \\(Q_{p}\\) 也是状态函数」直接判错。</p>"
             },
             {
-              "type": "选择",
-              "q": "下列物理量中属于途径函数的是（　）<br>\\(A\\). 焓 \\(H\\)　B. 熵 \\(S\\)　C. 吉布斯自由能 \\(G\\)　D. 体积功 W",
-              "a": "<p><b>答案：D</b></p><p>第一步：状态函数只由始末态决定，\\(H\\)、\\(S\\)、\\(G\\) 都是。<br>第二步：体积功 \\(W\\) 的数值取决于过程走法（等温可逆膨胀与一次膨胀的功不同），是途径函数。<br>第三步：功是过程中传递的能量，不是系统储存的性质。<br>所以选 \\(D\\)。</p><p>易错：以为「做了功」就意味着系统里多了某种能量——那能量属过程量，不属状态。</p>"
+              "type": "计算",
+              "q": "某系统从状态 A 变到状态 B：沿途径 Ⅰ 吸热 \\(100\\ \\mathrm{J}\\)、对环境做功 \\(40\\ \\mathrm{J}\\)；沿途径 Ⅱ 吸热 \\(60\\ \\mathrm{J}\\)。按 \\(\\Delta U=Q+W\\)（环境对系统做功为正），途径 Ⅱ 中系统对环境做多少功？",
+              "a": "<p><b>答案：系统对环境做功 \\(0\\ \\mathrm{J}\\)</b></p><p>第一步：途径 Ⅰ 中 \\(Q=+100\\ \\mathrm{J}\\)，\\(W=-40\\ \\mathrm{J}\\)，得 \\(\\Delta U=100-40=60\\ \\mathrm{J}\\)；第二步：\\(\\Delta U\\) 是状态函数，沿途径 Ⅱ 数值不变，故 \\(60=60+W\\)，解出 \\(W=0\\)；第三步：\\(W=0\\) 表示途径 Ⅱ 中系统与环境间没有体积功交换。</p><p>易错：把 \\(Q\\)、\\(W\\) 也当成状态函数，以为沿两条途径吸热相同、做功也相同；实际只有 \\(\\Delta U\\) 不变，\\(Q\\) 与 \\(W\\) 都随途径改变。</p>"
             }
           ],
           "signal": "问某物理量是状态函数还是途径函数，或「沿不同途径」到达同一始末态",
@@ -1707,9 +1730,9 @@
               "a": "<p><b>答案：A</b></p><p>第一步：写出 \\(\\Delta_r G=\\Delta_r G^{\\ominus}+RT\\ln Q=RT\\ln(Q/K^{\\ominus})\\)。<br>第二步：代入数值 \\(Q/K^{\\ominus}=0.20/0.50=0.40<1\\)，故 \\(\\ln(Q/K^{\\ominus})<0\\)。<br>第三步：\\(RT>0\\)，所以 \\(\\Delta_r G<0\\)，反应正向自发进行。</p><p>易错：把 \\(Q\\) 与 \\(K^{\\ominus}\\) 的大小关系记反——\\(Q<K^{\\ominus}\\) 意味着产物还太少，系统要正向移动去「补」产物。</p>"
             },
             {
-              "type": "选择",
-              "q": "反应 \\(\\mathrm{A(g)}\\rightleftharpoons\\mathrm{B(g)}\\) 在某温度下 \\(K^{\\ominus}=4.0\\)。此刻 \\(p(\\mathrm{A})=0.50\\ \\mathrm{MPa}\\)、\\(p(\\mathrm{B})=0.10\\ \\mathrm{MPa}\\)（\\(p^{\\ominus}=0.10\\ \\mathrm{MPa}\\)），反应将（　）<br>\\(A\\). 正向进行　\\(B\\). 逆向进行　\\(C\\). 保持平衡　\\(D\\). 无法判断",
-              "a": "<p><b>答案：A</b></p><p>第一步：按 \\(K^{\\ominus}\\) 的书写规则先写出反应商 \\(Q=\\dfrac{p(\\mathrm{B})/p^{\\ominus}}{p(\\mathrm{A})/p^{\\ominus}}\\)。<br>第二步：代入 \\(Q=\\dfrac{0.10/0.10}{0.50/0.10}=\\dfrac{1.0}{5.0}=0.20\\)。<br>第三步：\\(Q=0.20<K^{\\ominus}=4.0\\)，故 \\(\\Delta_r G=RT\\ln(Q/K^{\\ominus})<0\\)，反应正向进行。</p><p>易错：只比较 \\(0.10\\) 与 \\(0.50\\) 的数值大小，不先按 \\(p^{\\ominus}\\) 归一，\\(Q\\) 就算错；分压必须除以 \\(p^{\\ominus}\\) 才与 \\(K^{\\ominus}\\) 可比。</p>"
+              "type": "计算",
+              "q": "\\(673\\ \\mathrm{K}\\) 时反应 \\(\\mathrm{A(g)}\\rightleftharpoons2\\mathrm{B(g)}\\) 的 \\(K^{\\ominus}=0.50\\)。某时刻测得 \\(c(\\mathrm{A})=0.20\\ \\mathrm{mol\\cdot dm^{-3}}\\)、\\(c(\\mathrm{B})=0.10\\ \\mathrm{mol\\cdot dm^{-3}}\\)。求该时刻的反应商 \\(Q\\)，并判断反应方向。",
+              "a": "<p><b>答案：\\(Q=0.050\\)，反应正向进行</b></p><p>第一步：对 \\(\\mathrm{A(g)}\\rightleftharpoons2\\mathrm{B(g)}\\)，\\(Q=\\dfrac{\\left[c(\\mathrm{B})/c^{\\ominus}\\right]^{2}}{c(\\mathrm{A})/c^{\\ominus}}\\)，代入得 \\(Q=\\dfrac{(0.10)^{2}}{0.20}=0.050\\)；第二步：\\(Q<K^{\\ominus}\\)（\\(0.050<0.50\\)），由 \\(\\Delta_{r}G_{m}=\\Delta_{r}G_{m}^{\\ominus}+RT\\ln Q=-RT\\ln K^{\\ominus}+RT\\ln Q<0\\)；第三步：故反应正向自发进行。</p><p>易错：把 B 的浓度写成一次方，漏掉计量数 2 的平方，会得 \\(Q=0.50\\) 而误判平衡；反应商的指数必须照抄方程式。</p>"
             }
           ],
           "signal": "给了浓度/分压问反应方向，或比较 Q 与 K°",
@@ -2174,8 +2197,13 @@
           "examples": [
             {
               "type": "选择",
-              "q": "\\(0.5\\) \\(\\mathrm{mol}\\)葡萄糖溶于 \\(500\\) \\(\\mathrm{g}\\)水，该溶液质量摩尔浓度约为（　）\nA. \\(1.0\\) \\(\\mathrm{mol} \\cdot \\mathrm{kg}^{-1}\\)　B. \\(5.6\\) \\(\\mathrm{mol} \\cdot \\mathrm{kg}^{-1}\\)　C. \\(0.5\\) \\(\\mathrm{mol} \\cdot \\mathrm{kg}^{-1}\\)　D. \\(2.8\\) \\(\\mathrm{mol} \\cdot \\mathrm{kg}^{-1}\\)",
-              "a": "<p><b>答案：</b>\\(A\\)</p><p>\\(b=n/m(\\)溶剂\\()=0.5\\) \\(\\mathrm{mol}\\)÷\\(0.500\\) \\(\\mathrm{kg}=1.0 \\mathrm{mol} \\cdot \\mathrm{kg}^{-1}\\)，分母是溶剂质量。</p>"
+              "q": "将 0.5 \\mathrm{mol} 葡萄糖溶于 500 \\mathrm{g} 水中，所得溶液的质量摩尔浓度约为（ ）<br>A. 1.0 \\mathrm{mol}\\cdot\\mathrm{kg}^{-1}　B. 0.5 \\mathrm{mol}\\cdot\\mathrm{kg}^{-1}　C. 2.0 \\mathrm{mol}\\cdot\\mathrm{kg}^{-1}　D. 0.25 \\mathrm{mol}\\cdot\\mathrm{kg}^{-1}",
+              "a": "<p><b>答案：A</b></p><p>第一步：质量摩尔浓度 \\b_{\\mathrm{B}}=\\frac{n_{\\mathrm{B}}}{m_{\\mathrm{A}}}，分母是<b>溶剂</b>质量（kg），不是溶液质量。</p><p>第二步：\\b=\\frac{0.5\\ \\mathrm{mol}}{0.500\\ \\mathrm{kg}}=1.0\\ \\mathrm{mol}\\cdot\\mathrm{kg}^{-1}。</p><p>易错：把 500 g 当成溶液质量、或直接把 g 当 kg 用，得 0.5 或 2.0（trap ①）。</p>"
+            },
+            {
+              "type": "计算",
+              "q": "市售浓硫酸质量分数 \\w=0.98，密度 \\rho=1.84\\ \\mathrm{g}\\cdot\\mathrm{cm}^{-3}，求其物质的量浓度。",
+              "a": "<p><b>答案：18.4 \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}</b></p><p>第一步：取 1 \\mathrm{dm}^{3} 溶液，质量 m=\\rho V=1.84\\times1000=1840\\ \\mathrm{g}。</p><p>第二步：其中 \\mathrm{H_2SO_4} 质量 1840\\times0.98=1803\\ \\mathrm{g}，物质的量 n=1803/98.0=18.4\\ \\mathrm{mol}。</p><p>第三步：直接用桥式 \\c=\\frac{1000\\rho w}{M}=\\frac{1000\\times1.84\\times0.98}{98.0}=18.4\\ \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}。</p><p>易错：\\rho 用 \\mathrm{kg}\\cdot\\mathrm{dm}^{-3} 代入却保留 1000，结果差 1000 倍；或把 98% 直接当 98 代入（trap ③④）。</p>"
             }
           ],
           "signal": "要求配制某浓度溶液，或给了质量分数、密度要换算成物质的量浓度",
@@ -2234,8 +2262,13 @@
           "examples": [
             {
               "type": "判断",
-              "q": "相同质量摩尔浓度下，\\(\\mathrm{Na}\\mathrm{Cl}\\)溶液的蒸气压下降比蔗糖溶液大。",
-              "a": "<p><b>答案：</b>正确</p><p>\\(\\mathrm{Na}\\mathrm{Cl}\\)完全解离 \\(i\\approx2\\)，有效粒子数是蔗糖的 \\(2\\) 倍，\\(\\Delta p\\)更大。</p>"
+              "q": "相同质量摩尔浓度下，\\mathrm{NaCl} 溶液的蒸气压下降量比蔗糖溶液大。（ ）",
+              "a": "<p><b>答案：正确</b></p><p>第一步：拉乌尔定律 \\Delta p=p^{*}x_{\\mathrm{B}}，稀溶液中 \\Delta p 取决于溶质的「粒子」摩尔分数。</p><p>第二步：\\mathrm{NaCl} 完全解离，粒子数约为蔗糖的 2 倍（\\i\\approx2），同样 \\b 下 \\Delta p 更大。</p><p>易错：忘记电解质要折成粒子数、直接按溶质分子数比较（trap ④）；也别忘了公式只对非挥发性、稀溶液成立（trap ②③）。</p>"
+            },
+            {
+              "type": "计算",
+              "q": "20 ℃ 时水的饱和蒸气压 \\p^{*}=2.34\\ \\mathrm{kPa}。某蔗糖溶液中蔗糖的摩尔分数为 0.020，求该溶液的蒸气压与蒸气压下降量。",
+              "a": "<p><b>答案：p\\approx2.29 \\mathrm{kPa}，\\Delta p\\approx0.047 \\mathrm{kPa}</b></p><p>第一步：溶剂摩尔分数 \\x_{\\mathrm{A}}=1-0.020=0.980。</p><p>第二步：\\p=p^{*}x_{\\mathrm{A}}=2.34\\times0.980=2.29\\ \\mathrm{kPa}；\\Delta p=p^{*}x_{\\mathrm{B}}=2.34\\times0.020=0.047\\ \\mathrm{kPa}。</p><p>第三步：核对 \\p+\\Delta p=p^{*}，两者之和等于纯水蒸气压。</p><p>易错：把 \\p^{*} 当溶液蒸气压直接代回（trap ①）；用质量分数代替摩尔分数（trap ③）。</p>"
             }
           ],
           "signal": "题干出现「蒸气压下降」「拉乌尔定律」，或问同一溶剂加不同溶质后蒸气压大小",
@@ -2295,13 +2328,13 @@
           "examples": [
             {
               "type": "选择",
-              "q": "质量摩尔浓度均为 \\(0.10\\) \\(\\mathrm{mol} \\cdot \\mathrm{kg}^{-1}\\)的下列溶液，凝固点最低的是（　）<br>\\(A\\). 葡萄糖　B. \\(\\mathrm{Na}\\mathrm{Cl}\\)　C. \\(\\mathrm{Ca}\\mathrm{Cl}_{2}\\)　D. \\(\\mathrm{H}\\mathrm{Ac}\\)（\\(\\alpha\\approx1\\)%）",
-              "a": "<p><b>答案：C</b></p><p>依数性取决于溶质粒子总浓度：\\(\\mathrm{Ca}\\mathrm{Cl}_{2}\\)的 \\(i\\approx3\\)最大，\\(\\Delta T_{\\mathrm{f}}=i\\cdot K_{\\mathrm{f}}\\cdot m\\)最大，凝固点最低。</p><p>易错：只看溶质的物质的量浓度，不乘粒子数 i，于是四个选项判成一样低。</p>"
+              "q": "质量摩尔浓度均为 0.10 \\mathrm{mol}\\cdot\\mathrm{kg}^{-1} 的下列溶液，凝固点最低的是（ ）<br>A. 葡萄糖　B. \\mathrm{NaCl}（\\i\\approx2）　C. \\mathrm{Na_2SO_4}（\\i\\approx3）　D. 尿素",
+              "a": "<p><b>答案：C</b></p><p>第一步：\\Delta T_{\\mathrm{f}}=K_{\\mathrm{f}}\\cdot ib，水的 \\K_{\\mathrm{f}}=1.86\\ \\mathrm{K}\\cdot\\mathrm{kg}\\cdot\\mathrm{mol}^{-1}。</p><p>第二步：非电解质 \\i=1，\\mathrm{NaCl} \\i=2，\\mathrm{Na_2SO_4} \\i=3，故 \\Delta T_{\\mathrm{f}} 依次约 0.186、0.372、0.558 K。</p><p>第三步：降低值最大者凝固点最低，即 \\mathrm{Na_2SO_4} 溶液。</p><p>易错：忘乘 \\i 只比浓度（三者相同就判不出）；把 \\K_{\\mathrm{b}} 当成 \\K_{\\mathrm{f}}（trap ②③）。</p>"
             },
             {
               "type": "计算",
-              "q": "\\(298\\) K 时 \\(0.10\\) \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3} \\mathrm{Na}\\mathrm{Cl}\\)溶液（\\(i\\approx2\\)）的渗透压约为（\\(R=8.314 \\mathrm{J} \\cdot \\mathrm{mol}^{-1} \\cdot \\mathrm{K}^{-1}\\)）（　）<br>\\(A\\). \\(248\\) \\(\\mathrm{kPa}\\)　B. \\(495\\) \\(\\mathrm{kPa}\\)　C. \\(743\\) \\(\\mathrm{kPa}\\)　D. \\(99\\) \\(\\mathrm{kPa}\\)",
-              "a": "<p><b>答案：B</b></p><p>先把浓度换成 \\(100\\) \\(\\mathrm{mol} \\cdot \\mathrm{m}^{-3}\\)，Π\\(=i\\cdot c\\)RT\\(=2\\times100\\times8.314\\times298\\approx4.95\\times10^{5}\\) \\(\\mathrm{Pa}\\approx495 \\mathrm{kPa}\\)。</p><p>易错：忘乘 \\(i\\)得 \\(248\\) \\(\\mathrm{kPa}\\)；用 \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3}\\)直接代入得小 \\(1000\\) 倍的值。</p>"
+              "q": "将 1.00 \\mathrm{g} 某非电解质溶于 100 \\mathrm{g} 水中，测得凝固点降低 0.186 K，求该物质的摩尔质量（水的 \\K_{\\mathrm{f}}=1.86\\ \\mathrm{K}\\cdot\\mathrm{kg}\\cdot\\mathrm{mol}^{-1}）。",
+              "a": "<p><b>答案：100 \\mathrm{g}\\cdot\\mathrm{mol}^{-1}</b></p><p>第一步：由 \\Delta T_{\\mathrm{f}}=K_{\\mathrm{f}}b 得 \\b=\\frac{0.186}{1.86}=0.100\\ \\mathrm{mol}\\cdot\\mathrm{kg}^{-1}。</p><p>第二步：溶剂 0.100 kg，故溶质 n=0.100\\times0.100=0.0100\\ \\mathrm{mol}。</p><p>第三步：\\M=\\frac{m}{n}=\\frac{1.00}{0.0100}=100\\ \\mathrm{g}\\cdot\\mathrm{mol}^{-1}。</p><p>易错：\\b 的分母误用溶液质量 101 g，结果偏小；求 \\M 时忘把 g 换成 kg 而差 1000 倍（trap ①②）。</p>"
             }
           ],
           "signal": "给了沸点升高或凝固点降低的数值，要你求摩尔质量",
@@ -2360,8 +2393,13 @@
           "examples": [
             {
               "type": "计算",
-              "q": "\\(0.10\\) \\(\\mathrm{mol} \\cdot \\mathrm{kg}^{-1} \\mathrm{Na}_{2}\\mathrm{S}\\mathrm{O}_{4}\\)溶液（视为完全电离）的凝固点降低值约为（\\(K_{\\mathrm{f}}=1.86 \\mathrm{K} \\cdot \\mathrm{kg} \\cdot \\mathrm{mol}^{-1}\\)）（　）<br>\\(A\\). \\(0.186\\) K　B. \\(0.372\\) K　C. \\(0.558\\) K　D. \\(0.744\\) K",
-              "a": "<p><b>答案：C</b></p><p>\\(\\mathrm{Na}_{2}\\mathrm{S}\\mathrm{O}_{4}\\)电离出 \\(3\\) 个离子，i\\(\\approx3\\)：\\(\\Delta T_{\\mathrm{f}}=i\\cdot K_{\\mathrm{f}}\\cdot m=3\\times1.86\\times0.10\\approx0.558\\)K。</p><p>易错：把 \\(\\mathrm{Na}_{2}\\mathrm{S}\\mathrm{O}_{4}\\)记成 \\(i=2\\)，得 \\(0.372\\) K。</p>"
+              "q": "298 K 时 0.10 \\mathrm{mol}\\cdot\\mathrm{dm}^{-3} \\mathrm{NaCl} 溶液（\\i\\approx2）的渗透压约为多少？（\\R=8.314\\ \\mathrm{kPa}\\cdot\\mathrm{dm}^{3}\\cdot\\mathrm{mol}^{-1}\\cdot\\mathrm{K}^{-1}）",
+              "a": "<p><b>答案：\\Pi\\approx4.96\\times10^{2} \\mathrm{kPa}（约 496 kPa）</b></p><p>第一步：\\Pi=icRT，电解质必须乘 \\i：\\i=2，\\c=0.10\\ \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}，\\T=298\\ \\mathrm{K}。</p><p>第二步：\\Pi=2\\times0.10\\times8.314\\times298=4.96\\times10^{2}\\ \\mathrm{kPa}。</p><p>易错：漏乘 \\i 得 248 kPa（正好一半）；用 \\R=8.314\\ \\mathrm{J}\\cdot\\mathrm{mol}^{-1}\\cdot\\mathrm{K}^{-1} 配 \\mathrm{mol}\\cdot\\mathrm{dm}^{-3} 得 Pa，忘了换算成 kPa（trap ①②）。</p>"
+            },
+            {
+              "type": "选择",
+              "q": "与 0.10 \\mathrm{mol}\\cdot\\mathrm{dm}^{-3} \\mathrm{NaCl} 溶液（\\i\\approx2）等渗的葡萄糖溶液浓度约为（ ）<br>A. 0.10 \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}　B. 0.20 \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}　C. 0.05 \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}　D. 0.40 \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}",
+              "a": "<p><b>答案：B</b></p><p>第一步：等渗条件是 \\Pi 相同，即 \\i_{1}c_{1}=\\i_{2}c_{2}（同温下 \\RT 相同）。</p><p>第二步：\\2\\times0.10=1\\times c，得 \\c=0.20\\ \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}。</p><p>易错：只比浓度不比 \\ic，误选 0.10（trap ③）。</p>"
             }
           ],
           "signal": "题干出现「渗透压」「反渗透」「等渗溶液」",
@@ -2421,18 +2459,18 @@
           "examples": [
             {
               "type": "选择",
-              "q": "下列各组中互为共轭酸碱对的是（　）<br>\\(A\\). \\(\\mathrm{H_3O^{+}}\\) 与 \\(\\mathrm{OH^{-}}\\)　\\(B\\). \\(\\mathrm{H_2SO_4}\\) 与 \\(\\mathrm{SO_4^{2-}}\\)　\\(C\\). \\(\\mathrm{NH_4^{+}}\\) 与 \\(\\mathrm{NH_3}\\)　\\(D\\). \\(\\mathrm{HCl}\\) 与 \\(\\mathrm{Cl_2}\\)",
-              "a": "<p><b>答案：C</b></p><p>第一步：共轭酸碱对的定义是「彼此只相差一个 H⁺」。<br>第二步：逐项核对——\\(A\\) 中 \\(\\mathrm{H_3O^{+}}\\) 与 \\(\\mathrm{OH^{-}}\\) 相差两个 H⁺，不成对；\\(B\\) 中 \\(\\mathrm{H_2SO_4}\\) 与 \\(\\mathrm{SO_4^{2-}}\\) 也差两个 H⁺，其共轭碱应是 \\(\\mathrm{HSO_4^{-}}\\)；\\(D\\) 中 \\(\\mathrm{HCl}\\) 与 \\(\\mathrm{Cl_2}\\) 组成元素都不同。<br>第三步：\\(C\\) 中 \\(\\mathrm{NH_4^{+}}\\) 失去一个 H⁺ 恰为 \\(\\mathrm{NH_3}\\)，成对，故选 \\(C\\)。</p><p>易错：看见同一元素的不同物种就判成共轭对，忘记「只差一个 H⁺」这条硬标准。</p>"
-            },
-            {
-              "type": "选择",
-              "q": "已知 \\(\\mathrm{HAc}\\) 的 \\(K_{\\mathrm{a}}=1.8\\times10^{-5}\\)，则 \\(\\mathrm{Ac^{-}}\\) 的 \\(K_{\\mathrm{b}}\\) 为（　）<br>\\(A\\). \\(5.6\\times10^{-10}\\)　\\(B\\). \\(1.8\\times10^{-9}\\)　\\(C\\). \\(1.8\\times10^{-5}\\)　\\(D\\). \\(5.6\\times10^{-5}\\)",
-              "a": "<p><b>答案：A</b></p><p>第一步：\\(\\mathrm{HAc}\\) 与 \\(\\mathrm{Ac^{-}}\\) 是同一共轭对，满足 \\(K_{\\mathrm{a}}\\cdot K_{\\mathrm{b}}=K_{\\mathrm{w}}\\)。<br>第二步：取 \\(25\\ \\mathrm{^\\circ C}\\) 的 \\(K_{\\mathrm{w}}=1.0\\times10^{-14}\\)，得 \\(K_{\\mathrm{b}}=K_{\\mathrm{w}}/K_{\\mathrm{a}}=1.0\\times10^{-14}/(1.8\\times10^{-5})\\)。<br>第三步：\\(K_{\\mathrm{b}}=5.6\\times10^{-10}\\)，选 \\(A\\)。</p><p>易错：把 \\(K_{\\mathrm{b}}\\) 与 \\(K_{\\mathrm{a}}\\) 相除的顺序弄反，得 \\(1.8\\times10^{-9}\\)；或误以为酸越强共轭碱也越强。</p>"
+              "q": "下列各组中互为共轭酸碱对的是（ ）<br>A. \\mathrm{H_3O^{+}} 与 \\mathrm{OH^{-}}　B. \\mathrm{H_2SO_4} 与 \\mathrm{SO_4^{2-}}　C. \\mathrm{H_2CO_3} 与 \\mathrm{HCO_3^{-}}　D. \\mathrm{NH_3} 与 \\mathrm{H_3O^{+}}",
+              "a": "<p><b>答案：C</b></p><p>第一步：共轭酸碱对的定义是「只相差一个质子 \\mathrm{H^{+}}」。</p><p>第二步：A 相差两个质子；B 也相差两个质子（\\mathrm{H_2SO_4/H_2SO_4} 与 \\mathrm{SO_4^{2-}} 之间还有 \\mathrm{HSO_4^{-}}）；D 中两者分属不同对。</p><p>第三步：C 中 \\mathrm{H_2CO_3} 给出一个质子即得 \\mathrm{HCO_3^{-}}，是标准的共轭对。</p><p>易错：只看「名字相似」就配对，不核对质子数与电荷（trap ②）。</p>"
             },
             {
               "type": "判断",
-              "q": "酸越强，其共轭碱也越强。（　）<br>\\(A\\). 正确　\\(B\\). 错误",
-              "a": "<p><b>答案：B</b></p><p>第一步：由 \\(K_{\\mathrm{a}}\\cdot K_{\\mathrm{b}}=K_{\\mathrm{w}}\\)，同一共轭对的乘积为常数。<br>第二步：\\(K_{\\mathrm{a}}\\) 越大（酸越强），\\(K_{\\mathrm{b}}\\) 就越小（共轭碱越弱）。<br>第三步：例如 \\(\\mathrm{HCl}\\) 是强酸，其共轭碱 \\(\\mathrm{Cl^{-}}\\) 极弱；\\(\\mathrm{HAc}\\) 是弱酸，其共轭碱 \\(\\mathrm{Ac^{-}}\\) 反而是较强的弱碱。故原句错误。</p><p>易错：凭直觉认为「强酸背后一定有个强碱」，忘记了二者的常数是倒数关系。</p>"
+              "q": "\\mathrm{HCO_3^{-}} 在水中只能作为碱接受质子，不能给出质子。（ ）",
+              "a": "<p><b>答案：错误</b></p><p>第一步：\\mathrm{HCO_3^{-}} 给出质子得 \\mathrm{CO_3^{2-}}（作酸），接受质子得 \\mathrm{H_2CO_3}（作碱）。</p><p>第二步：既能给出又能接受质子的物种称两性物质，\\mathrm{HCO_3^{-}}、\\mathrm{H_2O}、\\mathrm{HSO_4^{-}} 都是。</p><p>第三步：一种物质是酸还是碱，要看它与谁反应、谁给它质子。</p><p>易错：把「能电离出 H^{+} 的个数」当酸强弱的判据（trap ①）；漏识别两性物质（trap ③）。</p>"
+            },
+            {
+              "type": "简答",
+              "q": "写出 \\mathrm{HPO_4^{2-}} 分别作为酸、作为碱时的共轭对；并指出 \\mathrm{HPO_4^{2-}} 属于哪一类物质。",
+              "a": "<p><b>答案：作酸时共轭对 \\mathrm{HPO_4^{2-}}/\\mathrm{PO_4^{3-}}，作碱时共轭对 \\mathrm{H_2PO_4^{-}}/\\mathrm{HPO_4^{2-}}，属两性物质</b></p><p>第一步：作为酸给出质子：\\mathrm{HPO_4^{2-}}\\rightleftharpoons\\mathrm{PO_4^{3-}}+\\mathrm{H^{+}}，共轭碱是 \\mathrm{PO_4^{3-}}。</p><p>第二步：作为碱接受质子：\\mathrm{HPO_4^{2-}}+\\mathrm{H^{+}}\\rightleftharpoons\\mathrm{H_2PO_4^{-}}，共轭酸是 \\mathrm{H_2PO_4^{-}}。</p><p>第三步：两种角色都成立，故 \\mathrm{HPO_4^{2-}} 是两性物质，其水溶液显弱碱性（水解倾向略占优势）。</p><p>易错：写共轭对时差两个质子，把 \\mathrm{H_3PO_4} 与 \\mathrm{PO_4^{3-}} 配成一对（trap ②）。</p>"
             }
           ],
           "signal": "问某物质是酸还是碱、写出共轭酸碱对，或给了质子条件式",
@@ -2492,9 +2530,14 @@
           "note": "讲义 p51、57、64、78、88、91 零散出现 Ka·Kb=Kw（未单独成节）；卷A 选11 考过。",
           "examples": [
             {
-              "type": "选择",
-              "q": "\\(298\\) K 时 \\(\\mathrm{H}\\mathrm{Ac}\\)的 \\(K_{\\mathrm{a}}=1.76\\times10^{-5}\\)，\\(\\mathrm{N}\\mathrm{H}_{3} \\cdot \\mathrm{H}_{2}\\mathrm{O}\\)的 \\(K_{\\mathrm{b}}=1.79\\times10^{-5}\\)，则同浓度 \\(\\mathrm{Na}\\mathrm{Ac}\\)溶液与 \\(\\mathrm{N}\\mathrm{H}_{3} \\cdot \\mathrm{H}_{2}\\mathrm{O}\\)的碱性（　）\nA. 两者相当　B. \\(\\mathrm{Na}\\mathrm{Ac}\\)更强　C. \\(\\mathrm{N}\\mathrm{H}_{3} \\cdot \\mathrm{H}_{2}\\mathrm{O}\\)更强　D. 无法比较",
-              "a": "<p><b>答案：</b>C</p><p>\\(\\mathrm{Ac}-\\)的 \\(K_{\\mathrm{b}}=K_{\\mathrm{w}}/K_{\\mathrm{a}}=1.0\\times10^{-14}/1.76\\times10^{-5}\\approx5.7\\times10^{-10}\\)，远小于 \\(1.79\\times10^{-5}\\)，\\(\\mathrm{N}\\mathrm{H}_{3} \\cdot \\mathrm{H}_{2}\\mathrm{O}\\)碱性更强。</p>"
+              "type": "填空",
+              "q": "298 K 时 \\mathrm{H}\\mathrm{Ac} 的 \\K_{\\mathrm{a}}=1.8\\times10^{-5}，则其共轭碱 \\mathrm{Ac^{-}} 的 \\K_{\\mathrm{b}}= ______",
+              "a": "<p><b>答案：5.6\\times10^{-10}</b></p><p>第一步：同一共轭对满足 \\K_{\\mathrm{a}}\\cdot K_{\\mathrm{b}}=K_{\\mathrm{w}}=1.0\\times10^{-14}（298 K）。</p><p>第二步：\\K_{\\mathrm{b}}=\\frac{1.0\\times10^{-14}}{1.8\\times10^{-5}}=5.6\\times10^{-10}。</p><p>第三步：取负对数可得 \\mathrm{p}K_{\\mathrm{b}}\\approx9.25，与 \\mathrm{p}K_{\\mathrm{a}}=4.75 之和为 14。</p><p>易错：温度不是 298 K 时仍用 1.0\\times10^{-14}（trap ②）。</p>"
+            },
+            {
+              "type": "判断",
+              "q": "将 \\mathrm{H}\\mathrm{Ac} 的 \\K_{\\mathrm{a}} 与 \\mathrm{NH_3}\\cdot\\mathrm{H_2O} 的 \\K_{\\mathrm{b}} 相乘，结果等于 \\K_{\\mathrm{w}}。（ ）",
+              "a": "<p><b>答案：错误</b></p><p>第一步：\\K_{\\mathrm{a}}\\cdot K_{\\mathrm{b}}=K_{\\mathrm{w}} 只对<b>同一共轭对</b>成立，例如 \\mathrm{H}\\mathrm{Ac}/\\mathrm{Ac^{-}}、\\mathrm{NH_4^{+}}/\\mathrm{NH_3}。</p><p>第二步：\\mathrm{H}\\mathrm{Ac} 与 \\mathrm{NH_3} 不是共轭对（前者的共轭碱是 \\mathrm{Ac^{-}}，后者的共轭酸是 \\mathrm{NH_4^{+}}）。</p><p>第三步：正确配对应取 \\mathrm{H}\\mathrm{Ac} 的 \\K_{\\mathrm{a}} 与 \\mathrm{Ac^{-}} 的 \\K_{\\mathrm{b}}，或 \\mathrm{NH_4^{+}} 的 \\K_{\\mathrm{a}} 与 \\mathrm{NH_3} 的 \\K_{\\mathrm{b}}。</p><p>易错：随手把题里给出的两个常数相乘（trap ①）。</p>"
             }
           ],
           "signal": "给两个弱酸/弱碱的 Ka 让你比强弱，或要你由 Ka 求 Kb",
@@ -2555,18 +2598,18 @@
           "examples": [
             {
               "type": "计算",
-              "q": "\\(0.10\\) \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3}\\)的 \\(\\mathrm{H}\\mathrm{Ac}\\)溶液电离度 \\(\\alpha=1.3\\)%，则 \\(K_{\\mathrm{a}}\\)约为（　）<br>\\(A\\). \\(1.7\\times10^{-5}\\)　B. \\(1.3\\times10^{-3}\\)　C. \\(1.0\\times10^{-7}\\)　D. \\(1.7\\times10^{-3}\\)",
-              "a": "<p><b>答案：A</b></p><p>\\(\\alpha\\)很小时 \\(K_{\\mathrm{a}}\\approx c\\alpha^{2}=0.10\\times(0.013)^{2}\\approx1.7\\times10^{-5}\\)。</p><p>易错：把 \\(\\alpha\\)直接当 \\(c(\\mathrm{H}^{+})\\)用，或分子上写成 \\(c\\alpha\\)。</p>"
+              "q": "298 K 时 0.10 \\mathrm{mol}\\cdot\\mathrm{dm}^{-3} \\mathrm{H}\\mathrm{Ac} 溶液（\\K_{\\mathrm{a}}=1.8\\times10^{-5}）的 \\c(\\mathrm{H^{+}})、pH 与解离度 \\alpha 各为多少？",
+              "a": "<p><b>答案：\\c(\\mathrm{H^{+}})\\approx1.3\\times10^{-3} \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}，pH\\approx2.87，\\alpha\\approx1.3%</b></p><p>第一步：先验近似条件：\\frac{c}{K_{\\mathrm{a}}}=\\frac{0.10}{1.8\\times10^{-5}}\\approx5.6\\times10^{3}\\ge500，可用最简式。</p><p>第二步：\\c(\\mathrm{H^{+}})=\\sqrt{K_{\\mathrm{a}}c}=\\sqrt{1.8\\times10^{-5}\\times0.10}=1.3\\times10^{-3}\\ \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}。</p><p>第三步：\\mathrm{pH}=-\\lg(1.3\\times10^{-3})=2.87；\\alpha=\\frac{c(\\mathrm{H^{+}})}{c}=\\frac{1.3\\times10^{-3}}{0.10}=1.3%。</p><p>易错：不验证 \\c/K_{\\mathrm{a}}\\ge500 就开方（trap ①）；把 1.3% 的百分数直接当 1.3 代进 \\alpha^{2}（trap ②）。</p>"
             },
             {
-              "type": "计算",
-              "q": "\\(0.10\\) \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3}\\)氨水中 \\(\\alpha=1.3\\)%，则 \\(c(\\mathrm{O}\\mathrm{H}-)\\)约为（　）<br>\\(A\\). \\(1.3\\times10^{-3}\\)　B. \\(1.3\\times10^{-2}\\)　C. \\(1.0\\times10^{-3}\\)　D. \\(1.3\\times10^{-4}\\) \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3}\\)",
-              "a": "<p><b>答案：A</b></p><p>\\(c(\\mathrm{O}\\mathrm{H}-)=c\\alpha=0.10\\times0.013=1.3\\times10^{-3} \\mathrm{mol} \\cdot \\mathrm{dm}^{-3}\\)。</p><p>易错：多乘一次 α，误用 \\(K_{\\mathrm{a}}=c\\alpha^{2}\\)去求浓度。</p>"
+              "type": "选择",
+              "q": "关于一元弱酸溶液的判断，正确的是（ ）<br>A. 0.10 \\mathrm{mol}\\cdot\\mathrm{dm}^{-3} \\mathrm{HCl} 也可用 \\c(\\mathrm{H^{+}})=\\sqrt{K_{\\mathrm{a}}c} 计算<br>B. 只要 \\c/K_{\\mathrm{a}}\\ge100 就可以直接开方近似<br>C. 加水稀释时 \\alpha 增大而 \\c(\\mathrm{H^{+}}) 减小<br>D. pH 越大，溶液的酸性越强",
+              "a": "<p><b>答案：C</b></p><p>第一步：A 错——\\mathrm{HCl} 是强酸，完全解离，\\c(\\mathrm{H^{+}})=0.10 \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}，与 \\K_{\\mathrm{a}} 无关。</p><p>第二步：B 错——经验判据是 \\c/K_{\\mathrm{a}}\\ge500（\\alpha<5%），100 时近似误差已较大。</p><p>第三步：C 对——\\c(\\mathrm{H^{+}})=\\sqrt{K_{\\mathrm{a}}c} 随 \\c 减小而减小，而 \\alpha=\\sqrt{K_{\\mathrm{a}}/c} 随 \\c 减小而增大（稀释促进解离）。</p><p>第四步：D 错——pH 越大，\\c(\\mathrm{H^{+}}) 越小，酸性越弱。</p><p>易错：把浓度与解离度的变化方向记混（trap ③）。</p>"
             },
             {
               "type": "判断",
-              "q": "「加水稀释弱酸溶液，电离度 \\(\\alpha\\)与 \\(c(\\mathrm{H}^{+})\\)都减小。」（　）<br>\\(A\\). 正确　B. 错误",
-              "a": "<p><b>答案：B</b></p><p>第一步：弱酸解离度 \\(\\alpha=\\sqrt{K_{\\mathrm{a}}/c}\\)，稀释使 \\(c\\) 减小，\\(\\alpha\\) 增大（稀释促进电离）。<br>第二步：但 \\([\\mathrm{H^{+}}]=\\sqrt{K_{\\mathrm{a}}c}\\)，\\(c\\) 减小使 \\([\\mathrm{H^{+}}]\\) 减小、\\(\\mathrm{pH}\\) 升高。<br>第三步：两者变化方向相反，故「都减小」错误，选 \\(B\\)。</p><p>易错：把强酸的稀释行为（浓度与解离度同向减小）套到弱酸上，忽略了稀释促进电离。</p>"
+              "q": "加水稀释弱酸溶液，其解离度 \\alpha 与 \\c(\\mathrm{H^{+}}) 都减小。（ ）",
+              "a": "<p><b>答案：错误</b></p><p>第一步：\\alpha=\\sqrt{\\frac{K_{\\mathrm{a}}}{c}}，稀释（\\c 减小）使 \\alpha 增大，这是稀释促进解离。</p><p>第二步：\\c(\\mathrm{H^{+}})=\\sqrt{K_{\\mathrm{a}}c} 随 \\c 减小而减小。</p><p>第三步：两者变化方向相反：\\alpha 增大、\\c(\\mathrm{H^{+}}) 减小（pH 升高）。</p><p>易错：只记住「稀释后酸性变弱」就推成 \\alpha 也减小（trap ③）。</p>"
             }
           ],
           "signal": "给了弱酸（弱碱）的初始浓度与 Ka，要求 pH、解离度或解离常数",
@@ -2626,8 +2669,13 @@
           "examples": [
             {
               "type": "计算",
-              "q": "\\(0.10\\) \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3}\\)二元弱酸 \\(\\mathrm{H}_{2}A\\)（\\(K_{\\mathrm{a}}\\)₁\\(=4.0\\times10^{-7}\\)，\\(K_{\\mathrm{a}}\\)₂\\(=8.0\\times10^{-10}\\)）溶液中 \\(c(A^{2-})\\)约为多少？",
-              "a": "<p><b>答案：</b>\\(8.0\\times10^{-10}\\) \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3}\\)</p><p>\\(c(A^{2-})\\approx K_{\\mathrm{a}}\\)₂\\(=8.0\\times10^{-10}\\)（第二步解离极弱，几乎不消耗 \\(\\mathrm{H}^{+}\\)）。\\(c(\\mathrm{H}^{+})=\\)√\\((K_{\\mathrm{a}}\\)₁\\(\\cdot c)=\\)√\\((4.0\\times10^{-8})=2.0\\times10^{-4}\\)。</p>"
+              "q": "室温下饱和 \\mathrm{H_2S} 水溶液浓度约 0.10 \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}，已知 \\K_{\\mathrm{a1}}=1.1\\times10^{-7}、\\K_{\\mathrm{a2}}=1.3\\times10^{-13}。求 \\c(\\mathrm{H^{+}}) 与 \\c(\\mathrm{S^{2-}})。",
+              "a": "<p><b>答案：\\c(\\mathrm{H^{+}})\\approx1.0\\times10^{-4} \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}，\\c(\\mathrm{S^{2-}})\\approx1.3\\times10^{-13} \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}</b></p><p>第一步：\\K_{\\mathrm{a1}}\\gg K_{\\mathrm{a2}}，第一步解离占绝对优势，只取第一步：\\c(\\mathrm{H^{+}})\\approx\\sqrt{K_{\\mathrm{a1}}c}=\\sqrt{1.1\\times10^{-8}}=1.0\\times10^{-4}\\ \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}。</p><p>第二步：由 \\K_{\\mathrm{a2}}=\\frac{c(\\mathrm{H^{+}})c(\\mathrm{S^{2-}})}{c(\\mathrm{HS^{-}})}，且 \\c(\\mathrm{HS^{-}})\\approx c(\\mathrm{H^{+}})，得 \\c(\\mathrm{S^{2-}})\\approx K_{\\mathrm{a2}}=1.3\\times10^{-13}。</p><p>第三步：结论——二元弱酸中酸根浓度约等于 \\K_{\\mathrm{a2}}，与总浓度基本无关。</p><p>易错：把 \\K_{\\mathrm{a1}}、\\K_{\\mathrm{a2}} 一起塞进同一个根式；把 \\c(\\mathrm{S^{2-}}) 写成 \\sqrt{K_{\\mathrm{a2}}c}（trap ①②）。</p>"
+            },
+            {
+              "type": "判断",
+              "q": "二元弱酸溶液中，酸根离子 \\mathrm{A^{2-}} 的浓度与酸的浓度成正比，可用 \\sqrt{K_{\\mathrm{a2}}c} 估算。（ ）",
+              "a": "<p><b>答案：错误</b></p><p>第一步：由 \\K_{\\mathrm{a2}} 的表达式，在 \\c(\\mathrm{H^{+}})\\approx c(\\mathrm{HA^{-}}) 的前提下得 \\c(\\mathrm{A^{2-}})\\approx K_{\\mathrm{a2}}。</p><p>第二步：它只与 \\K_{\\mathrm{a2}} 有关，与总浓度 \\c 基本无关（浓度变了，\\c(\\mathrm{H^{+}}) 同比例变化，两者抵消）。</p><p>第三步：若考虑水解等次级因素，也只是在小范围内偏离，绝不会正比于 \\c。</p><p>易错：把一元弱酸的 \\sqrt{K_{\\mathrm{a}}c} 套路照搬到二级解离（trap ②）。</p>"
             }
           ],
           "signal": "多元弱酸（H2S、H2CO3、H3PO4）求 pH 或某级离子浓度",
@@ -2688,8 +2736,13 @@
           "examples": [
             {
               "type": "判断",
-              "q": "向 \\(\\mathrm{H}\\mathrm{Ac}\\)溶液中加入少量 \\(\\mathrm{Na}\\mathrm{Ac}\\)固体，\\(\\mathrm{H}\\mathrm{Ac}\\)的解离度减小，溶液 \\(\\mathrm{pH}\\)升高。",
-              "a": "<p><b>答案：</b>正确</p><p>\\(\\mathrm{Ac}-\\)同离子抑制 \\(\\mathrm{H}\\mathrm{Ac}\\)解离，α 减小而 \\(c(\\mathrm{H}^{+})\\)下降、\\(\\mathrm{pH}\\)升高。</p>"
+              "q": "向 \\mathrm{H}\\mathrm{Ac} 溶液中加入少量 \\mathrm{Na}\\mathrm{Ac} 固体，\\mathrm{H}\\mathrm{Ac} 的解离度减小，溶液 pH 升高。（ ）",
+              "a": "<p><b>答案：正确</b></p><p>第一步：加入的 \\mathrm{Ac^{-}} 是 \\mathrm{H}\\mathrm{Ac} 解离产生的共同离子，使 \\mathrm{HAc}\\rightleftharpoons\\mathrm{H^{+}}+\\mathrm{Ac^{-}} 左移。</p><p>第二步：解离度 \\alpha 减小，\\c(\\mathrm{H^{+}}) 减小，pH 升高。</p><p>第三步：由 \\c(\\mathrm{H^{+}})=K_{\\mathrm{a}}\\cdot\\c_{\\text{酸}}/c_{\\text{碱}} 可直接验证：分母变大，\\c(\\mathrm{H^{+}}) 变小。</p><p>易错：以为加了「盐」会促解离（那是盐效应，方向相反且弱得多，trap ②）。</p>"
+            },
+            {
+              "type": "计算",
+              "q": "溶液由 0.10 \\mathrm{mol}\\cdot\\mathrm{dm}^{-3} \\mathrm{H}\\mathrm{Ac} 与 0.10 \\mathrm{mol}\\cdot\\mathrm{dm}^{-3} \\mathrm{Na}\\mathrm{Ac} 组成（\\K_{\\mathrm{a}}=1.8\\times10^{-5}），求 \\c(\\mathrm{H^{+}}) 与 pH。",
+              "a": "<p><b>答案：\\c(\\mathrm{H^{+}})=1.8\\times10^{-5} \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}，pH=4.74</b></p><p>第一步：\\mathrm{Ac^{-}} 主要来自 \\mathrm{Na}\\mathrm{Ac}，可用近似式 \\c(\\mathrm{H^{+}})=K_{\\mathrm{a}}\\cdot\\frac{c_{\\text{酸}}}{c_{\\text{碱}}}。</p><p>第二步：\\c(\\mathrm{H^{+}})=1.8\\times10^{-5}\\times\\frac{0.10}{0.10}=1.8\\times10^{-5}\\ \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}。</p><p>第三步：\\mathrm{pH}=-\\lg(1.8\\times10^{-5})=4.74。</p><p>易错：只写 \\c_{\\text{酸}}、漏掉分母的 \\c_{\\text{碱}}（trap ③）。</p>"
             }
           ],
           "signal": "溶液里同时有弱酸和它的盐，或问加入少量强酸强碱后 pH 变化",
@@ -2749,13 +2802,18 @@
           "examples": [
             {
               "type": "计算",
-              "q": "由 \\(0.10\\) \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3} \\mathrm{H}\\mathrm{Ac}\\)与 \\(0.20\\) \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3} \\mathrm{Na}\\mathrm{Ac}\\)组成缓冲溶液，\\(\\mathrm{p}K_{\\mathrm{a}}(\\mathrm{H}\\mathrm{Ac})=4.75\\)，其 \\(\\mathrm{pH}\\)约为（　）<br>\\(A\\). \\(4.45\\)　B. \\(4.75\\)　C. \\(5.05\\)　D. \\(5.35\\)",
-              "a": "<p><b>答案：C</b></p><p>第一步：写出 Henderson–Hasselbalch 方程 \\(\\mathrm{pH}=\\mathrm{p}K_{\\mathrm{a}}+\\lg\\dfrac{c(\\text{共轭碱})}{c(\\text{弱酸})}\\)。<br>第二步：代入 \\(\\mathrm{p}K_{\\mathrm{a}}=4.75\\)、\\(c_{\\text{碱}}=0.20\\)、\\(c_{\\text{酸}}=0.10\\)，得比值 \\(2\\)。<br>第三步：\\(\\lg2\\approx0.30\\)，故 \\(\\mathrm{pH}=4.75+0.30=5.05\\)。<br>所以选 \\(C\\)。</p><p>易错：把 \\(c_{\\text{酸}}/c_{\\text{碱}}\\) 写反，\\(\\lg\\frac12=-0.30\\)，得 \\(4.45\\)（选项 \\(A\\)）。</p>"
+              "q": "由 0.10 \\mathrm{mol}\\cdot\\mathrm{dm}^{-3} \\mathrm{H}\\mathrm{Ac} 与 0.20 \\mathrm{mol}\\cdot\\mathrm{dm}^{-3} \\mathrm{Na}\\mathrm{Ac} 等体积混合（\\mathrm{p}K_{\\mathrm{a}}=4.75），求该缓冲溶液的 pH。",
+              "a": "<p><b>答案：pH=5.05</b></p><p>第一步：等体积混合后浓度同比例变化，比值不变：\\c_{\\text{碱}}/c_{\\text{酸}}=0.20/0.10=2.0。</p><p>第二步：\\mathrm{pH}=\\mathrm{p}K_{\\mathrm{a}}+\\lg\\frac{c_{\\text{碱}}}{c_{\\text{酸}}}=4.75+\\lg2=4.75+0.30=5.05。</p><p>第三步：核对范围：5.05 落在 \\4.75\\pm1 的缓冲区间内，选型合理。</p><p>易错：把盐与酸的位置写反得 4.45（朝另一侧偏，trap ①）；把 \\K_{\\mathrm{a}}=1.8\\times10^{-5} 直接当代入项（trap ②）。</p>"
             },
             {
               "type": "选择",
-              "q": "要配制 \\(\\mathrm{pH}\\approx9.25\\)的缓冲溶液，应选（已知 \\(\\mathrm{p}K_{\\mathrm{a}}(\\mathrm{H}\\mathrm{Ac})=4.75\\)、\\(\\mathrm{p}K_{\\mathrm{b}}(\\mathrm{N}\\mathrm{H}_{3} \\cdot \\mathrm{H}_{2}\\mathrm{O})=4.75\\)、\\(\\mathrm{p}K_{\\mathrm{a}}(\\mathrm{H}\\mathrm{C}\\mathrm{O}\\mathrm{O}\\mathrm{H})=3.75\\)、\\(\\mathrm{p}K_{\\mathrm{a}}(\\mathrm{H}_{2}\\mathrm{C}\\mathrm{O}_{3})=6.35\\)）（　）<br>\\(A\\). \\(\\mathrm{H}\\mathrm{Ac}\\)–\\(\\mathrm{Na}\\mathrm{Ac}\\)　B. \\(\\mathrm{N}\\mathrm{H}_{3} \\cdot \\mathrm{H}_{2}\\mathrm{O}\\)–\\(\\mathrm{N}\\mathrm{H}_{4}\\mathrm{Cl}\\)　C. \\(\\mathrm{H}\\mathrm{C}\\mathrm{O}\\mathrm{O}\\mathrm{H}\\)–\\(\\mathrm{H}\\mathrm{C}\\mathrm{O}\\mathrm{O}\\mathrm{Na}\\)　D. \\(\\mathrm{H}_{2}\\mathrm{C}\\mathrm{O}_{3}\\)–\\(\\mathrm{Na}\\mathrm{H}\\mathrm{C}\\mathrm{O}_{3}\\)",
-              "a": "<p><b>答案：B</b></p><p>NH\\(4^{+}\\) 的 \\(\\mathrm{p}K_{\\mathrm{a}}=14-4.75=9.25\\)，与目标 \\(\\mathrm{pH}\\)相同，落在有效缓冲范围中央。</p><p>易错：直接把 \\(\\mathrm{p}K_{\\mathrm{b}}=4.75\\)当 \\(\\mathrm{p}K_{\\mathrm{a}}\\)用，误选 \\(\\mathrm{H}\\mathrm{Ac}\\)–\\(\\mathrm{Na}\\mathrm{Ac}\\)。</p>"
+              "q": "要配制 pH\\approx9.25 的缓冲溶液，应选择下列哪一对（ ）<br>A. \\mathrm{H}\\mathrm{Ac}/\\mathrm{Na}\\mathrm{Ac}（\\mathrm{p}K_{\\mathrm{a}}=4.75）<br>B. \\mathrm{NH_3}\\cdot\\mathrm{H_2O}/\\mathrm{NH_4Cl}（\\mathrm{p}K_{\\mathrm{a}}(\\mathrm{NH_4^{+}})=9.25）<br>C. \\mathrm{H_2CO_3}/\\mathrm{NaHCO_3}（\\mathrm{p}K_{\\mathrm{a1}}=6.38）<br>D. \\mathrm{NaH_2PO_4}/\\mathrm{Na_2HPO_4}（\\mathrm{p}K_{\\mathrm{a2}}=7.21）",
+              "a": "<p><b>答案：B</b></p><p>第一步：缓冲范围是 \\mathrm{p}K_{\\mathrm{a}}\\pm1，所配 pH 必须落在其中。</p><p>第二步：只需 \\mathrm{p}K_{\\mathrm{a}}\\approx9.25 的体系，即 \\mathrm{NH_4^{+}}/\\mathrm{NH_3} 共轭对。</p><p>第三步：此时 \\c_{\\text{碱}}/c_{\\text{酸}}\\approx1，缓冲容量最大。</p><p>易错：只看「能缓冲」不看 \\mathrm{p}K_{\\mathrm{a}} 是否匹配，选 A 配 pH 9 的溶液，实际几乎无缓冲能力（trap ④）。</p>"
+            },
+            {
+              "type": "简答",
+              "q": "要配制 pH=5.00 的缓冲溶液，能否选用 \\mathrm{H}\\mathrm{Ac}/\\mathrm{Na}\\mathrm{Ac}（\\mathrm{p}K_{\\mathrm{a}}=4.75）？说明理由并给出所需的浓度比。",
+              "a": "<p><b>答案：可以，\\c(\\mathrm{Ac^{-}})/c(\\mathrm{H}\\mathrm{Ac})=10^{0.25}\\approx1.8</b></p><p>第一步：判范围：\\4.75\\pm1 即 3.75\\～5.75，5.00 在其中，故选型可行。</p><p>第二步：由 \\mathrm{pH}=\\mathrm{p}K_{\\mathrm{a}}+\\lg\\frac{c_{\\text{碱}}}{c_{\\text{酸}}} 得 \\lg\\frac{c_{\\text{碱}}}{c_{\\text{酸}}}=0.25。</p><p>第三步：比值约为 1.8，即盐的浓度取酸的 1.8 倍左右（比值接近 1 时缓冲容量更大）。</p><p>易错：把比值算成 \\10^{0.25} 的反方向（写成 0.56，trap ①）；直接用浓度代替比值代入。</p>"
             }
           ],
           "signal": "题干出现「缓冲溶液」「加入少量酸碱 pH 变化很小」，或给了 HA 与 NaA 的浓度比",
@@ -2816,8 +2874,13 @@
           "examples": [
             {
               "type": "计算",
-              "q": "\\(25^{\\circ}\\mathrm{C}\\)时 \\(\\mathrm{Ag}\\mathrm{Cl}\\)的 \\(K_{\\mathrm{sp}}=1.8\\times10^{-10}\\)，其溶解度 \\(s\\)为多少 \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3}\\)？",
-              "a": "<p><b>答案：</b>\\(\\approx1.3\\times10^{-5}\\) \\(\\mathrm{mol} \\cdot \\mathrm{dm}^{-3}\\)</p><p>\\(\\mathrm{Ag}\\mathrm{Cl}(\\)s\\()\\rightleftharpoons\\mathrm{Ag}^{+}+\\mathrm{Cl}-\\)，\\(K_{\\mathrm{sp}}=s^{2}\\)，s=√\\((1.8\\times10^{-10})=1.34\\times10^{-5}\\)。</p>"
+              "q": "25 ℃ 时 \\mathrm{AgCl} 的 \\K_{\\mathrm{sp}}=1.8\\times10^{-10}，求其在水中的溶解度 \\s（\\mathrm{mol}\\cdot\\mathrm{dm}^{-3}）。",
+              "a": "<p><b>答案：\\s\\approx1.3\\times10^{-5} \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}</b></p><p>第一步：\\mathrm{AgCl} 属 AB 型，\\K_{\\mathrm{sp}}=s\\cdot s=s^{2}。</p><p>第二步：\\s=\\sqrt{K_{\\mathrm{sp}}}=\\sqrt{1.8\\times10^{-10}}=1.3\\times10^{-5}\\ \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}。</p><p>第三步：换算成质量浓度约为 1.9\\times10^{-3}\\ \\mathrm{g}\\cdot\\mathrm{dm}^{-3}。</p><p>易错：不管类型一律写 \\s^{2}（遇到 \\mathrm{AB_2} 型就错，trap ①）；有同离子时仍用 \\sqrt{K_{\\mathrm{sp}}}（trap ③）。</p>"
+            },
+            {
+              "type": "计算",
+              "q": "25 ℃ 时 \\mathrm{Ag_2CrO_4} 的 \\K_{\\mathrm{sp}}=1.12\\times10^{-12}，求其溶解度 \\s；并与 \\mathrm{AgCl}（\\K_{\\mathrm{sp}}=1.8\\times10^{-10}，\\s=1.3\\times10^{-5}\\ \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}）比较大小。",
+              "a": "<p><b>答案：\\s\\approx6.5\\times10^{-5} \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}，大于 \\mathrm{AgCl} 的溶解度</b></p><p>第一步：\\mathrm{Ag_2CrO_4} 属 \\mathrm{A_2B} 型，\\K_{\\mathrm{sp}}=(2s)^{2}s=4s^{3}。</p><p>第二步：\\s=\\sqrt[3]{\\frac{K_{\\mathrm{sp}}}{4}}=\\sqrt[3]{2.8\\times10^{-13}}\\approx6.5\\times10^{-5}\\ \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}。</p><p>第三步：\\6.5\\times10^{-5}>1.3\\times10^{-5}，即 \\K_{\\mathrm{sp}} 更小的 \\mathrm{Ag_2CrO_4} 反而更易溶——不同类型不能直接比 \\K_{\\mathrm{sp}}（trap ②）。</p>"
             }
           ],
           "signal": "给了 Ksp 求溶解度，或给了溶解度求 Ksp，题干出现「难溶电解质」",
@@ -2878,8 +2941,13 @@
           "examples": [
             {
               "type": "判断",
-              "q": "溶液中 \\(Q>K_{\\mathrm{sp}}\\)时为过饱和溶液，会析出沉淀。",
-              "a": "<p><b>答案：</b>正确</p><p>\\(Q>K_{\\mathrm{sp}}\\)表示超出饱和量，多余部分将以沉淀析出直至 \\(Q=K_{\\mathrm{sp}}\\)。</p>"
+              "q": "溶液中离子积 \\Q>K_{\\mathrm{sp}} 时为过饱和溶液，会析出沉淀。（ ）",
+              "a": "<p><b>答案：正确</b></p><p>第一步：溶度积规则：\\Q<K_{\\mathrm{sp}} 未饱和（沉淀可继续溶解）；\\Q=K_{\\mathrm{sp}} 恰好饱和；\\Q>K_{\\mathrm{sp}} 过饱和，生成沉淀。</p><p>第二步：本质是平衡向减少离子浓度的方向移动。</p><p>易错：把规则方向记反（trap ③）；判断题只看结论不看是否先算 \\Q（trap ①）。</p>"
+            },
+            {
+              "type": "计算",
+              "q": "将等体积的 2.0\\times10^{-5} \\mathrm{mol}\\cdot\\mathrm{dm}^{-3} \\mathrm{AgNO_3} 与 2.0\\times10^{-5} \\mathrm{mol}\\cdot\\mathrm{dm}^{-3} \\mathrm{NaCl} 混合，是否有 \\mathrm{AgCl} 沉淀生成？（\\K_{\\mathrm{sp}}=1.8\\times10^{-10}）",
+              "a": "<p><b>答案：没有沉淀</b></p><p>第一步：等体积混合后浓度减半：\\c(\\mathrm{Ag^{+}})=\\mathrm{c}(\\mathrm{Cl^{-}})=1.0\\times10^{-5}\\ \\mathrm{mol}\\cdot\\mathrm{dm}^{-3}。</p><p>第二步：\\Q=\\mathrm{c}(\\mathrm{Ag^{+}})\\cdot\\mathrm{c}(\\mathrm{Cl^{-}})=1.0\\times10^{-10}。</p><p>第三步：\\Q<K_{\\mathrm{sp}}=1.8\\times10^{-10}，未饱和，无沉淀。</p><p>易错：忘记混合后浓度稀释，直接把 2.0\\times10^{-5} 相乘得 4\\times10^{-10}>K_{\\mathrm{sp}} 判成有沉淀（trap ②）。</p>"
             }
           ],
           "signal": "给了离子浓度问有无沉淀，或问「沉淀完全」的条件",
@@ -2939,8 +3007,13 @@
           "examples": [
             {
               "type": "选择",
-              "q": "向含等浓度 \\(\\mathrm{Cl}-\\)与 \\(\\mathrm{I}-\\)的溶液中逐滴加 \\(\\mathrm{Ag}\\mathrm{N}\\mathrm{O}_{3}\\)（\\(K_{\\mathrm{sp}}(\\mathrm{Ag}\\mathrm{Cl})=1.8\\times10^{-10}\\)，\\(K_{\\mathrm{sp}}(\\mathrm{Ag}\\mathrm{I})=8.5\\times10^{-17}\\)），先沉淀的是（　）\nA. \\(\\mathrm{Ag}\\mathrm{Cl}\\)　B. \\(\\mathrm{Ag}\\mathrm{I}\\)　C. 同时沉淀　D. 无法判断",
-              "a": "<p><b>答案：</b>\\(B\\)</p><p>同类型沉淀，\\(K_{\\mathrm{sp}}\\)越小越易达到饱和，\\(\\mathrm{Ag}\\mathrm{I}\\)先沉淀。</p>"
+              "q": "向含等浓度 \\mathrm{Cl^{-}}、\\mathrm{I^{-}} 的溶液中逐滴加入 \\mathrm{AgNO_3}（\\K_{\\mathrm{sp}}(\\mathrm{AgCl})=1.8\\times10^{-10}，\\K_{\\mathrm{sp}}(\\mathrm{AgI})=8.5\\times10^{-17}），先沉淀的是（ ）<br>A. \\mathrm{AgCl}　B. \\mathrm{AgI}　C. 同时沉淀　D. 无法判断",
+              "a": "<p><b>答案：B</b></p><p>第一步：两者都是 AB 型，且 \\mathrm{Cl^{-}} 与 \\mathrm{I^{-}} 浓度相同。</p><p>第二步：开始沉淀所需 \\c(\\mathrm{Ag^{+}})=K_{\\mathrm{sp}}/c(\\mathrm{X^{-}})，\\K_{\\mathrm{sp}} 越小所需 \\mathrm{Ag^{+}} 越少。</p><p>第三步：\\8.5\\times10^{-17}<1.8\\times10^{-10}，故 \\mathrm{AgI} 先沉淀。</p><p>易错：凭「浓度大先沉淀」判断（浓度相同就更判断不出）；不同类型时直接比 \\K_{\\mathrm{sp}}（trap ①②）。</p>"
+            },
+            {
+              "type": "判断",
+              "q": "向 \\mathrm{AgCl} 沉淀中加入足量 \\mathrm{KI} 溶液，白色沉淀可转化为黄色 \\mathrm{AgI} 沉淀。（ ）",
+              "a": "<p><b>答案：正确</b></p><p>第一步：转化反应 \\mathrm{AgCl}(\\mathrm{s})+\\mathrm{I^{-}}\\rightleftharpoons\\mathrm{AgI}(\\mathrm{s})+\\mathrm{Cl^{-}}。</p><p>第二步：平衡常数 \\K=\\frac{K_{\\mathrm{sp}}(\\mathrm{AgCl})}{K_{\\mathrm{sp}}(\\mathrm{AgI})}=\\frac{1.8\\times10^{-10}}{8.5\\times10^{-17}}\\approx2\\times10^{6}。</p><p>第三步：\\K\\gg1，转化很彻底，故沉淀由白变黄。</p><p>易错：把转化方向写反（由小 \\K_{\\mathrm{sp}} 转大 \\K_{\\mathrm{sp}} 通常不能自发，trap ④）；算 \\K 时除反。</p>"
             }
           ],
           "signal": "两种离子都可能与同一沉淀剂反应，问谁先沉淀或能否分离",
@@ -3000,8 +3073,13 @@
           "examples": [
             {
               "type": "选择",
-              "q": "\\(\\mathrm{[Cu(NH_3)_4]SO_4}\\) 中中心离子与配位数分别是（　）<br>\\(A\\). \\(\\mathrm{Cu^{2+}}\\)、\\(4\\)　\\(B\\). \\(\\mathrm{Cu^{+}}\\)、\\(4\\)　\\(C\\). \\(\\mathrm{Cu^{2+}}\\)、\\(6\\)　\\(D\\). \\(\\mathrm{SO_4^{2-}}\\)、\\(4\\)",
-              "a": "<p><b>答案：A</b></p><p>第一步：把配合物拆成内界与外界——内界是配离子 \\(\\mathrm{[Cu(NH_3)_4]^{2+}}\\)，外界是 \\(\\mathrm{SO_4^{2-}}\\)。<br>第二步：外界 \\(\\mathrm{SO_4^{2-}}\\) 带 \\(-2\\) 电荷，故配离子带 \\(+2\\)；配体 \\(\\mathrm{NH_3}\\) 中性，所以中心离子为 \\(\\mathrm{Cu^{2+}}\\)。<br>第三步：配体 \\(\\mathrm{NH_3}\\) 是单齿配体，内界中共有 4 个，故配位数为 4。选 \\(A\\)。</p><p>易错：由 \\(\\mathrm{SO_4^{2-}}\\) 反推时把中心离子判成 \\(\\mathrm{Cu^{+}}\\)；或把外界离子当成中心离子（\\(D\\)）。</p>"
+              "q": "\\mathrm{[Cu(NH_3)_4]SO_4} 中，中心离子及其氧化数、配位数分别是（ ）<br>A. \\mathrm{Cu^{2+}}、氧化数 +2、配位数 4<br>B. \\mathrm{Cu^{+}}、氧化数 +1、配位数 4<br>C. \\mathrm{Cu^{2+}}、氧化数 +2、配位数 8<br>D. \\mathrm{Cu^{2+}}、氧化数 +1、配位数 4",
+              "a": "<p><b>答案：A</b></p><p>第一步：外界 \\mathrm{SO_4^{2-}} 带 2 个单位负电，故配离子 \\mathrm{[Cu(NH_3)_4]^{2+}} 带 2 个单位正电。</p><p>第二步：4 个中性配体 \\mathrm{NH_3} 不贡献电荷，故中心离子为 \\mathrm{Cu^{2+}}，氧化数 +2。</p><p>第三步：\\mathrm{NH_3} 是单齿配体，配位数等于配体个数 4。</p><p>易错：由外界反推中心离子电荷时算错，把 \\mathrm{Cu^{2+}} 写成 \\mathrm{Cu^{+}}（trap ②）。</p>"
+            },
+            {
+              "type": "填空",
+              "q": "配合物 \\mathrm{[Cu(en)_2]^{2+}}（en 为乙二胺，双齿配体）中铜的配位数是 ______；\\mathrm{[Co(NH_3)_6]Cl_3} 应命名为 ______。",
+              "a": "<p><b>答案：4；氯化六氨合钴(III)</b></p><p>第一步：配位数数的是直接配位的配位原子数，en 提供 2 个氮原子，故 2\\times2=4。</p><p>第二步：命名 \\mathrm{[Co(NH_3)_6]Cl_3}：外界阴离子「氯化」+ 配体个数与名称「六氨」+「合」+ 中心离子「钴」+ 氧化数「(III)」。</p><p>第三步：核对电荷：\\mathrm{[Co(NH_3)_6]^{3+}} 与 3 个 \\mathrm{Cl^{-}} 平衡，钴为 +3。</p><p>易错：把配体个数当配位数（多齿配体时错，trap ①）；命名时内外界顺序颠倒（trap ③）。</p>"
             }
           ],
           "signal": "给了配合物化学式要你写名称、中心离子电荷或配位数",
@@ -3062,8 +3140,13 @@
           "examples": [
             {
               "type": "计算",
-              "q": "已知 \\(K_{\\mathrm{f}}(\\mathrm{[Ag(NH_3)_2]^{+}})=1.1\\times10^{7}\\)。若平衡时 \\(c(\\mathrm{[Ag(NH_3)_2]^{+}})=0.10\\ \\mathrm{mol\\cdot dm^{-3}}\\)、\\(c(\\mathrm{NH_3})=0.10\\ \\mathrm{mol\\cdot dm^{-3}}\\)，求 \\(c(\\mathrm{Ag^{+}})\\)。",
-              "a": "<p><b>答案：\\(c(\\mathrm{Ag^{+}})\\approx9.1\\times10^{-7}\\ \\mathrm{mol\\cdot dm^{-3}}\\)</b></p><p>第一步：写出配位平衡 \\(\\mathrm{Ag^{+}}+2\\mathrm{NH_3}\\rightleftharpoons\\mathrm{[Ag(NH_3)_2]^{+}}\\)，稳定常数 \\(K_{\\mathrm{f}}=\\dfrac{c(\\mathrm{[Ag(NH_3)_2]^{+}})}{c(\\mathrm{Ag^{+}})c^{2}(\\mathrm{NH_3})}\\)。<br>第二步：变形得 \\(c(\\mathrm{Ag^{+}})=\\dfrac{c(\\mathrm{[Ag(NH_3)_2]^{+}})}{K_{\\mathrm{f}}\\,c^{2}(\\mathrm{NH_3})}\\)。<br>第三步：代入 \\(c(\\mathrm{Ag^{+}})=\\dfrac{0.10}{1.1\\times10^{7}\\times(0.10)^{2}}=\\dfrac{0.10}{1.1\\times10^{5}}=9.1\\times10^{-7}\\)。</p><p>易错：①分母漏掉 \\(\\mathrm{NH_3}\\) 浓度的平方；②把 \\(K_{\\mathrm{f}}\\) 的表达式写成 \\(c(\\mathrm{Ag^{+}})c^{2}(\\mathrm{NH_3})/c(\\text{配离子})\\)（那是解离常数 \\(K_{\\mathrm{d}}\\)）。</p>"
+              "q": "25 ℃ 时 \\K_{\\mathrm{f}}(\\mathrm{[Ag(NH_3)_2]^{+}})=1.1\\times10^{7}，\\K_{\\mathrm{sp}}(\\mathrm{AgCl})=1.8\\times10^{-10}。求反应 \\mathrm{AgCl}(\\mathrm{s})+2\\mathrm{NH_3}\\rightleftharpoons\\mathrm{[Ag(NH_3)_2]^{+}}+\\mathrm{Cl^{-}} 的平衡常数 \\K。",
+              "a": "<p><b>答案：\\K\\approx2.0\\times10^{-3}</b></p><p>第一步：拆分两步：\\mathrm{AgCl}(\\mathrm{s})\\rightleftharpoons\\mathrm{Ag^{+}}+\\mathrm{Cl^{-}}，\\K=K_{\\mathrm{sp}}。</p><p>第二步：\\mathrm{Ag^{+}}+2\\mathrm{NH_3}\\rightleftharpoons\\mathrm{[Ag(NH_3)_2]^{+}}，\\K=K_{\\mathrm{f}}。</p><p>第三步：总反应为两步相加，常数相乘：\\K=K_{\\mathrm{sp}}\\cdot K_{\\mathrm{f}}=1.8\\times10^{-10}\\times1.1\\times10^{7}\\approx2.0\\times10^{-3}。</p><p>易错：把常数该乘写成该除（trap ④）；\\K_{\\mathrm{f}} 的分母漏掉 \\c^{2}(\\mathrm{NH_3}) 的幂次（trap ②）。</p>"
+            },
+            {
+              "type": "判断",
+              "q": "配离子的 \\K_{\\mathrm{f}} 越大，它越稳定；\\K_{\\mathrm{d}} 与 \\K_{\\mathrm{f}} 的关系是 \\K_{\\mathrm{d}}=1/K_{\\mathrm{f}}。（ ）",
+              "a": "<p><b>答案：正确</b></p><p>第一步：\\K_{\\mathrm{f}}=\\frac{c(\\text{配离子})}{c(\\text{中心离子})c^{n}(\\text{配体})}，越大表示生成配离子的倾向越大。</p><p>第二步：\\K_{\\mathrm{d}} 是解离常数，对应逆反应，故互为倒数。</p><p>第三步：常见例子：\\mathrm{[Ag(NH_3)_2]^{+}} 的 \\K_{\\mathrm{f}}=1.1\\times10^{7}，\\K_{\\mathrm{d}}\\approx9.1\\times10^{-8}。</p><p>易错：把 \\K_{\\mathrm{f}} 表达式写成「反应物之积/生成物」，那就变成 \\K_{\\mathrm{d}}（trap ①）。</p>"
             }
           ],
           "signal": "给了 K稳（或 K不稳）要算配离子浓度、游离离子浓度",
@@ -3124,8 +3207,13 @@
           "examples": [
             {
               "type": "判断",
-              "q": "向 \\(\\mathrm{[Ag(NH_3)_2]^{+}}\\) 溶液中加入 \\(\\mathrm{KI}\\) 会生成黄色 \\(\\mathrm{AgI}\\) 沉淀，原因是 \\(\\mathrm{Ag^{+}}\\) 被消耗使配位平衡右移。（　）<br>\\(A\\). 正确　\\(B\\). 错误",
-              "a": "<p><b>答案：A</b></p><p>第一步：溶液中存在配位平衡 \\(\\mathrm{[Ag(NH_3)_2]^{+}}\\rightleftharpoons\\mathrm{Ag^{+}}+2\\mathrm{NH_3}\\)，游离 \\(\\mathrm{Ag^{+}}\\) 浓度虽小但存在。<br>第二步：加入 \\(\\mathrm{I^{-}}\\) 后，\\(\\mathrm{Ag^{+}}\\) 与 \\(\\mathrm{I^{-}}\\) 的离子积超过 \\(K_{\\mathrm{sp}}(\\mathrm{AgI})\\)，生成 \\(\\mathrm{AgI}\\) 沉淀，游离 \\(\\mathrm{Ag^{+}}\\) 被消耗。<br>第三步：由勒夏特列原理，\\(\\mathrm{Ag^{+}}\\) 浓度下降使配位平衡向右（解离方向）移动，不断释放 \\(\\mathrm{Ag^{+}}\\) 直至沉淀完全，故说法正确。</p><p>易错：只答「生成沉淀」而不说明「沉淀消耗游离 \\(\\mathrm{Ag^{+}}\\) → 平衡右移」这一因果链，简答题拿不到分。</p>"
+              "q": "向 \\mathrm{[Ag(NH_3)_2]^{+}} 溶液中加入 \\mathrm{KI} 会生成黄色 \\mathrm{AgI} 沉淀，原因是 \\mathrm{Ag^{+}} 被消耗，使配位平衡向解离方向移动。（ ）",
+              "a": "<p><b>答案：正确</b></p><p>第一步：主平衡 \\mathrm{Ag^{+}}+2\\mathrm{NH_3}\\rightleftharpoons\\mathrm{[Ag(NH_3)_2]^{+}}。</p><p>第二步：\\mathrm{I^{-}} 与游离 \\mathrm{Ag^{+}} 生成更难溶的 \\mathrm{AgI}（\\K_{\\mathrm{sp}}=8.5\\times10^{-17}），使 \\c(\\mathrm{Ag^{+}}) 下降。</p><p>第三步：按勒夏特列原理，平衡左移（解离方向），配离子被破坏，同时出现黄色沉淀。</p><p>易错：只说「生成了沉淀」，不说清「游离中心离子被消耗→平衡左移」的因果链（trap ①）。</p>"
+            },
+            {
+              "type": "简答",
+              "q": "向 \\mathrm{[Cu(NH_3)_4]^{2+}} 溶液中加入稀硫酸，蓝色配离子颜色变浅、溶液变为浅蓝色并出现 \\mathrm{Cu^{2+}} 的特征颜色。解释原因。",
+              "a": "<p><b>答案：\\mathrm{H^{+}} 与配体 \\mathrm{NH_3} 结合成 \\mathrm{NH_4^{+}}，配体浓度下降，配位平衡向解离方向移动</b></p><p>第一步：主平衡 \\mathrm{Cu^{2+}}+4\\mathrm{NH_3}\\rightleftharpoons\\mathrm{[Cu(NH_3)_4]^{2+}}。</p><p>第二步：加酸后 \\mathrm{NH_3}+\\mathrm{H^{+}}\\to\\mathrm{NH_4^{+}}，\\c(\\mathrm{NH_3}) 大幅下降。</p><p>第三步：平衡左移，配离子解离出 \\mathrm{Cu^{2+}}（水合铜离子呈浅蓝），深蓝色变浅。</p><p>易错：忽略配体的碱性、只说「酸把配离子破坏」（trap ②）；判断移动方向时写反（trap ③）。</p>"
             }
           ],
           "signal": "题干出现「加过量配体」「加酸」「加沉淀剂」对配位平衡的影响",
@@ -3186,13 +3274,13 @@
           "examples": [
             {
               "type": "选择",
-              "q": "下列物质中硫元素氧化数为 \\(+6\\) 的是（　）\nA. \\(\\mathrm{H}_{2}\\mathrm{S}\\)　B. \\(\\mathrm{S}\\mathrm{O}_{2}\\)　C. \\(\\mathrm{H}_{2}\\mathrm{S}\\mathrm{O}_{4}\\)　D. \\(S\\)₈",
+              "q": "下列物质中硫元素氧化数为 \\(+6\\) 的是（　）\\nA. \\(\\mathrm{H}_{2}\\mathrm{S}\\)　B. \\(\\mathrm{S}\\mathrm{O}_{2}\\)　C. \\(\\mathrm{H}_{2}\\mathrm{S}\\mathrm{O}_{4}\\)　D. \\(S\\)₈",
               "a": "<p><b>答案：</b>C</p><p>\\(\\mathrm{H}_{2}\\mathrm{S}\\)中 \\(S\\)为 \\(-2\\)，\\(\\mathrm{S}\\mathrm{O}_{2}\\)中为 \\(+4\\)，S₈ 中为 \\(0\\)，\\(\\mathrm{H}_{2}\\mathrm{S}\\mathrm{O}_{4}\\)中 \\(S\\)为 \\(+6\\)。</p>"
             },
             {
-              "type": "选择",
-              "q": "在 \\(\\mathrm{Na}\\)₂\\(S\\)₂O₃ 中硫元素的氧化数为（　）\nA. \\(+2\\)　B. \\(+3\\)　C. \\(+4\\)　D. \\(+6\\)",
-              "a": "<p><b>答案：</b>\\(A\\)</p><p>\\(\\mathrm{Na}\\)为 \\(+1\\)（共 \\(+2\\)），O 为 \\(-2\\)（共 \\(-6\\)），由 \\(2+2x-6=0\\)得 \\(x=+2\\)。</p>"
+              "type": "填空",
+              "q": "\\(\\mathrm{Fe}_{3}\\mathrm{O}_{4}\\) 中 Fe 的氧化数为 ______。",
+              "a": "<p><b>答案：\\(+\\dfrac{8}{3}\\)</b></p><p>第一步：设 Fe 的氧化数为 \\(x\\)，O 为 \\(-2\\)，由电中性得 \\(3x+4\\times(-2)=0\\)；第二步：解得 \\(x=+\\dfrac{8}{3}\\)；第三步：\\(\\mathrm{Fe}_{3}\\mathrm{O}_{4}\\) 可视为 \\(\\mathrm{FeO\\cdot Fe_{2}O_{3}}\\)，两个 Fe 为 \\(+2\\)、一个为 \\(+3\\)，平均正是 \\(+\\dfrac{8}{3}\\)，可见平均氧化数可为分数。</p><p>易错：默认氧化数必须是整数而写 \\(+2\\) 或 \\(+3\\)；只有单个离子的电荷数才必须是整数。</p>"
             }
           ],
           "signal": "给了元素/化合物要你标氧化数，或判断某反应是否氧化还原",
@@ -3320,7 +3408,7 @@
           "examples": [
             {
               "type": "选择",
-              "q": "\\(\\mathrm{Zn}\\)|\\(\\mathrm{Zn}^{2+}(1 \\mathrm{mol} \\cdot \\mathrm{dm}^{-3})\\)‖\\(\\mathrm{Cu}^{2+}(1 \\mathrm{mol} \\cdot \\mathrm{dm}^{-3})\\)|\\(\\mathrm{Cu}\\)电池中，负极是（　）\nA. \\(\\mathrm{Zn}\\)　B. \\(\\mathrm{Cu}\\)　C. 两者均可　D. 无法判断",
+              "q": "\\(\\mathrm{Zn}\\)|\\(\\mathrm{Zn}^{2+}(1 \\mathrm{mol} \\cdot \\mathrm{dm}^{-3})\\)‖\\(\\mathrm{Cu}^{2+}(1 \\mathrm{mol} \\cdot \\mathrm{dm}^{-3})\\)|\\(\\mathrm{Cu}\\)电池中，负极是（　）\\nA. \\(\\mathrm{Zn}\\)　B. \\(\\mathrm{Cu}\\)　C. 两者均可　D. 无法判断",
               "a": "<p><b>答案：</b>\\(A\\)</p><p>\\(\\mathrm{Zn}\\)失电子被氧化，作负极；\\(\\mathrm{Cu}^{2+}\\)得电子在铜极析出，铜为正极。</p>"
             },
             {
@@ -3387,13 +3475,13 @@
           "examples": [
             {
               "type": "选择",
-              "q": "国际规定标准氢电极的电极电势为（　）\nA. \\(0\\) \\(V\\)　B. \\(1\\) \\(V\\)　C. \\(-0.76\\) \\(V\\)　D. 无法确定",
+              "q": "国际规定标准氢电极的电极电势为（　）\\nA. \\(0\\) \\(V\\)　B. \\(1\\) \\(V\\)　C. \\(-0.76\\) \\(V\\)　D. 无法确定",
               "a": "<p><b>答案：</b>\\(A\\)</p><p>标准氢电极是电极电势的零点基准，其余电极电势都是相对它测得的。</p>"
             },
             {
-              "type": "选择",
-              "q": "已知 \\(E^{\\ominus}(\\mathrm{Cu}^{2+}/\\mathrm{Cu})=+0.34\\)V、\\(E^{\\ominus}(\\mathrm{Zn}^{2+}/\\mathrm{Zn})=-0.76\\)V，则 \\(\\mathrm{Zn}\\)|\\(\\mathrm{Zn}^{2+}\\)‖\\(\\mathrm{Cu}^{2+}\\)|\\(\\mathrm{Cu}\\)的标准电动势为（　）\nA. \\(0.34\\) \\(V\\)　B. \\(0.76\\) \\(V\\)　C. \\(1.10\\) \\(V\\)　D. \\(-1.10\\) V",
-              "a": "<p><b>答案：</b>C</p><p>\\(E^{\\ominus}\\)池\\(=E^{\\ominus}(\\)正\\()-E^{\\ominus}(\\)负\\()=0.34-(-0.76)=1.10\\) \\(V\\)。</p>"
+              "type": "判断",
+              "q": "「标准电极电势越大，该电对氧化型物质的氧化能力越强，还原型物质的还原能力也越强。」这一说法（ ）<br>A. 正确 B. 错误",
+              "a": "<p><b>答案：错误</b></p><p>第一步：\\(E^{\\ominus}\\) 越大，氧化型越容易得电子，氧化性越强；第二步：同一电对的还原型则越难失电子，还原性越弱（如 \\(E^{\\ominus}(\\mathrm{Zn^{2+}/Zn})=-0.76\\ \\mathrm{V}\\)，小于铜，故 Zn 的还原性强）；第三步：两个「越强」不可能同时成立，后半句说反了。故原说法错误。</p><p>易错：把「氧化型氧化性强」与「还原型还原性强」当成正相关；二者恰好相反。</p>"
             }
           ],
           "signal": "给了两个电对的标准电极电势，要你判断氧化剂强弱或反应方向",
@@ -3525,9 +3613,9 @@
               "a": "<p><b>答案：</b>\\(\\lg\\)K°\\(\\approx37.2\\)</p><p>\\(\\lg\\)K°\\(=n\\)E°\\(/0.0592=2\\times1.10/0.0592\\approx37.2\\)，\\(K^{\\ominus}\\approx10^{37}\\)，说明反应进行得很完全。</p>"
             },
             {
-              "type": "计算",
-              "q": "\\(298\\) K 下某电池 \\(E^{\\ominus}\\)池\\(=0.76\\) V、n\\(=2\\)，求反应的 \\(\\Delta_{r}G^{\\ominus}\\)（\\(F=96500 \\mathrm{C} \\cdot \\mathrm{mol}^{-1}\\)）。",
-              "a": "<p><b>答案：</b>\\(\\approx-147\\) \\(\\mathrm{kJ} \\cdot \\mathrm{mol}^{-1}\\)</p><p>\\(\\Delta_{r}G^{\\ominus}=-n\\)FE°池\\(=-2\\times96500\\times0.76\\approx-1.47\\times10^{5}\\) \\(\\mathrm{J} \\cdot \\mathrm{mol}^{-1}\\)。</p>"
+              "type": "判断",
+              "q": "\\(298\\ \\mathrm{K}\\) 下某电池电动势 \\(E_{\\text{池}}=0.10\\ \\mathrm{V}\\)，转移电子数 \\(\\nu=2\\)。由此可判断该电池反应的 \\(K^{\\ominus}>1\\)。（ ）<br>A. 正确 B. 错误",
+              "a": "<p><b>答案：正确</b></p><p>第一步：\\(\\Delta_{r}G_{m}^{\\ominus}=-\\nu FE^{\\ominus}\\)，\\(E^{\\ominus}>0\\) 故 \\(\\Delta_{r}G_{m}^{\\ominus}<0\\)；第二步：由 \\(\\Delta_{r}G_{m}^{\\ominus}=-RT\\ln K^{\\ominus}\\)，负值对应 \\(\\ln K^{\\ominus}>0\\)；第三步：故 \\(K^{\\ominus}>1\\)，标准态下反应正向自发。</p><p>易错：由 \\(E_{\\text{池}}>0\\) 直接说「K 很大」——本题只能得 \\(K^{\\ominus}>1\\)；按 \\(\\nu FE^{\\ominus}/(RT)\\approx7.8\\) 算，\\(K^{\\ominus}\\approx2.4\\times10^{3}\\)，量级不大，且漏乘 \\(\\nu\\) 会差得很远。</p>"
             }
           ],
           "signal": "从电动势求 ΔG 或 K°，或问「电池能否自发」",
@@ -3592,9 +3680,9 @@
               "a": "<p><b>答案：</b>错误</p><p>还需克服超电势与电解池内阻，故分解电压一般大于可逆电动势。</p>"
             },
             {
-              "type": "判断",
-              "q": "电解时与直流电源负极相连的电极是阴极，该极上发生还原反应。",
-              "a": "<p><b>答案：</b>正确</p><p>电解池中阴极接电源负极，阳离子移向阴极得电子被还原。</p>"
+              "type": "选择",
+              "q": "关于电解池与直流电源的连接及电极反应，下列说法正确的是（ ）<br>A. 与电源正极相连的电极是阴极 B. 与电源负极相连的阴极上发生还原反应 C. 阳极上发生还原反应 D. 电解时电子由电源正极经电解质溶液流向负极",
+              "a": "<p><b>答案：B</b></p><p>第一步：与电源负极相连的是阴极，溶液中的阳离子在其上得电子被还原；第二步：与电源正极相连的是阳极，发生氧化反应；第三步：电子只在外电路由电源负极流向阴极、再由阳极流回电源正极，溶液中靠离子迁移导电。逐项比对只有 B 正确。</p><p>易错：把原电池与电解池的电极名称混用——原电池「正极还原」，电解池「阴极还原」，共同判据是「发生还原反应的一极」。</p>"
             }
           ],
           "signal": "题干出现「电解池」「分解电压」「外加电压」",
@@ -3654,13 +3742,13 @@
           "examples": [
             {
               "type": "选择",
-              "q": "用惰性电极电解 \\(\\mathrm{Cu}\\)Cl₂ 水溶液，阳极产物是（　）\nA. \\(\\mathrm{Cl}_{2}\\)　B. \\(\\mathrm{O}_{2}\\)　C. \\(\\mathrm{Cu}\\)　D. \\(\\mathrm{H}_{2}\\)",
+              "q": "用惰性电极电解 \\(\\mathrm{Cu}\\)Cl₂ 水溶液，阳极产物是（　）\\nA. \\(\\mathrm{Cl}_{2}\\)　B. \\(\\mathrm{O}_{2}\\)　C. \\(\\mathrm{Cu}\\)　D. \\(\\mathrm{H}_{2}\\)",
               "a": "<p><b>答案：</b>\\(A\\)</p><p>阳极上 \\(\\mathrm{Cl}-\\)的放电电势低于 \\(\\mathrm{O}\\mathrm{H}-\\)，故析出 \\(\\mathrm{Cl}_{2}\\)；阴极析出 \\(\\mathrm{Cu}\\)。</p>"
             },
             {
-              "type": "选择",
-              "q": "用惰性电极电解 \\(\\mathrm{Cu}\\)Cl₂ 水溶液，阳极产物主要是（　）\nA. \\(\\mathrm{Cu}\\)　B. \\(\\mathrm{Cl}_{2}\\)　C. \\(\\mathrm{O}_{2}\\)　D. \\(\\mathrm{H}_{2}\\)",
-              "a": "<p><b>答案：</b>\\(B\\)</p><p>阳极上 \\(\\mathrm{Cl}-\\)的放电电势低于 \\(\\mathrm{O}\\mathrm{H}-\\)，故优先氧化为 \\(\\mathrm{Cl}_{2}\\)；阴极析出 \\(\\mathrm{Cu}\\)。</p>"
+              "type": "判断",
+              "q": "用铜片作阳极、石墨作阴极电解 \\(\\mathrm{CuSO_{4}}\\) 溶液，阳极的电极反应为 \\(4\\mathrm{OH^{-}}-4\\mathrm{e^{-}}\\rightarrow\\mathrm{O_{2}}\\uparrow+2\\mathrm{H_{2}O}\\)。（ ）<br>A. 正确 B. 错误",
+              "a": "<p><b>答案：B（错误）</b></p><p>第一步：阳极先看材料——铜是活泼金属，自身先失电子：\\(\\mathrm{Cu}-2\\mathrm{e^{-}}\\rightarrow\\mathrm{Cu^{2+}}\\)。</p><p>第二步：正因为金属阳极溶解，\\(\\mathrm{OH^{-}}\\) 来不及放电，阳极无 \\(\\mathrm{O_{2}}\\)；改用石墨或 Pt 作阳极才是 \\(\\mathrm{OH^{-}}\\) 放电。</p><p>易错：只看溶液里有哪些离子、按放电顺序硬排，忽略「阳极看材料」——活泼金属阳极会自身溶解。</p>"
             }
           ],
           "signal": "给了电解质溶液要你判断电解产物或离子放电顺序",
@@ -3721,7 +3809,7 @@
           "examples": [
             {
               "type": "选择",
-              "q": "钢铁在中性水膜中发生的电化学腐蚀主要是（　）\nA. 析氢腐蚀　B. 吸氧腐蚀　C. 化学腐蚀　D. 均匀腐蚀",
+              "q": "钢铁在中性水膜中发生的电化学腐蚀主要是（　）\\nA. 析氢腐蚀　B. 吸氧腐蚀　C. 化学腐蚀　D. 均匀腐蚀",
               "a": "<p><b>答案：</b>\\(B\\)</p><p>中性水膜中 \\(\\mathrm{H}^{+}\\)浓度极低，阴极以 \\(\\mathrm{O}_{2}\\)的还原（吸氧）为主。</p>"
             },
             {
@@ -3793,7 +3881,7 @@
             },
             {
               "type": "选择",
-              "q": "下列防腐蚀措施中属于电化学保护法的是（　）\nA. 表面刷漆　B. 牺牲阳极法　C. 表面镀铬　D. 加缓蚀剂",
+              "q": "下列防腐蚀措施中属于电化学保护法的是（　）\\nA. 表面刷漆　B. 牺牲阳极法　C. 表面镀铬　D. 加缓蚀剂",
               "a": "<p><b>答案：</b>\\(B\\)</p><p>牺牲阳极法把更活泼金属作阳极腐蚀掉，使被保护金属作阴极，属电化学保护。</p>"
             }
           ],
@@ -3860,8 +3948,13 @@
           "examples": [
             {
               "type": "选择",
-              "q": "函数 y=ln(x−2)/√(3−x) 的定义域是（　）\nA. (2,3)　B. [2,3)　C. (2,3]　D. [2,3]",
+              "q": "函数 y=ln(x−2)/√(3−x) 的定义域是（　）\\nA. (2,3)　B. [2,3)　C. (2,3]　D. [2,3]",
               "a": "<p><b>答案：</b>A</p><p>对数要求 x−2>0 即 x>2，偶次根号在分母要求 3−x>0 即 x<3，取交得 (2,3)。</p>"
+            },
+            {
+              "type": "判断",
+              "q": "函数 \\(y=\\sqrt{\\ln x}\\) 的定义域是 \\(x\\ge 1\\)。（ ）<br>A. 正确 B. 错误",
+              "a": "<p><b>答案：正确</b></p><p>第一步：内层 \\(\\ln x\\) 要求 \\(x>0\\)；第二步：外层算术平方根要求 \\(\\ln x\\ge 0\\)，即 \\(x\\ge 1\\)；取交集得定义域 \\([1,+\\infty)\\)。故原说法正确。</p><p>易错：只盯 \\(\\ln x\\) 的 \\(x>0\\) 就下结论，忘了根号要求被开方数非负，会误判为「错误」。</p>"
             }
           ],
           "signal": "题干给了 f(g(x)) 的表达式或分段定义，问定义域、值域或反函数",
@@ -3921,6 +4014,11 @@
               "type": "判断",
               "q": "函数 \\(f(x)=\\sin^{2}x\\) 是周期函数，且其最小正周期为 \\(\\pi\\)。（　）<br>A. 正确　B. 错误",
               "a": "<p><b>答案：A</b></p><p>\\(\\sin^{2}x=\\frac{1-\\cos 2x}{2}\\)，周期为 \\(2\\pi/2=\\pi\\)。</p><p>易错：由 \\(\\sin x\\) 的周期 \\(2\\pi\\) 直接判成 \\(2\\pi\\)，未注意平方后周期减半。</p>"
+            },
+            {
+              "type": "选择",
+              "q": "下列函数中是奇函数的是（ ）<br>A. \\(x\\cos x\\) B. \\(x^{2}+\\sin x\\) C. \\(\\sin x+\\cos x\\) D. \\(\\dfrac{\\sin x}{x+1}\\)",
+              "a": "<p><b>答案：A</b></p><p>第一步：验证 \\(f(-x)=-f(x)\\)。A 中 \\((-x)\\cos(-x)=-x\\cos x\\)，成立；第二步：B 中 \\(f(-x)=x^{2}-\\sin x\\ne -f(x)\\)；C 中 \\(-\\sin x+\\cos x\\ne-\\sin x-\\cos x\\)；D 的定义域为 \\(x\\ne -1\\)，关于原点不对称，直接排除。故选 A。</p><p>易错：只有定义域关于原点对称才可能具有奇偶性，D 无需做恒等式检验即可排除；B、C 也不能凭「含 \\(\\sin x\\)」就判奇。</p>"
             }
           ],
           "signal": "题干出现「奇函数」「偶函数」「周期为 T」「有界」，或要求判断函数性质",
@@ -4047,6 +4145,11 @@
               "type": "简答",
               "q": "用数列极限的 \\(\\varepsilon-N\\) 定义证明：若 \\(\\lim_{n\\to\\infty}\\left|x_{n}\\right|=0\\)，则 \\(\\lim_{n\\to\\infty}x_{n}=0\\)。",
               "a": "<p><b>答案：</b></p><p>任给 \\(\\varepsilon>0\\)，由 \\(\\lim\\left|x_{n}\\right|=0\\) 知存在 \\(N\\)，当 \\(n>N\\) 时 \\(\\left|\\left|x_{n}\\right|-0\\right|=\\left|x_{n}\\right|<\\varepsilon\\)。又 \\(\\left|x_{n}-0\\right|=\\left|x_{n}\\right|\\)，故当 \\(n>N\\) 时 \\(\\left|x_{n}-0\\right|<\\varepsilon\\)，即 \\(\\lim x_{n}=0\\)。</p><p>易错：写「\\(\\left|x_{n}\\right|\\to 0\\)，所以 \\(x_{n}\\to 0\\)」当证明——这恰恰是待证结论，必须回到 \\(\\varepsilon-N\\) 定义。</p>"
+            },
+            {
+              "type": "选择",
+              "q": "在 \\(\\lim_{x\\to x_{0}}f(x)=A\\) 的 ε-δ 定义中，关于 δ 的说法正确的是（ ）<br>A. 由预先给定的 ε>0 确定，一般随 ε 减小而减小 B. 是与 ε 无关的固定常数 C. 必须取 δ=ε D. 只要求 δ 足够大",
+              "a": "<p><b>答案：A</b></p><p>第一步：定义的结构是「对任意给定的 ε>0，存在 δ>0」，δ 在 ε 给定之后才被寻找；第二步：ε 越小要求 \\(f(x)\\) 越贴近 A，可取的 δ 一般越小；C、D 把 δ 说成与 ε 无关或可以取大，与定义矛盾。故选 A。</p><p>易错：把 δ 当成任意取定的常数而忽略它对 ε 的依赖，这是 ε-δ 语言最典型的误解。</p>"
             }
           ],
           "signal": "题干出现「ε-δ」「用定义证明 lim f(x)=A」",
@@ -4171,19 +4274,19 @@
           ],
           "examples": [
             {
-              "type": "计算",
-              "q": "求 \\(\\lim_{x\\to+\\infty} x\\left(\\sqrt{x^{2}+1}-x\\right)\\)。",
-              "a": "<p><b>答案：\\(\\frac{1}{2}\\)</b></p><p>乘共轭：\\(x\\left(\\sqrt{x^{2}+1}-x\\right)\\cdot\\frac{\\sqrt{x^{2}+1}+x}{\\sqrt{x^{2}+1}+x}=\\frac{x}{\\sqrt{x^{2}+1}+x}=\\frac{1}{\\sqrt{1+1/x^{2}}+1}\\to\\frac{1}{2}\\)。</p><p>易错：只对根号差有理化后忘记把分子分母同除 \\(x\\)。</p>"
+              "type": "选择",
+              "q": "下列极限计算正确的是（ ）<br>A. \\(\\lim_{x\\to\\infty}\\frac{3x^{2}+2x}{2x^{2}-1}=\\frac{3}{2}\\)　B. \\(\\lim_{x\\to-\\infty}\\frac{\\sqrt{x^{2}+1}}{x}=1\\)<br>C. \\(\\lim_{x\\to+\\infty}\\left(\\sqrt{x^{2}+x}-x\\right)=0\\)　D. \\(\\lim_{x\\to 1}\\frac{x^{2}-1}{x-1}=0\\)",
+              "a": "<p><b>答案：A</b></p><p>第一步：A 抓大头——分子分母同除 \\(x^{2}\\)，得 \\(\\frac{3+2/x}{2-1/x^{2}}\\to\\frac{3}{2}\\)，正确。</p><p>第二步：B 的坑在 \\(\\sqrt{x^{2}}=|x|=-x\\)（因为 \\(x\\to-\\infty\\)），原式 \\(=\\lim\\frac{|x|}{x}=-1\\)，不是 1。</p><p>第三步：C 是 \\(\\infty-\\infty\\) 型，先乘共轭得 \\(\\frac{x}{\\sqrt{x^{2}+x}+x}\\to\\frac{1}{2}\\)，不是 0；D 约分得 \\(x+1\\to 2\\)，不是 0。只有 A 成立。</p><p>易错：\\(x\\to-\\infty\\) 时把 \\(\\sqrt{x^{2}}\\) 写成 \\(x\\)；把 \\(\\infty-\\infty\\) 直接当成 0。</p>"
             },
             {
               "type": "计算",
-              "q": "求 \\(\\lim_{n\\to\\infty}\\left(\\sqrt{n^{2}+n}-n\\right)\\)。",
-              "a": "<p><b>答案：\\(\\frac{1}{2}\\)</b></p><p>乘共轭得 \\(\\frac{n}{\\sqrt{n^{2}+n}+n}=\\frac{1}{\\sqrt{1+1/n}+1}\\to\\frac{1}{2}\\)。</p><p>易错：把 \\(\\sqrt{n^{2}+n}\\) 写成 \\(n+n\\)：根号内提 \\(n^{2}\\) 得 \\(n\\sqrt{1+1/n}\\)。</p>"
+              "q": "求 \\(\\lim_{x\\to+\\infty}\\left(\\sqrt{x^{2}+x}-x\\right)\\)。",
+              "a": "<p><b>答案：\\(\\frac{1}{2}\\)</b></p><p>第一步：这是 \\(\\infty-\\infty\\) 型，根号差先乘共轭：\\(\\left(\\sqrt{x^{2}+x}-x\\right)\\cdot\\frac{\\sqrt{x^{2}+x}+x}{\\sqrt{x^{2}+x}+x}=\\frac{x}{\\sqrt{x^{2}+x}+x}\\)。</p><p>第二步：分子分母同除 \\(x\\)（\\(x>0\\)），得 \\(\\frac{1}{\\sqrt{1+1/x}+1}\\)。</p><p>第三步：\\(x\\to+\\infty\\) 时 \\(\\sqrt{1+1/x}\\to 1\\)，所以原式 \\(=\\frac{1}{1+1}=\\frac{1}{2}\\)。</p><p>易错：乘共轭只乘分子、忘了分母要同乘；同除最高次幂时把常数项也除掉。</p>"
             },
             {
               "type": "计算",
-              "q": "求 \\(\\lim_{n\\to\\infty}\\sqrt{n}\\cdot\\left(\\sqrt{n+1}-\\sqrt{n-2}\\right)\\)。",
-              "a": "<p><b>答案：\\(\\frac{3}{2}\\)</b></p><p>乘共轭得 \\(\\sqrt{n}\\cdot\\frac{3}{\\sqrt{n+1}+\\sqrt{n-2}}=\\frac{3}{\\sqrt{1+1/n}+\\sqrt{1-2/n}}\\to\\frac{3}{2}\\)。</p><p>易错：共轭乘完后分子写成 1（应为 \\((n+1)-(n-2)=3\\)）。</p>"
+              "q": "求 \\(\\lim_{n\\to\\infty}\\left(\\sqrt{n^{2}+n}-\\sqrt{n^{2}-n}\\right)\\)。",
+              "a": "<p><b>答案：\\(1\\)</b></p><p>第一步：两个根号之差，同样用共轭，乘 \\(\\frac{\\sqrt{n^{2}+n}+\\sqrt{n^{2}-n}}{\\sqrt{n^{2}+n}+\\sqrt{n^{2}-n}}\\)，分子变成 \\((n^{2}+n)-(n^{2}-n)=2n\\)。</p><p>第二步：分母两条根号各提一个 \\(n\\)，得 \\(n\\left(\\sqrt{1+1/n}+\\sqrt{1-1/n}\\right)\\)。</p><p>第三步：原式 \\(=\\frac{2}{\\sqrt{1+1/n}+\\sqrt{1-1/n}}\\to\\frac{2}{1+1}=1\\)。</p><p>易错：分子得 \\(2n\\) 后不除以分母的 \\(n\\)，直接写 \\(2n\\to\\infty\\)；或以为「两个根号差」只需对其中一个有理化。</p>"
             }
           ],
           "signal": "给了分式或根式的极限，分子分母都趋于 0 或都趋于无穷",
@@ -4258,9 +4361,9 @@
               "a": "<p><b>答案：\\(-1\\)</b></p><p>\\((1+kx)^{2024/x}=\\left[(1+kx)^{1/(kx)}\\right]^{2024k}\\to e^{2024k}\\)，令 \\(2024k=-2024\\) 得 \\(k=-1\\)。</p><p>易错：指数只写 \\(2024/x\\) 就直接对照，忘了凑 \\((1+kx)^{1/(kx)}\\) 后还要乘 \\(k\\)。</p>"
             },
             {
-              "type": "填空",
-              "q": "若 \\(\\lim_{x\\to 1}\\frac{x^{2}+ax+b}{x-1}=3\\)，则 \\(a=\\) ______，\\(b=\\) ______",
-              "a": "<p><b>答案：\\(a=1\\)，\\(b=-2\\)</b></p><p>极限存在而分母 \\(\\to 0\\)，故分子必须 \\(\\to 0\\)：\\(1+a+b=0\\)。因式分解 \\(x^{2}+ax+b=(x-1)(x+1+a)\\)，极限为 \\(2+a=3\\)，得 \\(a=1\\)，\\(b=-2\\)。</p><p>易错：只用一次洛必达，忘记「分子极限必须为 \\(0\\)」这个必要条件。</p>"
+              "type": "计算",
+              "q": "若 \\(\\lim_{x\\to 1}\\dfrac{x^{2}+ax+b}{x-1}=3\\)，则 \\(a=\\) ______，\\(b=\\) ______。",
+              "a": "<p><b>答案：\\(a=1\\)，\\(b=-2\\)</b></p><p>第一步：极限存在且分母 \\(x-1\\to 0\\)，故分子在 \\(x=1\\) 处必为 0：\\(1+a+b=0\\)；第二步：把分子因式分解为 \\((x-1)(x+a+1)\\)，约分后 \\(\\lim_{x\\to1}(x+a+1)=a+2=3\\)，得 \\(a=1\\)；第三步：回代 \\(b=-1-a=-2\\)。</p><p>易错：只用「分子为 0」这一个条件就收手，只得到 \\(a+b=-1\\)；必须再用约分后的极限值定第二个方程。</p>"
             }
           ],
           "signal": "题干出现「已知极限值，求参数 a、b」，或极限式中含待定字母",
@@ -4393,6 +4496,11 @@
               "type": "计算",
               "q": "用夹逼定理求 \\(\\lim_{n\\to\\infty}\\left[\\frac{1}{\\sqrt{n^{2}+1}}+\\frac{1}{\\sqrt{n^{2}+2}}+\\cdots+\\frac{1}{\\sqrt{n^{2}+n}}\\right]\\)。",
               "a": "<p><b>答案：\\(1\\)</b></p><p>共 \\(n\\) 项，每项介于 \\(\\frac{1}{\\sqrt{n^{2}+n}}\\) 与 \\(\\frac{1}{\\sqrt{n^{2}+1}}\\) 之间，故 \\(\\frac{n}{\\sqrt{n^{2}+n}}\\le S_{n}\\le\\frac{n}{\\sqrt{n^{2}+1}}\\)；两端都 \\(\\to 1\\)，夹逼得 \\(S_{n}\\to 1\\)。</p><p>易错：以为每项 \\(\\to 0\\) 所以和 \\(\\to 0\\)，忽略了项数也趋于无穷。</p>"
+            },
+            {
+              "type": "选择",
+              "q": "设 \\(a_{n}=\\dfrac{1}{n^{2}}+\\dfrac{2}{n^{2}}+\\cdots+\\dfrac{n}{n^{2}}\\)，则 \\(\\lim_{n\\to\\infty}a_{n}=\\)（ ）<br>A. \\(0\\) B. \\(\\dfrac{1}{4}\\) C. \\(\\dfrac{1}{2}\\) D. \\(1\\)",
+              "a": "<p><b>答案：C</b></p><p>第一步：先求和，\\(a_{n}=\\dfrac{1+2+\\cdots+n}{n^{2}}=\\dfrac{n(n+1)}{2n^{2}}=\\dfrac{1}{2}+\\dfrac{1}{2n}\\)；第二步：\\(\\dfrac{1}{2}<a_{n}\\le\\dfrac{1}{2}+\\dfrac{1}{2n}\\)，两端都趋于 \\(\\dfrac{1}{2}\\)，由夹逼准则得极限为 \\(\\dfrac{1}{2}\\)。</p><p>易错：\\(n\\) 个项都含 \\(\\frac{1}{n^{2}}\\) 就以为整体趋于 \\(0\\)，忽略了项数也在增加；先写求和式再取极限。</p>"
             }
           ],
           "signal": "题干出现「n 项和求极限」「递推数列 a(n+1)=f(an)」「证明极限存在」",
@@ -4454,6 +4562,11 @@
               "type": "判断",
               "q": "柯西收敛原理可用于判断数列收敛而不必先求出极限值。",
               "a": "<p><b>答案：</b>正确</p><p>柯西条件只涉及项与项之间的距离，不需要预先知道极限，这是它与定义判别法的本质区别。</p>"
+            },
+            {
+              "type": "选择",
+              "q": "设数列 \\(\\{x_{n}\\}\\) 满足 \\(\\lim_{n\\to\\infty}(x_{n+1}-x_{n})=0\\)。下列命题正确的是（ ）<br>A. \\(\\{x_{n}\\}\\) 一定收敛 B. \\(\\{x_{n}\\}\\) 收敛则其相邻两项之差必趋于 0 C. \\(\\{x_{n}\\}\\) 有界则一定收敛 D. \\(\\{x_{n}\\}\\) 单调则一定收敛",
+              "a": "<p><b>答案：B</b></p><p>第一步：A 错——取调和级数部分和 \\(x_{n}=1+\\dfrac{1}{2}+\\cdots+\\dfrac{1}{n}\\)，\\(x_{n+1}-x_{n}=\\dfrac{1}{n+1}\\to 0\\) 但 \\(x_{n}\\) 发散；第二步：B 对——若 \\(x_{n}\\to a\\)，则 \\(x_{n+1}-x_{n}=(x_{n+1}-a)-(x_{n}-a)\\to 0\\)；第三步：C 错（如 \\(x_{n}=(-1)^{n}\\) 有界不收敛），D 错（单调有界才收敛，单调无界如 \\(x_{n}=n\\) 发散）。故选 B。</p><p>易错：把「相邻两项之差趋于 0」当成收敛的充分条件；柯西收敛原理要求的是任意两项 \\(|x_{m}-x_{n}|\\) 都能任意小，比相邻差强得多。</p>"
             }
           ],
           "signal": "题干出现「柯西收敛原理」「充要条件」",
@@ -4520,9 +4633,9 @@
               "a": "<p><b>答案：0</b></p><p>\\(x\\to 0\\) 时 \\(x\\) 是无穷小，\\(\\sin\\left(\\frac{1}{x}\\right)\\) 有界（\\(\\left|\\sin\\left(\\frac{1}{x}\\right)\\right|\\le 1\\)），无穷小乘有界量仍是无穷小，极限为 0。</p><p>易错：把 \\(\\sin\\left(\\frac{1}{x}\\right)\\) 当成无穷小或以为它没有极限就判「原式不存在」。</p>"
             },
             {
-              "type": "判断",
-              "q": "有界函数与无穷小的乘积仍是无穷小。（　）<br>A. 正确　B. 错误",
-              "a": "<p><b>答案：A</b></p><p>设 \\(\\left|g(x)\\right|\\le M\\)，\\(\\alpha(x)\\to 0\\)，则 \\(\\left|\\alpha g\\right|\\le M\\left|\\alpha\\right|\\to 0\\)。</p><p>易错：把「有界」换成「无穷大」也照搬——无穷大乘无穷小不能直接定。</p>"
+              "type": "简答",
+              "q": "「无界变量一定是无穷大」这一说法是否成立？请举例说明。",
+              "a": "<p><b>答案：不成立。</b></p><p>第一步：无穷大要求对任意 \\(M>0\\)，从某项起恒有 \\(|x_{n}|>M\\)；第二步：无界只要求 \\(|x_{n}|\\) 能超过任意给定界，允许它在某些项上回落；第三步：取 \\(x_{n}=n\\left[1+(-1)^{n}\\right]\\)，偶数项为 \\(2n\\)、奇数项为 0，\\(|x_{n}|\\) 无界，但奇数项恒为 0，不满足「尾部恒大于 M」，故不是无穷大。</p><p>易错：把无界与无穷大当成同义词；无穷大是无界中更强的一类，必须整条尾部都变大。</p>"
             }
           ],
           "signal": "题干出现「无穷小」「无穷大」「有界变量乘无穷小」，或判断无穷小阶",
@@ -4678,13 +4791,13 @@
             },
             {
               "type": "计算",
-              "q": "设 \\(f(x)=\\begin{cases}\\frac{x^{2}-1}{x-1},&x\\ne 1\\\\ a,&x=1\\end{cases}\\) 在 \\(x=1\\) 处连续，求 \\(a\\)。",
-              "a": "<p><b>答案：\\(a=2\\)</b></p><p>\\(\\lim_{x\\to 1}\\frac{x^{2}-1}{x-1}=\\lim_{x\\to 1}(x+1)=2\\)，连续要求 \\(a=2\\)。</p><p>易错：先约分再直接代 \\(x=1\\)，忘了说明「\\(x\\ne 1\\) 时才能约分」。</p>"
+              "q": "设 \\(f(x)=\\begin{cases}\\frac{\\sin 2x}{x},&x<0\\\\ a+x,&x\\ge 0\\end{cases}\\) 在 \\(x=0\\) 处连续，求 \\(a\\)。",
+              "a": "<p><b>答案：\\(a=2\\)</b></p><p>第一步：左极限用等价无穷小 \\(\\sin 2x\\sim 2x\\)，得 \\(\\lim_{x\\to0^{-}}\\frac{\\sin 2x}{x}=2\\)。</p><p>第二步：右极限与函数值同取第二分支：\\(\\lim_{x\\to0^{+}}(a+x)=a\\)，\\(f(0)=a\\)。</p><p>第三步：连续要求左极限 \\(=\\) 右极限 \\(=\\) 函数值，即 \\(2=a\\)，故 \\(a=2\\)。</p><p>易错：看到 \\(\\frac{\\sin 2x}{x}\\) 只换分子不除 \\(x\\)，得 \\(2x\\to 0\\)；或只算一侧极限就下结论。</p>"
             },
             {
-              "type": "计算",
-              "q": "设 \\(f(x)=\\begin{cases}\\frac{1-\\cos x}{x^{2}},&x\\ne 0\\\\ a,&x=0\\end{cases}\\) 在 \\(x=0\\) 处连续，求 \\(a\\)。",
-              "a": "<p><b>答案：\\(a=\\frac{1}{2}\\)</b></p><p>\\(1-\\cos x\\sim\\frac{x^{2}}{2}\\)，所以 \\(\\lim_{x\\to 0} f(x)=\\frac{1}{2}\\)，连续要求 \\(a=\\frac{1}{2}\\)。</p><p>易错：把 \\(1-\\cos x\\) 换成 \\(x^{2}\\)，得 \\(a=1\\)。</p>"
+              "type": "判断",
+              "q": "若 \\(\\lim_{x\\to x_{0}^{-}}f(x)\\) 与 \\(\\lim_{x\\to x_{0}^{+}}f(x)\\) 都存在且相等，则 \\(f\\) 在 \\(x_{0}\\) 处连续。（ ）<br>A. 正确 B. 错误",
+              "a": "<p><b>答案：B（错误）</b></p><p>第一步：左右极限存在且相等，只能说明 \\(\\lim_{x\\to x_{0}}f(x)\\) 存在。</p><p>第二步：连续要求三件事同时成立——\\(f(x_{0})\\) 有定义、极限存在、且极限值等于函数值。题干缺了最后一条。</p><p>第三步：反例 \\(f(x)=\\frac{\\sin x}{x}\\)（\\(x\\ne0\\)），\\(f(0)=0\\)：\\(x\\to0\\) 时极限为 1，但 \\(f(0)=0\\ne1\\)，不连续（可去间断点）。</p><p>易错：把「极限存在」直接当成「连续」，忘了「极限值 = 函数值」这一步。</p>"
             }
           ],
           "signal": "题干给了分段函数，问「在 x=0 处连续」「求 a 使连续」",
@@ -4753,9 +4866,9 @@
               "a": "<p><b>答案：A</b></p><p>\\(\\lim_{x\\to 0}\\frac{\\sqrt{x+1}-1}{x}=\\lim\\frac{1}{\\sqrt{x+1}+1}=\\frac{1}{2}\\)，而 \\(f(0)=0\\)，极限存在且不等于函数值，是可去间断点。</p><p>易错：把「有定义」当成「连续」；可去的判定是极限 \\(\\ne\\) 函数值。</p>"
             },
             {
-              "type": "选择",
-              "q": "函数 \\(y=\\frac{x^{2}-1}{x^{2}-3x+2}\\) 的间断点情况是（　）<br>A. \\(x=1\\) 为可去间断点，\\(x=2\\) 为无穷间断点<br>B. \\(x=1\\) 为无穷间断点，\\(x=2\\) 为可去间断点<br>C. \\(x=1\\)、\\(x=2\\) 都是可去间断点<br>D. \\(x=1\\)、\\(x=2\\) 都是无穷间断点",
-              "a": "<p><b>答案：A</b></p><p>\\(y=\\frac{(x-1)(x+1)}{(x-1)(x-2)}\\)。\\(x=1\\)：约分后极限为 \\(\\frac{1+1}{1-2}=-2\\)，可去；\\(x=2\\)：约分后分母为 0、分子不为 0，极限无穷。</p><p>易错：不约分就判「两个都是无穷」。</p>"
+              "type": "简答",
+              "q": "求函数 \\(y=\\frac{x^{2}-1}{x^{2}-3x+2}\\) 的间断点，并指出各间断点的类型。",
+              "a": "<p><b>答案：\\(x=1\\) 为可去间断点，\\(x=2\\) 为无穷间断点</b></p><p>第一步：分母 \\(x^{2}-3x+2=(x-1)(x-2)\\)，候选间断点为 \\(x=1\\)、\\(x=2\\)；分子 \\(x^{2}-1=(x-1)(x+1)\\)。</p><p>第二步：\\(x=1\\) 处约分得 \\(y=\\frac{x+1}{x-2}\\to\\frac{2}{-1}=-2\\)，极限存在但该点无定义，是可去间断点。</p><p>第三步：\\(x=2\\) 处约分后分母为 0、分子为 3\\(\\ne 0\\)，极限为 \\(\\infty\\)，是无穷间断点。</p><p>易错：不约分就判「两个都是无穷间断点」；把「该点无定义」一律当成第二类间断点。</p>"
             }
           ],
           "signal": "题干问「x=0 是什么间断点」「第一类还是第二类」",
@@ -4889,6 +5002,11 @@
               "type": "判断",
               "q": "若函数 f 在区间 I 上连续，则 f 在 I 上必一致连续。",
               "a": "<p><b>答案：</b>错误</p><p>只在闭区间上成立。反例：1/x 在 (0,1) 上连续但非一致连续。</p>"
+            },
+            {
+              "type": "选择",
+              "q": "下列函数在所示区间上一致连续的是（ ）<br>A. \\(f(x)=\\dfrac{1}{x}\\) 在 \\((0,1)\\) B. \\(f(x)=x^{2}\\) 在 \\((0,+\\infty)\\) C. \\(f(x)=\\sin x\\) 在 \\((-\\infty,+\\infty)\\) D. \\(f(x)=\\ln x\\) 在 \\((0,1)\\)",
+              "a": "<p><b>答案：C</b></p><p>第一步：\\(|f'|\\) 在区间上有界则一致连续；C 中 \\(|f'|=|\\cos x|\\le 1\\)，故一致连续；第二步：A 取 \\(x_{n}=\\frac{1}{n}\\)、\\(y_{n}=\\frac{1}{n+1}\\)，\\(|x_{n}-y_{n}|\\to 0\\) 而 \\(|f(x_{n})-f(y_{n})|=1\\)，不一致连续；B 取 \\(x=2n\\)、\\(y=2n+1\\)，差值 \\(4n+1\\) 无界；D 在 0 附近同理。故选 C。</p><p>易错：以为「连续就一致连续」；一致连续对区间有要求，只有闭区间上的连续函数才一定一致连续。</p>"
             }
           ],
           "signal": "题干出现「一致连续」「是否一致连续」",
@@ -4946,13 +5064,18 @@
           "examples": [
             {
               "type": "选择",
-              "q": "设 f(1)=2，f′(1)=3，则 lim_{Δx→0}[f(1+3Δx)−f(1)]/Δx=（　）\nA. 3　B. 9　C. 6　D. 1",
-              "a": "<p><b>答案：</b>B</p><p>分子增量为 3Δx，故原式=3·lim[f(1+3Δx)−f(1)]/(3Δx)=3f′(1)=9。</p>"
+              "q": "设 f(1)=2，f′(1)=3，则 \\lim_{\\Delta x\\to0}\\frac{f(1+3\\Delta x)-f(1)}{\\Delta x}=（ ）<br>A. 3　B. 9　C. 6　D. 1/3",
+              "a": "<p><b>答案：B</b></p><p>第一步：凑定义——分子是函数值之差，必须配同样的自变量增量 3\\Delta x。</p><p>第二步：\\frac{f(1+3\\Delta x)-f(1)}{\\Delta x}=3\\cdot\\frac{f(1+3\\Delta x)-f(1)}{3\\Delta x}\\to3f′(1)=9。</p><p>易错：分母不跟着乘 3，把 3f′(1) 算成 f′(1)=3（漏乘系数，trap ①）。</p>"
+            },
+            {
+              "type": "判断",
+              "q": "若极限 \\lim_{h\\to0}\\frac{f(x_0+h)-f(x_0-h)}{2h} 存在且等于 A，则 f′(x_0) 存在且等于 A。（判断正误）",
+              "a": "<p><b>答案：错误</b></p><p>第一步：上式是对称差商，只用两侧函数值之差，并不等于定义式（定义式分母是「自变量之差 x−x_0」，分子是「函数值之差 f(x)−f(x_0)」）。</p><p>第二步：反例 f(x)=|x|，x_0=0：\\lim_{h\\to0}\\frac{|h|-|-h|}{2h}=0，极限存在；但左右导数分别为 −1 与 1，f′(0) 不存在。</p><p>第三步：要反推出 f′(x_0)，还需 f 在 x_0 连续等附加条件。</p><p>易错：把任何「形状像差商」的极限都当导数定义（trap ①②）。</p>"
             },
             {
               "type": "计算",
-              "q": "设 f′(x₀)=2，求 lim_{h→0}[f(x₀−h)−f(x₀)]/h。",
-              "a": "<p><b>答案：</b>−2</p><p>[f(x₀−h)−f(x₀)]/(−h)→f′(x₀)，故原式=−f′(x₀)=−2。</p>"
+              "q": "设 f(x)=\\begin{cases}x^{2},&x\\le1\\\\ ax+b,&x>1\\end{cases}，已知 f 在 x=1 处可导，求 a、b。",
+              "a": "<p><b>答案：a=2，b=−1</b></p><p>第一步：可导必连续，先定连续：f(1^{-})=1，f(1^{+})=a+b，故 a+b=1。</p><p>第二步：用定义求左右导数：f′_-(1)=\\lim_{h\\to0^{-}}\\frac{(1+h)^{2}-1}{h}=2；f′_+(1)=\\lim_{h\\to0^{+}}\\frac{a(1+h)+b-1}{h}=a。</p><p>第三步：可导要求 2=a，代回得 b=−1。</p><p>易错：直接对两侧解析式求导数再令相等，跳过「先验连续」这一步（trap ③）。</p>"
             }
           ],
           "signal": "题干出现「用定义求 f′(x0)」「lim [f(x0+h)−f(x0)]/h」，或 f 在 x0 点不满足求导公式条件",
@@ -5012,13 +5135,13 @@
           "examples": [
             {
               "type": "判断",
-              "q": "若函数 f 在 x₀ 处可导，则 f 在 x₀ 处必连续；反之不一定成立。",
-              "a": "<p><b>答案：</b>正确</p><p>可导⇒连续是定理；反例 y=|x| 在 x=0 连续但左右导数分别为 −1、1，不可导。</p>"
+              "q": "若函数 f 在 x_0 处可导，则 f 在 x_0 处必连续，但连续不一定可导。（判断正误）",
+              "a": "<p><b>答案：正确</b></p><p>第一步：f(x)-f(x_0)=\\frac{f(x)-f(x_0)}{x-x_0}\\cdot(x-x_0)，故 \\lim_{x\\to x_0}[f(x)-f(x_0)]=f′(x_0)\\cdot0=0，即连续。</p><p>第二步：反例 f(x)=|x| 在 0 处连续，但左右导数 −1、1 不等，故不可导。</p><p>易错：把「连续」与「可导」混为一谈（trap ①）；或看到曲线「有切线」就判可导，忘记竖直切线（trap ②）。</p>"
             },
             {
-              "type": "选择",
-              "q": "曲线 y=x³ 在点 (1,1) 处的切线斜率为（　）\nA. 1　B. 2　C. 3　D. 0",
-              "a": "<p><b>答案：</b>C</p><p>y′=3x²，在 x=1 处为 3，即切线斜率。</p>"
+              "type": "计算",
+              "q": "用定义说明 y=\\sqrt[3]{x} 在 x=0 处连续但不可导。",
+              "a": "<p><b>答案：连续且不可导</b></p><p>第一步：f(0)=0，\\lim_{x\\to0}\\sqrt[3]{x}=0=f(0)，故连续。</p><p>第二步：用定义 f′(0)=\\lim_{x\\to0}\\frac{\\sqrt[3]{x}-0}{x-0}=\\lim_{x\\to0}\\frac{1}{x^{2/3}}=+\\infty，导数不存在。</p><p>第三步：几何上曲线在原点有竖直切线，斜率无穷大不能当作导数。</p><p>易错：把 f′(x_0)=\\infty 写成「可导」（trap ②④）。</p>"
             }
           ],
           "signal": "题干出现「可导必连续」「f 在 x0 连续是否可导」，或问切线、法线方程",
@@ -5078,18 +5201,18 @@
           "examples": [
             {
               "type": "选择",
-              "q": "\\((\\arcsin x)'=\\)（　）<br>A. \\(\\frac{1}{\\sqrt{1-x^{2}}}\\)　B. \\(\\frac{1}{\\sqrt{1+x^{2}}}\\)　C. \\(\\frac{1}{1+x^{2}}\\)　D. \\(-\\frac{1}{\\sqrt{1-x^{2}}}\\)",
-              "a": "<p><b>答案：A</b></p><p>\\(\\arcsin x\\) 的导数是 \\(\\frac{1}{\\sqrt{1-x^{2}}}\\)；\\(\\frac{1}{\\sqrt{1+x^{2}}}\\) 是 \\(\\left(\\ln\\left(x+\\sqrt{1+x^{2}}\\right)\\right)'\\)，\\(\\frac{1}{1+x^{2}}\\) 是 \\((\\arctan x)'\\)，D 是 \\((\\arccos x)'\\)。</p><p>易错：\\(\\arcsin\\) 与 \\(\\arctan\\) 的公式互换，这是填空题高频扣分点。</p>"
+              "q": "下列求导结果正确的是（ ）<br>A. (2^{x})′=x\\cdot2^{x-1}　B. (2^{x})′=2^{x}\\ln2　C. (\\ln x)′=\\frac{1}{x}（x 为任意实数）　D. \\left(\\frac{u}{v}\\right)′=\\frac{u′}{v′}",
+              "a": "<p><b>答案：B</b></p><p>第一步：2^{x} 是指数函数，公式为 (a^{x})′=a^{x}\\ln a，A 把它当成幂函数（trap ②）。</p><p>第二步：(\\ln x)′=\\frac1x 只在 x>0 成立；x<0 时 (\\ln|x|)′=\\frac1x，写成「x 任意」不严谨（trap ③）。</p><p>第三步：商的导数应为 \\frac{u′v-uv′}{v^{2}}，不是 \\frac{u′}{v′}（trap ⑤）。</p>"
             },
             {
               "type": "计算",
-              "q": "求 \\(y=x^{2}\\cdot\\ln x\\) 的导数。",
-              "a": "<p><b>答案：\\(y'=2x\\cdot\\ln x+x\\)</b></p><p>乘积法则：\\(y'=(x^{2})'\\ln x+x^{2}(\\ln x)'=2x\\cdot\\ln x+x^{2}\\cdot\\frac{1}{x}=2x\\cdot\\ln x+x\\)。</p><p>易错：把 \\(x^{2}\\cdot\\frac{1}{x}\\) 写成 \\(x^{2}/x^{2}\\) 或漏掉最后一项。</p>"
+              "q": "求 y=\\frac{1-x}{1+x} 的导数。",
+              "a": "<p><b>答案：y′=−2/(1+x)^{2}</b></p><p>第一步：商法则，u=1−x，u′=−1；v=1+x，v′=1。</p><p>第二步：y′=\\frac{(-1)(1+x)-(1-x)(1)}{(1+x)^{2}}=\\frac{-1-x-1+x}{(1+x)^{2}}=−\\frac{2}{(1+x)^{2}}。</p><p>易错：分子两项顺序写反得 \\frac{1+x+1-x}{\\;} 之类的错误符号（trap ⑤）。</p>"
             },
             {
-              "type": "填空",
-              "q": "\\((\\tan x)'=\\) ______",
-              "a": "<p><b>答案：\\(\\sec^{2}x\\)</b></p><p>也可写成 \\(\\frac{1}{\\cos^{2}x}\\)。它是商法则 \\(\\left(\\frac{\\sin x}{\\cos x}\\right)'\\) 的结果。</p><p>易错：写成 \\(\\sec x\\) 或 \\(\\frac{\\sin x}{\\cos^{2}x}\\)。</p>"
+              "type": "计算",
+              "q": "设 y=\\arctan x，用反函数求导法则求 y′。",
+              "a": "<p><b>答案：y′=1/(1+x^{2})</b></p><p>第一步：由 y=\\arctan x 得 x=\\tan y，y\\in(-\\pi/2,\\pi/2)。</p><p>第二步：\\frac{dx}{dy}=\\sec^{2}y=1+\\tan^{2}y=1+x^{2}。</p><p>第三步：\\frac{dy}{dx}=1\\big/\\frac{dx}{dy}=\\frac{1}{1+x^{2}}。</p><p>易错：忘记取倒数，直接把 \\sec^{2}y 当结果（trap ④）。</p>"
             }
           ],
           "signal": "给了和差积商、反三角、幂指函数让求导",
@@ -5149,18 +5272,18 @@
           "examples": [
             {
               "type": "计算",
-              "q": "求 \\(y=\\ln\\left(x+\\sqrt{x^{2}+1}\\right)\\) 的导数。",
-              "a": "<p><b>答案：\\(y'=\\frac{1}{\\sqrt{x^{2}+1}}\\)</b></p><p>\\(y'=\\frac{1+\\frac{x}{\\sqrt{x^{2}+1}}}{x+\\sqrt{x^{2}+1}}=\\frac{1}{\\sqrt{x^{2}+1}}\\)。</p><p>易错：内层 \\(\\sqrt{x^{2}+1}\\) 求导时漏掉 \\(\\frac{1}{2}\\) 或漏掉 \\(x\\)，导致约分不干净。</p>"
+              "q": "求 y=\\ln\\left(x+\\sqrt{x^{2}+1}\\right) 的导数。",
+              "a": "<p><b>答案：y′=1/\\sqrt{x^{2}+1}</b></p><p>第一步：外层 \\ln u，内层 u=x+\\sqrt{x^{2}+1}；u′=1+\\frac{x}{\\sqrt{x^{2}+1}}=\\frac{\\sqrt{x^{2}+1}+x}{\\sqrt{x^{2}+1}}。</p><p>第二步：y′=\\frac{1}{u}\\cdot u′=\\frac{1}{x+\\sqrt{x^{2}+1}}\\cdot\\frac{x+\\sqrt{x^{2}+1}}{\\sqrt{x^{2}+1}}=\\frac{1}{\\sqrt{x^{2}+1}}。</p><p>易错：内层 √ 的 \\frac12 系数与 x^{2} 的 2x 不化简；或漏乘内层导数（trap ①）。</p>"
+            },
+            {
+              "type": "选择",
+              "q": "设 y=\\sin^{2}x，则 y′=（ ）<br>A. 2\\sin x　B. \\sin2x　C. 2\\cos x　D. \\cos^{2}x",
+              "a": "<p><b>答案：B</b></p><p>第一步：分解 y=u^{2}，u=\\sin x。</p><p>第二步：y′=2u\\cdot u′=2\\sin x\\cos x=\\sin2x。</p><p>易错：忘乘内层导数，选 A；或把它当幂函数写 2\\sin x（trap ①）。</p>"
             },
             {
               "type": "计算",
-              "q": "求 \\(y=(1+x^{2})^{10}\\) 的导数。",
-              "a": "<p><b>答案：\\(y'=20x(1+x^{2})^{9}\\)</b></p><p>链式：\\(10(1+x^{2})^{9}\\cdot(1+x^{2})'=10(1+x^{2})^{9}\\cdot 2x\\)。</p><p>易错：只写 \\(10(1+x^{2})^{9}\\)，漏乘内层导数 \\(2x\\)。</p>"
-            },
-            {
-              "type": "计算",
-              "q": "求 \\(y=e^{\\sin 2x}\\) 的导数。",
-              "a": "<p><b>答案：\\(y'=2\\cos 2x\\cdot e^{\\sin 2x}\\)</b></p><p>两层：外层 \\(e^{u}\\) 的导数仍是 \\(e^{u}\\)，内层 \\(\\sin 2x\\) 求导得 \\(2\\cos 2x\\)。</p><p>易错：内层只写到 \\(\\cos 2x\\)，漏掉 2。</p>"
+              "q": "求 y=x^{\\sin x}（x>0）的导数。",
+              "a": "<p><b>答案：y′=x^{\\sin x}(\\cos x\\ln x+\\frac{\\sin x}{x})</b></p><p>第一步：幂指函数先改写成 y=\\mathrm{e}^{\\sin x\\cdot\\ln x}。</p><p>第二步：y′=\\mathrm{e}^{\\sin x\\ln x}(\\cos x\\ln x+\\sin x\\cdot\\frac1x)。</p><p>易错：按幂函数写成 \\sin x\\cdot x^{\\sin x-1}，或按指数函数写成 x^{\\sin x}\\ln x\\cdot\\cos x，两者都错（trap ②）；取对数法求完忘记乘回 y（trap ④）。</p>"
             }
           ],
           "signal": "题干出现 sin(3x+1)、e^(x²)、根号套根号，或形如 x^x、x^sin x",
@@ -5231,18 +5354,18 @@
           "examples": [
             {
               "type": "选择",
-              "q": "如果 \\(y=x\\ln x\\)，那么 \\(y^{(8)}=\\)（　）<br>A. \\(\\frac{6!}{x^{7}}\\)　B. \\(-\\frac{6!}{x^{7}}\\)　C. \\(\\frac{1}{x^{7}}\\)　D. \\(-\\frac{1}{x^{7}}\\)",
-              "a": "<p><b>答案：A</b></p><p>\\(y'=\\ln x+1\\)，\\(y''=\\frac{1}{x}\\)。\\(n\\ge 2\\) 时 \\(y^{(n)}=(-1)^{n}\\frac{(n-2)!}{x^{n-1}}\\)，取 \\(n=8\\) 得 \\(\\frac{6!}{x^{7}}\\)。</p><p>易错：直接从 \\(y'\\) 套 \\((1/x)\\) 的公式，把阶数错成 \\(n-1\\)。</p>"
+              "q": "如果 y=x\\ln x，那么 y^{(8)}=（ ）<br>A. \\frac{6!}{x^{7}}　B. −\\frac{6!}{x^{7}}　C. \\frac{1}{x^{7}}　D. 0",
+              "a": "<p><b>答案：A</b></p><p>第一步：逐阶求：y′=\\ln x+1，y″=\\frac1x，y‴=−\\frac{1}{x^{2}}，y^{(4)}=\\frac{2}{x^{3}}。</p><p>第二步：归纳得 y^{(n)}=(-1)^{n}\\frac{(n-2)!}{x^{n-1}}（n≥2）。</p><p>第三步：n=8 时 (-1)^{8}=1，得 \\frac{6!}{x^{7}}。</p><p>易错：符号写成 (-1)^{n-1}；或一开始就上 Leibniz 公式，把 \\ln x 的 n 阶导数弄错（trap ②③）。</p>"
             },
             {
               "type": "填空",
-              "q": "设 \\(y=\\cos 2x\\)，则 \\(y^{(10)}(0)=\\) ______",
-              "a": "<p><b>答案：\\(-2^{10}\\)</b></p><p>\\(y^{(n)}=2^{n}\\cos\\left(2x+\\frac{n\\pi}{2}\\right)\\)，\\(n=10\\) 时 \\(y^{(10)}=2^{10}\\cos(2x+5\\pi)=-2^{10}\\cos 2x\\)，代 \\(x=0\\) 得 \\(-2^{10}\\)。</p><p>易错：漏乘 \\(2^{10}\\)，或把 \\(\\cos(2x+5\\pi)\\) 的符号算成 +。</p>"
+              "q": "设 y=\\sin x，则 y^{(2024)}(0)= ______",
+              "a": "<p><b>答案：0</b></p><p>第一步：(\\sin x)^{(n)}=\\sin\\left(x+\\frac{n\\pi}{2}\\right)。</p><p>第二步：n=2024，相位 \\frac{2024\\pi}{2}=1012\\pi，故 y^{(2024)}(0)=\\sin1012\\pi=0。</p><p>易错：漏掉相位直接算 \\sin0=0 碰巧对，换成 y=\\cos x 或 n=2023 就会错（trap ①）。</p>"
             },
             {
               "type": "计算",
-              "q": "设 \\(y=\\sin^{2}x\\)，求 \\(y^{(n)}\\)。",
-              "a": "<p><b>答案：\\(y^{(n)}=-2^{n-1}\\cdot\\cos\\left(2x+\\frac{n\\pi}{2}\\right)\\)</b></p><p>先降幂：\\(y=\\frac{1-\\cos 2x}{2}\\)，常数项求导后消失，剩下 \\(-\\frac{1}{2}\\cos 2x\\) 的 \\(n\\) 阶导：\\(-2^{n-1}\\cos\\left(2x+\\frac{n\\pi}{2}\\right)\\)。</p><p>易错：忘记先降幂，直接对 \\(\\sin^{2}x\\) 硬求高阶导。</p>"
+              "q": "设 y=x^{2}\\mathrm{e}^{x}，求 y^{(n)}。",
+              "a": "<p><b>答案：y^{(n)}=\\mathrm{e}^{x}\\left[x^{2}+2nx+n(n-1)\\right]</b></p><p>第一步：用 Leibniz 公式，取 u=\\mathrm{e}^{x}（各阶导数不变）、v=x^{2}。</p><p>第二步：v 的三阶及以上导数为 0，只剩三项：\\mathrm{e}^{x}x^{2}+n\\mathrm{e}^{x}\\cdot2x+\\mathrm{C}_n^{2}\\mathrm{e}^{x}\\cdot2。</p><p>第三步：\\mathrm{C}_n^{2}=\\frac{n(n-1)}{2}，整理得 \\mathrm{e}^{x}[x^{2}+2nx+n(n-1)]。</p><p>易错：漏掉组合数 \\mathrm{C}_n^{k}，或把 (uv)^{(n)} 写成 u^{(n)}v^{(n)}（trap ②③）；把 x^{2} 的零项也算进去（trap ④）。</p>"
             }
           ],
           "signal": "题干出现「y″」「n 阶导数」「求 y^(n)」",
@@ -5302,13 +5425,13 @@
           "examples": [
             {
               "type": "选择",
-              "q": "已知函数 \\(y=f(u)\\) 可导，若 \\(y=f(e^{-x})\\)，则 \\(\\mathrm{d}y=\\)（　）<br>A. \\(f'(e^{-x})\\mathrm{d}x\\)　B. \\(e^{-x}f'(e^{-x})\\mathrm{d}x\\)　C. \\(-e^{-x}f'(e^{-x})\\mathrm{d}x\\)　D. \\(-f'(e^{-x})\\mathrm{d}x\\)",
-              "a": "<p><b>答案：C</b></p><p>\\(\\mathrm{d}y=f'(e^{-x})\\cdot(e^{-x})'\\mathrm{d}x=-e^{-x}f'(e^{-x})\\mathrm{d}x\\)。</p><p>易错：漏掉内层导数 \\((e^{-x})'=-e^{-x}\\)，或把负号丢掉。</p>"
+              "q": "已知 y=f(u) 可导，若 y=f(\\mathrm{e}^{-x})，则 \\mathrm{d}y=（ ）<br>A. f′(\\mathrm{e}^{-x})\\mathrm{d}x　B. \\mathrm{e}^{-x}f′(\\mathrm{e}^{-x})\\mathrm{d}x　C. −\\mathrm{e}^{-x}f′(\\mathrm{e}^{-x})\\mathrm{d}x　D. −f′(\\mathrm{e}^{-x})\\mathrm{d}x",
+              "a": "<p><b>答案：C</b></p><p>第一步：由微分形式不变性 \\mathrm{d}y=f′(u)\\mathrm{d}u，u=\\mathrm{e}^{-x}。</p><p>第二步：\\mathrm{d}u=−\\mathrm{e}^{-x}\\mathrm{d}x，故 \\mathrm{d}y=−\\mathrm{e}^{-x}f′(\\mathrm{e}^{-x})\\mathrm{d}x。</p><p>易错：只写 f′(u)\\mathrm{d}x，把中间变量当自变量（trap ③）。</p>"
             },
             {
-              "type": "选择",
-              "q": "设 \\(f(x)=e^{\\sin(1/x)}\\)，则 \\(\\mathrm{d}f=\\)（　）<br>A. \\(e^{\\sin(1/x)}\\cos(1/x)\\mathrm{d}x\\)　B. \\(\\frac{1}{x^{2}}e^{\\sin(1/x)}\\cos(1/x)\\mathrm{d}x\\)<br>C. \\(-\\frac{1}{x^{2}}e^{\\sin(1/x)}\\cos(1/x)\\mathrm{d}x\\)　D. \\(-\\frac{1}{x^{2}}e^{\\sin(1/x)}\\mathrm{d}x\\)",
-              "a": "<p><b>答案：C</b></p><p>\\(f'(x)=e^{\\sin(1/x)}\\cdot\\cos(1/x)\\cdot\\left(-\\frac{1}{x^{2}}\\right)\\)。三层复合，符号来自 \\((1/x)'=-1/x^{2}\\)。</p><p>易错：只写到 \\(\\cos(1/x)\\)，漏掉 \\(-1/x^{2}\\)。</p>"
+              "type": "计算",
+              "q": "测得球半径 r=10 cm，测量误差不超过 0.05 cm，用微分估计球体积的最大绝对误差与相对误差。",
+              "a": "<p><b>答案：|\\Delta V|\\le20\\pi\\approx62.8 cm³，相对误差约 1.5%</b></p><p>第一步：V=\\frac43\\pi r^{3}，\\mathrm{d}V=4\\pi r^{2}\\mathrm{d}r。</p><p>第二步：r=10、\\mathrm{d}r=0.05 时 \\mathrm{d}V=4\\pi\\cdot100\\times0.05=20\\pi\\approx62.8 cm³。</p><p>第三步：相对误差 \\frac{\\mathrm{d}V}{V}=\\frac{4\\pi r^{2}\\mathrm{d}r}{\\frac43\\pi r^{3}}=3\\frac{\\mathrm{d}r}{r}=3\\times0.5%=1.5%。</p><p>易错：误差估计忘记取导数的绝对值，直接用正负号（trap ④）；把 \\mathrm{d}r 当成相对误差。</p>"
             }
           ],
           "signal": "题干出现「微分 dy」「一阶微分形式不变性」「近似计算」",
@@ -5367,19 +5490,19 @@
           ],
           "examples": [
             {
-              "type": "计算",
-              "q": "设方程 \\(y=\\sin(xy)+3\\) 确定隐函数 \\(y=f(x)\\)，求曲线 \\(y=f(x)\\) 在点 \\((0,3)\\) 处的切线方程和法线方程。",
-              "a": "<p><b>答案：切线 \\(y=3x+3\\)，法线 \\(y=-x/3+3\\)</b></p><p>两边对 \\(x\\) 求导：\\(y'=(y+xy')\\cos(xy)\\)，解得 \\(y'=\\frac{y\\cos(xy)}{1-x\\cos(xy)}\\)。代入 \\((0,3)\\)：\\(y'=3\\)。切线 \\(y-3=3(x-0)\\)，法线斜率 \\(-\\frac{1}{3}\\)，\\(y-3=-\\frac{1}{3}(x-0)\\)。</p><p>易错：对 \\(\\sin(xy)\\) 求导时漏掉 \\((y+xy')\\)，只写 \\(\\cos(xy)\\cdot y'\\)。</p>"
-            },
-            {
               "type": "填空",
-              "q": "设 \\(y=y(x)\\) 由方程 \\(x^{3}+y^{3}-e^{xy}=0\\) 确定，则 \\(y'(0)=\\) ______",
-              "a": "<p><b>答案：\\(\\frac{1}{3}\\)</b></p><p>两边求导：\\(3x^{2}+3y^{2}y'-e^{xy}(y+xy')=0\\)。令 \\(x=0\\)，原方程给 \\(y^{3}=1\\)，\\(y=1\\)；代入得 \\(3y'-1=0\\)，\\(y'=\\frac{1}{3}\\)。</p><p>易错：不先由原方程算出 \\(y(0)=1\\) 就代点，式子里留下 \\(y\\)。</p>"
+              "q": "设 y=y(x) 由 x^{2}+y^{2}=25 确定，则曲线在点 (3,4) 处的 y′= ______",
+              "a": "<p><b>答案：−3/4</b></p><p>第一步：两边对 x 求导，y 视为 y(x)：2x+2yy′=0。</p><p>第二步：解得 y′=−\\frac{x}{y}。</p><p>第三步：代 (3,4) 得 y′=−\\frac34。</p><p>易错：对 y^{2} 求导时漏乘 y′，或把 y 当常数（trap ①）。</p>"
+            },
+            {
+              "type": "选择",
+              "q": "设 y=y(x) 由 \\mathrm{e}^{y}+xy=\\mathrm{e} 确定，则 y′(0)=（ ）<br>A. −1/\\mathrm{e}　B. 1/\\mathrm{e}　C. −\\mathrm{e}　D. 1",
+              "a": "<p><b>答案：A</b></p><p>第一步：先定切点：x=0 时 \\mathrm{e}^{y}=\\mathrm{e}，得 y=1。</p><p>第二步：两边求导 \\mathrm{e}^{y}y′+y+xy′=0。</p><p>第三步：代 x=0、y=1：\\mathrm{e}y′+1=0，y′=−\\frac1\\mathrm{e}。</p><p>易错：不知道 y(0) 就直接代入；这属于「切点不满足方程却套公式」的同类错误（trap ③）。</p>"
             },
             {
               "type": "计算",
-              "q": "曲线 \\(e^{x+y}-\\sin(xy)=e\\) 在点 \\((0,1)\\) 处的切线方程。",
-              "a": "<p><b>答案：\\(y=(1/e-1)x+1\\)</b></p><p>两边求导：\\(e^{x+y}(1+y')-\\cos(xy)(y+xy')=0\\)。代入 \\((0,1)\\)：\\(e(1+y')-1=0\\)，\\(y'=1/e-1\\)。切线 \\(y-1=(1/e-1)(x-0)\\)。</p><p>易错：把 \\(e^{x+y}\\) 求导只写 \\(e^{x+y}\\)，漏乘 \\((1+y')\\)。</p>"
+              "q": "设方程 y=\\sin(xy)+3 确定隐函数 y=f(x)，求曲线在点 (0,3) 处的切线方程和法线方程。",
+              "a": "<p><b>答案：切线 y=3x+3，法线 y=−\\frac13x+3</b></p><p>第一步：两边对 x 求导（\\sin(xy) 要乘内层 ((xy))′）：y′=\\cos(xy)\\cdot(y+xy′)。</p><p>第二步：代 x=0、y=3：y′=\\cos0\\cdot(3+0)=3。</p><p>第三步：切线 y-3=3(x-0)；法线 y-3=−\\frac13x。</p><p>易错：内层 (xy)′ 只写 y 漏掉 xy′（复合+隐函数两步）；求出斜率后不检查 (0,3) 是否在曲线上（trap ②③）。</p>"
             }
           ],
           "signal": "题干出现「由方程 F(x,y)=0 确定 y=y(x)」「求隐函数的二阶导数」",
@@ -5439,18 +5562,18 @@
           "examples": [
             {
               "type": "选择",
-              "q": "已知参数方程 \\(x=\\ln(1+t^{2}), y=\\arctan t\\)，则 \\(\\frac{\\mathrm{d}y}{\\mathrm{d}x}=\\)（　）<br>A. \\(t\\)　B. \\(2t\\)　C. \\(1/t\\)　D. \\(\\frac{1}{2t}\\)",
-              "a": "<p><b>答案：D</b></p><p>\\(\\frac{\\mathrm{d}x}{\\mathrm{d}t}=\\frac{2t}{1+t^{2}}\\)，\\(\\frac{\\mathrm{d}y}{\\mathrm{d}t}=\\frac{1}{1+t^{2}}\\)，相除得 \\(\\frac{1}{2t}\\)。</p><p>易错：把 \\(\\frac{\\mathrm{d}x}{\\mathrm{d}t}\\) 算成 \\(\\frac{1}{1+t^{2}}\\cdot 2t\\) 后忘记约分，或写成 \\(2t\\)。</p>"
+              "q": "已知参数方程 x=\\ln(1+t^{2})，y=\\arctan t，则 \\frac{\\mathrm{d}y}{\\mathrm{d}x}=（ ）<br>A. t　B. 2t　C. \\frac{1}{t}　D. \\frac{1}{2t}",
+              "a": "<p><b>答案：D</b></p><p>第一步：\\frac{\\mathrm{d}x}{\\mathrm{d}t}=\\frac{2t}{1+t^{2}}，\\frac{\\mathrm{d}y}{\\mathrm{d}t}=\\frac{1}{1+t^{2}}。</p><p>第二步：\\frac{\\mathrm{d}y}{\\mathrm{d}x}=\\frac{\\mathrm{d}y/\\mathrm{d}t}{\\mathrm{d}x/\\mathrm{d}t}=\\frac{1}{2t}。</p><p>易错：把 \\frac{\\mathrm{d}y}{\\mathrm{d}x} 与 \\frac{\\mathrm{d}y}{\\mathrm{d}t} 混绕，直接答 \\frac{1}{1+t^{2}}（trap ②）。</p>"
+            },
+            {
+              "type": "填空",
+              "q": "设 x=t^{2}，y=t^{3}（t>0），则 \\frac{\\mathrm{d}^{2}y}{\\mathrm{d}x^{2}}= ______",
+              "a": "<p><b>答案：\\frac{3}{4t}</b></p><p>第一步：\\frac{\\mathrm{d}y}{\\mathrm{d}x}=\\frac{3t^{2}}{2t}=\\frac{3t}{2}。</p><p>第二步：再对 t 求导得 \\frac32，除以 \\frac{\\mathrm{d}x}{\\mathrm{d}t}=2t，得 \\frac{3}{4t}。</p><p>易错：二阶导忘记再除以 x′(t)，直接答 \\frac32（trap ①）。</p>"
             },
             {
               "type": "计算",
-              "q": "设 \\(y=y(x)\\) 由参数方程 \\(x=t^{2}-\\ln(1+t^{2}), y=\\arctan t\\) 确定，求 \\(\\frac{\\mathrm{d}y}{\\mathrm{d}x}\\) 与 \\(\\frac{\\mathrm{d}^{2}y}{\\mathrm{d}x^{2}}\\)。",
-              "a": "<p><b>答案：\\(\\frac{\\mathrm{d}y}{\\mathrm{d}x}=\\frac{1}{2t^{3}}\\)，\\(\\frac{\\mathrm{d}^{2}y}{\\mathrm{d}x^{2}}=-\\frac{3(1+t^{2})}{4t^{7}}\\)</b></p><p>\\(\\frac{\\mathrm{d}x}{\\mathrm{d}t}=2t-\\frac{2t}{1+t^{2}}=\\frac{2t^{3}}{1+t^{2}}\\)，\\(\\frac{\\mathrm{d}y}{\\mathrm{d}t}=\\frac{1}{1+t^{2}}\\)，故 \\(\\frac{\\mathrm{d}y}{\\mathrm{d}x}=\\frac{1}{2t^{3}}\\)。再对 \\(t\\) 求导：\\(\\frac{\\mathrm{d}}{\\mathrm{d}t}\\left(\\frac{1}{2t^{3}}\\right)=-\\frac{3}{2t^{4}}\\)，除以 \\(\\frac{\\mathrm{d}x}{\\mathrm{d}t}\\) 得 \\(-\\frac{3(1+t^{2})}{4t^{7}}\\)。</p><p>易错：二阶导直接对 \\(\\frac{1}{2t^{3}}\\) 再除一次 \\(\\frac{\\mathrm{d}x}{\\mathrm{d}t}\\)，却漏了「先对 \\(t\\) 求导」。</p>"
-            },
-            {
-              "type": "计算",
-              "q": "设 \\(x=e^{-t}, y=t\\cdot e^{-t}\\)，求 \\(\\frac{\\mathrm{d}^{2}y}{\\mathrm{d}x^{2}}\\)。",
-              "a": "<p><b>答案：\\(-e^{t}\\)</b></p><p>\\(\\frac{\\mathrm{d}x}{\\mathrm{d}t}=-e^{-t}\\)，\\(\\frac{\\mathrm{d}y}{\\mathrm{d}t}=e^{-t}-te^{-t}\\)，故 \\(\\frac{\\mathrm{d}y}{\\mathrm{d}x}=t-1\\)。\\(\\frac{\\mathrm{d}(t-1)}{\\mathrm{d}t}=1\\)，再除以 \\(\\frac{\\mathrm{d}x}{\\mathrm{d}t}=-e^{-t}\\)，得 \\(-e^{t}\\)。</p><p>易错：把 \\(\\frac{\\mathrm{d}y}{\\mathrm{d}x}\\) 当成常数 0 再求二阶导。</p>"
+              "q": "求摆线 x=a(t-\\sin t)，y=a(1-\\cos t)（a>0）的 \\frac{\\mathrm{d}^{2}y}{\\mathrm{d}x^{2}}。",
+              "a": "<p><b>答案：−\\frac{1}{a(1-\\cos t)^{2}}</b></p><p>第一步：\\frac{\\mathrm{d}x}{\\mathrm{d}t}=a(1-\\cos t)，\\frac{\\mathrm{d}y}{\\mathrm{d}t}=a\\sin t，故 \\frac{\\mathrm{d}y}{\\mathrm{d}x}=\\frac{\\sin t}{1-\\cos t}。</p><p>第二步：对 t 求导：\\frac{\\cos t(1-\\cos t)-\\sin t\\cdot\\sin t}{(1-\\cos t)^{2}}=\\frac{\\cos t-1}{(1-\\cos t)^{2}}=−\\frac{1}{1-\\cos t}。</p><p>第三步：再除以 a(1-\\cos t)，得 −\\frac{1}{a(1-\\cos t)^{2}}。</p><p>易错：第二步算完就收工，忘记最后再除一次 x′(t)（trap ①）；商的求导法则分子展开时符号写错（trap ④ t_0 代错同样致命）。</p>"
             }
           ],
           "signal": "题干给了 x=x(t)、y=y(t)，要求 dy/dx 或二阶导数",
@@ -5510,8 +5633,13 @@
           "examples": [
             {
               "type": "选择",
-              "q": "球的体积 V=4πr³/3，当半径以 2 cm/s 增大、r=5 cm 时，体积变化率 dV/dt 为（　）\nA. 100π cm³/s　B. 200π cm³/s　C. 50π cm³/s　D. 400π cm³/s",
-              "a": "<p><b>答案：</b>B</p><p>dV/dt=4πr²·(dr/dt)=4π×25×2=200π cm³/s。</p>"
+              "q": "球的体积 V=\\frac43\\pi r^{3}，当半径以 2 cm/s 的速率增大、r=5 cm 时，体积变化率 \\frac{\\mathrm{d}V}{\\mathrm{d}t} 为（ ）<br>A. 100\\pi cm³/s　B. 200\\pi cm³/s　C. 50\\pi cm³/s　D. 400\\pi cm³/s",
+              "a": "<p><b>答案：B</b></p><p>第一步：V 与 r 都随 t 变，先求导：\\frac{\\mathrm{d}V}{\\mathrm{d}t}=4\\pi r^{2}\\frac{\\mathrm{d}r}{\\mathrm{d}t}。</p><p>第二步：代 r=5、\\frac{\\mathrm{d}r}{\\mathrm{d}t}=2，得 4\\pi\\cdot25\\cdot2=200\\pi cm³/s。</p><p>易错：先把 r=5 代入再求导，得 0（trap ①）；忘记给 r 乘上 \\frac{\\mathrm{d}r}{\\mathrm{d}t}（trap ②）。</p>"
+            },
+            {
+              "type": "计算",
+              "q": "长 5 m 的梯子斜靠墙面，梯脚距墙 3 m 并以 0.5 m/s 的速率沿地面外滑，求此刻梯顶沿墙下滑的速度。",
+              "a": "<p><b>答案：0.375 m/s（方向向下）</b></p><p>第一步：设梯脚到墙的距离为 x、梯顶高度为 y，由勾股关系 x^{2}+y^{2}=25，且 x、y 都是 t 的函数。</p><p>第二步：两边对 t 求导：2x\\frac{\\mathrm{d}x}{\\mathrm{d}t}+2y\\frac{\\mathrm{d}y}{\\mathrm{d}t}=0，即 \\frac{\\mathrm{d}y}{\\mathrm{d}t}=−\\frac{x}{y}\\frac{\\mathrm{d}x}{\\mathrm{d}t}。</p><p>第三步：此时 x=3、y=4、\\frac{\\mathrm{d}x}{\\mathrm{d}t}=0.5，得 \\frac{\\mathrm{d}y}{\\mathrm{d}t}=−\\frac{3\\times0.5}{4}=−0.375，即每秒下滑 0.375 m。</p><p>易错：把 y′ 写成 −\\frac{x}{y}，漏掉 \\frac{\\mathrm{d}x}{\\mathrm{d}t} 这个链式因子（trap ②）；「增加/减少」的符号弄反（trap ④）。</p>"
             }
           ],
           "signal": "题干出现「速率」「变化率」「同时变化」，且给了两个量的关系式",
@@ -5571,19 +5699,19 @@
           ],
           "examples": [
             {
-              "type": "选择",
-              "q": "下列函数中，在区间 \\([-1,1]\\) 上满足罗尔定理条件的是（　）<br>A. \\(f(x)=\\left|x\\right|\\)　B. \\(f(x)=\\frac{1}{x}\\)　C. \\(f(x)=2x+5\\)　D. \\(f(x)=x^{2}\\)",
-              "a": "<p><b>答案：D</b></p><p>罗尔定理要求 \\([-1,1]\\) 连续、\\((-1,1)\\) 可导、端点值相等。A 在 \\(x=0\\) 不可导；B 在 \\(x=0\\) 不连续；C 端点值 \\(-2+5=3\\) 与 \\(2+5=7\\) 不等；D 全满足。</p><p>易错：只看端点值相等就选 C，忘了验可导性。</p>"
-            },
-            {
-              "type": "判断",
-              "q": "函数 \\(f(x)=\\left|x\\right|\\) 在 \\([-1,1]\\) 上满足罗尔定理的全部条件。（　）<br>A. 正确　B. 错误",
-              "a": "<p><b>答案：B</b></p><p>\\(\\left|x\\right|\\) 在 \\([-1,1]\\) 连续、\\(f(-1)=f(1)\\)，但在 \\(x=0\\) 处不可导，不满足「\\((-1,1)\\) 内可导」。</p><p>易错：把「连续」当成「可导」；尖点处不可导是罗尔定理最常考的反例。</p>"
-            },
-            {
               "type": "计算",
-              "q": "验证函数 \\(f(x)=x^{2}-2x-3\\) 在 \\([-1,3]\\) 上满足罗尔定理，并求出定理中的 \\(\\xi\\)。",
-              "a": "<p><b>答案：\\(\\xi=1\\)</b></p><p>\\(f\\) 是多项式，在 \\([-1,3]\\) 连续、\\((-1,3)\\) 可导；\\(f(-1)=1+2-3=0\\)，\\(f(3)=9-6-3=0\\)，端点值相等。\\(f'(x)=2x-2=0\\) 得 \\(x=1\\in(-1,3)\\)，故 \\(\\xi=1\\)。</p><p>易错：解出 \\(f'(x)=0\\) 后不检查它是否落在开区间内。</p>"
+              "q": "验证函数 f(x)=x^{2}-2x-3 在 [-1,3] 上满足罗尔定理的条件，并求出定理中的 \\xi。",
+              "a": "<p><b>答案：满足，\\xi=1</b></p><p>第一步：f 是多项式，在 [-1,3] 上连续、在 (-1,3) 内可导；f(-1)=1+2-3=0，f(3)=9-6-3=0，端点值相等，三条件齐备。</p><p>第二步：f′(x)=2x-2，令 f′(\\xi)=0 得 \\xi=1。</p><p>第三步：1\\in(-1,3)，结论成立。</p><p>易错：把 \\xi 的范围写成闭区间，或直接代端点求值（trap ④）。</p>"
+            },
+            {
+              "type": "选择",
+              "q": "下列函数中，在区间 [-1,1] 上满足罗尔定理全部条件的是（ ）<br>A. f(x)=|x|　B. f(x)=\\frac{1}{x}　C. f(x)=\\sqrt{1-x^{2}}　D. f(x)=x+1",
+              "a": "<p><b>答案：C</b></p><p>第一步：罗尔定理三条件——闭区间连续、开区间可导、两端点值相等。</p><p>第二步：A 在 x=0 处不可导；B 在 x=0 处无定义、不连续；D 的 f(-1)=0 与 f(1)=2 不等。</p><p>第三步：C 在 [-1,1] 连续、在 (-1,1) 内可导，且 f(-1)=f(1)=0，三条件全满足。</p><p>易错：只核对端点值相等，忽略「开区间内可导」（trap ①）。</p>"
+            },
+            {
+              "type": "简答",
+              "q": "设 f 在 [0,1] 上连续、在 (0,1) 内可导，且 f(0)=f(1)=0。证明：存在 \\xi\\in(0,1)，使 f′(\\xi)=f(\\xi)。",
+              "a": "<p><b>答案：构造 F(x)=\\mathrm{e}^{-x}f(x)，用罗尔定理</b></p><p>第一步：F(x)=\\mathrm{e}^{-x}f(x) 在 [0,1] 连续、在 (0,1) 内可导，且 F(0)=F(1)=0。</p><p>第二步：F′(x)=\\mathrm{e}^{-x}[f′(x)-f(x)]，由罗尔定理存在 \\xi\\in(0,1) 使 F′(\\xi)=0。</p><p>第三步：\\mathrm{e}^{-\\xi}\\ne0，故 f′(\\xi)=f(\\xi)。</p><p>易错：把结论写成「存在 \\xi 使 F(\\xi)=0」（应为 F′(\\xi)=0，trap ②）；构造后不做端点验证（trap ③）。</p>"
             }
           ],
           "signal": "题干出现「f(a)=f(b)=0」「证明存在 ξ 使 f′(ξ)=0」",
@@ -5642,14 +5770,14 @@
           ],
           "examples": [
             {
-              "type": "简答",
-              "q": "设 \\(0<a<b\\)，用拉格朗日中值定理证明 \\(\\ln b-\\ln a>\\frac{2a(b-a)}{a^{2}+b^{2}}\\)。",
-              "a": "<p><b>答案：</b></p><p>对 \\(f(x)=\\ln x\\) 在 \\([a,b]\\) 上用拉格朗日中值定理：\\(\\exists\\xi\\in(a,b)\\) 使 \\(\\ln b-\\ln a=\\frac{b-a}{\\xi}\\)。又 \\(\\frac{1}{\\xi}>\\frac{1}{b}\\)，且 \\(\\frac{1}{b}-\\frac{2a}{a^{2}+b^{2}}=\\frac{(a-b)^{2}}{b(a^{2}+b^{2})}>0\\)，即 \\(\\frac{1}{b}>\\frac{2a}{a^{2}+b^{2}}\\)，所以 \\(\\ln b-\\ln a=\\frac{b-a}{\\xi}>\\frac{b-a}{b}>\\frac{2a(b-a)}{a^{2}+b^{2}}\\)。</p><p>易错：整体代入后直接放缩成 \\(\\frac{1}{\\xi}>\\frac{1}{b}\\) 就完事，漏掉 \\(\\frac{1}{b}\\) 与 \\(\\frac{2a}{a^{2}+b^{2}}\\) 的比较这一步。</p>"
+              "type": "填空",
+              "q": "对 f(x)=\\ln x 在区间 [1,\\mathrm{e}] 上使用拉格朗日中值定理，定理中的 \\xi= ______",
+              "a": "<p><b>答案：\\mathrm{e}-1</b></p><p>第一步：\\ln x 在 [1,\\mathrm{e}] 上连续、在 (1,\\mathrm{e}) 内可导，条件满足。</p><p>第二步：\\frac{\\ln\\mathrm{e}-\\ln1}{\\mathrm{e}-1}=\\frac{1}{\\mathrm{e}-1}=f′(\\xi)=\\frac{1}{\\xi}。</p><p>第三步：解得 \\xi=\\mathrm{e}-1\\approx1.718\\in(1,\\mathrm{e})，符合要求。</p><p>易错：把 \\xi 当已知点代入具体数值；解出的 \\xi 不检查是否落在 (a,b) 内（trap ②）。</p>"
             },
             {
               "type": "简答",
-              "q": "证明：当 \\(x>0\\) 时，\\(\\frac{x}{1+x}<\\ln(1+x)<x\\)。",
-              "a": "<p><b>答案：</b></p><p>对 \\(f(t)=\\ln(1+t)\\) 在 \\([0,x]\\) 上用拉格朗日中值定理：\\(\\ln(1+x)=\\frac{x}{1+\\xi}\\)，其中 \\(0<\\xi<x\\)。由 \\(\\frac{1}{1+x}<\\frac{1}{1+\\xi}<1\\)，两边乘 \\(x>0\\) 得 \\(\\frac{x}{1+x}<\\frac{x}{1+\\xi}<x\\)，即得证。</p><p>易错：用拉格朗日时把 \\(\\xi\\) 当成端点直接代入，忘记它夹在 \\(0\\) 与 \\(x\\) 之间。</p>"
+              "q": "证明：对任意实数 a、b，都有 |\\sin a-\\sin b|\\le|a-b|。",
+              "a": "<p><b>答案：对 f(t)=\\sin t 用拉格朗日中值定理</b></p><p>第一步：a=b 时两边为 0，结论显然；a\\neb 时不妨设 a<b，f(t)=\\sin t 在 [a,b] 连续、在内可导。</p><p>第二步：\\sin b-\\sin a=f′(\\xi)(b-a)=\\cos\\xi\\cdot(b-a)，其中 \\xi\\in(a,b)。</p><p>第三步：|\\cos\\xi|\\le1，故 |\\sin a-\\sin b|\\le|b-a|。</p><p>易错：估计 |f′(\\xi)| 的界时把不等号方向写反（trap ③）；忘记先验证连续、可导（trap ④）。</p>"
             }
           ],
           "signal": "题干出现「证明不等式」「至少存在 ξ 使 f(b)−f(a)=f′(ξ)(b−a)」",
@@ -5708,9 +5836,14 @@
           ],
           "examples": [
             {
+              "type": "判断",
+              "q": "柯西中值定理中，即使 g(a)=g(b)，公式 \\frac{f(b)-f(a)}{g(b)-g(a)}=\\frac{f′(\\xi)}{g′(\\xi)} 仍然成立。（判断正误）",
+              "a": "<p><b>答案：错误</b></p><p>第一步：公式左端的分母是 g(b)-g(a)，若 g(a)=g(b) 则分母为 0，式子无意义。</p><p>第二步：定理还要求 g′(x)\\ne0，这一点也必须验证。</p><p>第三步：若 g(b)=g(a)，只能单独对 f 用拉格朗日中值定理，不能套柯西公式。</p><p>易错：不检查分母是否为 0 就套公式（trap ③）；忘记 g′(x)\\ne0（trap ②）。</p>"
+            },
+            {
               "type": "简答",
-              "q": "写出柯西中值定理的条件与结论。",
-              "a": "<p><b>答案：</b></p><p>设 \\(f\\)、\\(g\\) 在 \\([a,b]\\) 上连续、在 \\((a,b)\\) 内可导，且 \\(g'(x)\\ne 0\\)（\\(x\\in(a,b)\\)），则存在 \\(\\xi\\in(a,b)\\)，使 \\(\\frac{f(b)-f(a)}{g(b)-g(a)}=\\frac{f'(\\xi)}{g'(\\xi)}\\)。</p><p>易错：漏掉 \\(g'(x)\\ne 0\\) 与 \\(g(b)\\neg(a)\\) 的条件；它就是洛必达法则的理论依据。</p>"
+              "q": "设 0<a<b，f 在 [a,b] 上连续、在 (a,b) 内可导。证明：存在 \\xi\\in(a,b)，使 f(b)-f(a)=\\xi f′(\\xi)\\ln\\frac{b}{a}。",
+              "a": "<p><b>答案：取 g(x)=\\ln x，用柯西中值定理</b></p><p>第一步：f、g 在 [a,b] 上连续、在 (a,b) 内可导，g′(x)=\\frac1x\\ne0，条件满足。</p><p>第二步：由柯西中值定理，\\frac{f(b)-f(a)}{\\ln b-\\ln a}=\\frac{f′(\\xi)}{1/\\xi}=\\xi f′(\\xi)。</p><p>第三步：整理得 f(b)-f(a)=\\xi f′(\\xi)\\ln\\frac{b}{a}。</p><p>易错：分别对 f、g 各用一次拉格朗日，得到两个不同的中值再相除（trap ①）；结论里 \\xi 的范围写成闭区间（trap ④）。</p>"
             }
           ],
           "signal": "题干出现「两个函数」「f(b)−f(a) 与 g(b)−g(a) 之比」",
@@ -5852,14 +5985,14 @@
           ],
           "examples": [
             {
-              "type": "选择",
-              "q": "利用 eˣ=1+x+x²/2+x³/6+o(x³)，lim_{x→0}(eˣ−1−x)/x²=（　）\nA. 0　B. 1/2　C. 1　D. ∞",
-              "a": "<p><b>答案：</b>B</p><p>分子=(x²/2)+o(x²)，除以 x² 得 1/2。</p>"
+              "type": "填空",
+              "q": "用 e^{x}\\approx1+x+\\frac{x^{2}}{2} 近似计算 e^{0.1}，得到 ______，并用拉格朗日余项给出误差上界 ______（可取 e^{0.1}<1.11）。",
+              "a": "<p><b>答案：e^{0.1}\\approx1.105，误差 |R_2|\\le1.9\\times10^{-4}</b></p><p>第一步：x=0.1 代入前三项：1+0.1+0.005=1.105。</p><p>第二步：R_2(x)=\\frac{f‴(\\xi)}{3!}x^{3}=\\frac{\\mathrm{e}^{\\xi}}{6}x^{3}，\\xi 介于 0 与 0.1 之间。</p><p>第三步：|R_2|\\le\\frac{1.11\\times0.001}{6}\\approx1.85\\times10^{-4}。</p><p>易错：用佩亚诺余项 o(x^{n}) 去做定量估计（它给不出数值上界，trap ①）；估计时忘记取 |f^{(n+1)}| 在区间上的最大值（trap ③）。</p>"
             },
             {
               "type": "计算",
-              "q": "求 lim_{x→0}(x−sin x)/x³。",
-              "a": "<p><b>答案：</b>1/6</p><p>sin x=x−x³/6+o(x³)，故 x−sin x=x³/6+o(x³)，原式=1/6。用洛必达需三次，泰勒一步到位。</p>"
+              "q": "求 \\lim_{x\\to0}\\frac{x-\\sin x}{x^{3}}。",
+              "a": "<p><b>答案：\\frac16</b></p><p>第一步：\\sin x=x-\\frac{x^{3}}{6}+o(x^{3})。</p><p>第二步：分子 x-\\sin x=\\frac{x^{3}}{6}+o(x^{3})。</p><p>第三步：\\lim=\\frac{\\frac16 x^{3}+o(x^{3})}{x^{3}}=\\frac16。</p><p>易错：只把 \\sin x 展开到 x 这一项，分子成 o(x) 无法定阶（展开阶数要等于分母的阶，trap ④）。</p>"
             }
           ],
           "signal": "题干出现「拉格朗日余项」「证明不等式用泰勒」「洛必达做不下去」",
@@ -5919,13 +6052,18 @@
           "examples": [
             {
               "type": "计算",
-              "q": "求 \\(\\lim_{x\\to 1}\\frac{\\sqrt[3]{x}-1}{\\sqrt{x}-1}\\)。",
-              "a": "<p><b>答案：\\(\\frac{2}{3}\\)</b></p><p>\\(0/0\\) 型，用洛必达：分子求导 \\(\\frac{1}{3}x^{-2/3}\\)，分母 \\(\\frac{1}{2}x^{-1/2}\\)，代 \\(x=1\\) 得 \\(\\frac{1/3}{1/2}=\\frac{2}{3}\\)。</p><p>易错：先化成整数幂再求导，直接把 \\(\\sqrt[3]{x}\\) 求导写成 \\(3x^{2}\\) 是常见错法。</p>"
+              "q": "求 \\lim_{x\\to1}\\frac{\\sqrt[3]{x}-1}{\\sqrt{x}-1}。",
+              "a": "<p><b>答案：\\frac23</b></p><p>第一步：代入得 \\frac00，是未定式，条件满足（在 x=1 去心邻域内两函数可导、分母导数不为 0）。</p><p>第二步：分子、分母分别求导：(x^{1/3})′=\\frac13x^{-2/3}，(x^{1/2})′=\\frac12x^{-1/2}。</p><p>第三步：\\lim_{x\\to1}\\frac{\\frac13x^{-2/3}}{\\frac12x^{-1/2}}=\\frac{1/3}{1/2}=\\frac23。</p><p>易错：把整个分式按商的求导法则求导（应分别对分子、分母求导，trap ②）。</p>"
+            },
+            {
+              "type": "选择",
+              "q": "下列极限中可以直接（第一步就合法）使用洛必达法则的是（ ）<br>A. \\lim_{x\\to1}\\frac{x+1}{x}　B. \\lim_{x\\to0}\\frac{\\sin x}{x}　C. \\lim_{x\\to\\infty}\\frac{x+\\sin x}{x}　D. \\lim_{x\\to0}\\frac{x^{2}+1}{x}",
+              "a": "<p><b>答案：B</b></p><p>第一步：A 代入得 2，不是未定式；D 代入得 \\infty（分母 →0、分子 →1），也不是未定式。</p><p>第二步：C 是 \\frac{\\infty}{\\infty} 型，但求导后 \\frac{1+\\cos x}{1} 的极限不存在（振荡），属洛必达失效，不能据此下结论（原极限实为 1）。</p><p>第三步：B 是 \\frac00 型，求导后 \\lim\\cos x=1 存在，可以直接用。</p><p>易错：不是未定式也套洛必达（trap ①）；求导后极限不存在就断言原极限不存在（trap ③）。</p>"
             },
             {
               "type": "计算",
-              "q": "求 \\(\\lim_{x\\to 0}\\frac{e^{x}-x-1}{x^{2}}\\)。",
-              "a": "<p><b>答案：\\(\\frac{1}{2}\\)</b></p><p>\\(0/0\\) 型，洛必达一次得 \\(\\frac{e^{x}-1}{2x}\\)，仍是 \\(0/0\\)；再洛必达得 \\(\\frac{e^{x}}{2}\\to\\frac{1}{2}\\)。</p><p>易错：只洛必达一次就代值，把剩余 \\(0/0\\) 当成已算完。</p>"
+              "q": "求 \\lim_{x\\to0}\\frac{\\tan x-x}{x^{3}}。",
+              "a": "<p><b>答案：\\frac13</b></p><p>第一步：代入得 \\frac00，属未定式；若直接洛必达要连求三次导，改用泰勒更省。</p><p>第二步：\\tan x=x+\\frac{x^{3}}{3}+o(x^{3})，故分子 =\\frac{x^{3}}{3}+o(x^{3})。</p><p>第三步：\\lim=\\frac13。</p><p>易错：把 (\\tan x)′ 写成 \\sec x（应为 \\sec^{2}x），连续洛必达时越算越乱；分母已求导出 0 仍在继续用（trap ④）。</p>"
             }
           ],
           "signal": "题干出现 0/0 或 ∞/∞ 型，且分子分母可导",
@@ -5996,13 +6134,13 @@
           "examples": [
             {
               "type": "选择",
-              "q": "下列对洛必达法则的使用正确的是（　）<br>A. \\(\\lim_{x\\to\\infty}\\frac{x+\\sin x}{2x}=\\lim_{x\\to\\infty}\\frac{1+\\cos x}{2}\\)（故不存在）<br>B. \\(\\lim_{x\\to 0}\\frac{x+\\sin x}{x-\\sin x}=\\lim_{x\\to 0}\\frac{1+\\cos x}{1-\\cos x}=+\\infty\\)<br>C. \\(\\lim_{x\\to 0}\\frac{x^{2}\\sin\\frac{1}{x}}{\\sin x}=\\lim_{x\\to 0}\\frac{2x\\cdot\\sin\\frac{1}{x}-\\cos\\frac{1}{x}}{\\cos x}\\)<br>D. \\(\\lim_{x\\to\\infty}\\frac{\\sin x}{x}=\\lim_{x\\to\\infty}\\frac{\\cos x}{1}\\)（故不存在）",
-              "a": "<p><b>答案：B</b></p><p>B 是 \\(0/0\\) 型且求导后极限为 \\(+\\infty\\)，属于「存在或为无穷」的允许情形。A、D 中原极限都存在（分别为 \\(1/2\\)、\\(0\\)），只是求导后的比值极限不存在——洛必达法则的结论是「若 \\(f'/g'\\) 有极限则原极限等于它」，反过来不成立。C 求导后越来越复杂，洛必达无效。</p><p>易错：把洛必达当成等价变形；它不是「一定成立」，而是有前提的充分条件。</p>"
+              "q": "下列极限中，必须先化型（0\\cdot\\infty 或 1^{\\infty}）才能使用洛必达法则的是（ ）<br>A. \\lim_{x\\to0^{+}}x\\ln x　B. \\lim_{x\\to0}\\frac{\\sin x}{x}　C. \\lim_{x\\to0}\\frac{\\mathrm{e}^{x}-1}{x}　D. \\lim_{x\\to0}\\frac{1-\\cos x}{x^{2}}",
+              "a": "<p><b>答案：A</b></p><p>第一步：A 代入得 0\\cdot(-\\infty)，是 0\\cdot\\infty 型，不能直接洛必达，要改写为 \\frac{\\ln x}{1/x} 化成 \\frac{\\infty}{\\infty}。</p><p>第二步：化型后 \\lim_{x\\to0^{+}}\\frac{1/x}{-1/x^{2}}=\\lim(-x)=0。</p><p>第三步：B、C、D 本身都是 \\frac00 型，可直接用洛必达。</p><p>易错：把 0\\cdot\\infty 型直接当成 0 或当成可洛必达的 0/0（trap ①）。</p>"
             },
             {
-              "type": "判断",
-              "q": "若 \\(\\lim_{x\\to a}\\frac{f'(x)}{g'(x)}\\) 不存在，则 \\(\\lim_{x\\to a}\\frac{f(x)}{g(x)}\\) 一定不存在。（　）<br>A. 正确　B. 错误",
-              "a": "<p><b>答案：B</b></p><p>反例：\\(\\lim_{x\\to\\infty}\\frac{\\sin x}{x}=0\\) 存在，但 \\(\\frac{\\cos x}{1}\\) 的极限不存在。洛必达失效只说明不能再用这条法则，原极限仍可能用别的方法求出。</p><p>易错：考场上洛必达一卡壳就判「极限不存在」，应先试试等价无穷小或夹逼。</p>"
+              "type": "计算",
+              "q": "求 \\lim_{x\\to0}(\\cos x)^{1/x^{2}}。",
+              "a": "<p><b>答案：\\mathrm{e}^{-1/2}</b></p><p>第一步：这是 1^{\\infty} 型，先取对数：\\ln y=\\frac{\\ln\\cos x}{x^{2}}。</p><p>第二步：\\ln\\cos x\\approx-\\frac{x^{2}}{2}，故 \\lim\\ln y=\\lim\\frac{-x^{2}/2}{x^{2}}=-\\frac12。</p><p>第三步：原式 =\\mathrm{e}^{-\\frac12}。</p><p>易错：1^{\\infty} 型直接写 1（trap ②）；取对数求完极限忘记还原成指数形式（trap ⑤）。</p>"
             }
           ],
           "signal": "题干出现 0·∞、∞−∞、1^∞、0^0、∞^0，或洛必达求导后循环",
@@ -6066,7 +6204,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.2.0";
+  var APP_VERSION = "3.5.0";
   var DATA_VERSION = "2026-10-26";
 
   var LEVEL_ORDER = ["A", "B", "C"];
