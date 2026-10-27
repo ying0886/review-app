@@ -2,9 +2,32 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.5.0
+  APP_VERSION: 3.10.0
   DATA_VERSION: 2026-10-26
-  本次变更: 「例题全清」收尾（APP_VERSION 3.5.0 / DATA_VERSION 不变，只改 examples 的 q/a/type）——
+  本次变更: P4 收尾（APP_VERSION 3.10.0 / DATA_VERSION 不变，不动数据块、快照格式与 KaTeX 内嵌资源）——
+             ①进度条压成顶栏底边 2px 细线（.prog absolute 贴底通栏，.progText 用 sr-only 保留），进度文字移到筛选栏右侧 #inlineProg；
+             ②全局快捷键：Ctrl/Cmd+K 与「/」打开搜索抽屉并聚焦（输入框内不拦截、Ctrl+Shift+K 不抢）；
+             ③目录抽屉顶部常驻搜索入口（按钮转发，非真 input，避免焦点撕裂；sticky 固定）；
+             ④「关联」与「知识网络」链接 chip 化（refChip 胶囊：编号灰小字 + 名称截断 + title 全名），打印降为灰边无底色；
+             ⑤打印页脚降级：新增 #printFooter（fixed 逐页重复，Chrome/Edge 无 @page margin box 时兜底显示版本与进度）。
+  上次变更: P2 优化（APP_VERSION 3.8.0 / DATA_VERSION 不变，不动数据块、快照格式与 KaTeX 内嵌资源）——
+             ①「只看未掌握」高频开关常驻 .filterbar（mastery 维度并入筛选与计数、清除）；分组头加 3px 微进度条；勾选与总进度有轻量动画反馈；
+             ②例题区加「全部收起/全部展开解析」批量按钮，单条解析 summary 文案随开合切换（看解析↔收起解析）；
+             ③收藏抽屉跳转补 flash 高亮（抽取 flashCard 复用，gotoCard 追加）；
+             ④搜索命中词安全高亮（<mark> 走 textNode/textContent 绝不拼 innerHTML，名称与片段都覆盖）；
+             ⑤收藏/同步/目录搜索三抽屉共用 focus trap（Tab/Shift+Tab 循环，Esc 归还焦点）；
+             ⑥更新横幅「立即更新/稍后/忽略」补 aria-label 与忽略按钮 title，便于屏幕阅读器。
+  上次变更: P1 优化（APP_VERSION 3.7.0 / DATA_VERSION 不变，不动数据块、快照格式与 KaTeX 内嵌资源）——
+             ①顶栏 6 按钮收拢为「目录/搜索/我的收藏」三主操作 + 「⋯」更多菜单（深色/打印/同步移入），同步状态点在 ⋯ 上镜像显示，菜单可点外/按 Esc 收起；
+             ②展开区「易错点」「最低拿分动作」加视觉权重：新增 --warn/--warnBg/--act/--actBg 四个颜色变量（亮/暗三处同步），字段加 .field-warn/.field-action 暖色/蓝色竖条与浅底；
+             ③「关联」链接与「知识网络」前置/对比/后续统一走 jumpToPoint()，点过去自动展开分组与卡片、渲染公式、1.5s 高亮，不再落到折叠卡片；
+             ④仅改 buildCard/field/pointLink/.links 渲染段、顶栏 HTML 与相关 CSS/JS；同步快照、KaTeX、打印、筛选/笔记/收藏/目录/搜索/主题全部保留。
+  上次变更: 渲染层优化（APP_VERSION 3.6.0 / DATA_VERSION 不变，不动数据块、快照格式与 KaTeX 内嵌资源）——
+             ①筛选栏默认折叠为一行「筛选 + 级别快切 + 清除筛选」，点「筛选」展开 5 个 facet，选中非「全部」条件后角标计数、可一键清除复位；
+             ②卡片头瘦身：删除 summary 里整句「信号：…」徽标与 forms 徽标，改到展开后 body 顶部（信号 chip 可点、forms 徽标同行）；
+             ③公式懒渲染：只渲染「已展开且可见」的卡片，折叠分组与未展开卡片不渲染 KaTeX，跳转/打印路径仍同步渲染；
+             ④改动仅限 renderFilters/buildCard/renderGroups 与 CSS，同步快照、KaTeX、打印、筛选/笔记/收藏/目录/搜索/主题全部保留。
+  上次变更: 「例题全清」收尾（APP_VERSION 3.5.0 / DATA_VERSION 不变，只改 examples 的 q/a/type）——
              ①补满 C 级单题：m1s1-01、m1s1-02、m1s2-02、m1s4-02、m1s4-03、m1s7-02 各加 1 题（判断/选择轮换，避免与原题同法）；
              ②消除同型重复：m1s3-02 第二题 填空→计算（反求 a、b 两参数）、m1s5-01 第三题 判断→简答（无界≠无穷大，举 x_n=n[1+(−1)^n] 反例）、
                c1s2-01 第三题 选择→计算（同一 ΔU 沿两条途径求功）、c1s4-03 第二题 选择→计算（由浓度算 Q 再判方向）、
@@ -82,7 +105,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.5.0">
+<meta name="app-version" content="3.10.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -109,6 +132,10 @@
     --chipOn:#E6EEE8;
     --chipOnInk:#2A4F42;
     --barBg:#E4DFD3;
+    --warn:#A9762F;
+    --warnBg:#F7F1E4;
+    --act:#2F5E7A;
+    --actBg:#E9F0F5;
   }
   html[data-theme="dark"]{
     --bg:#1A1A1A;
@@ -126,6 +153,10 @@
     --chipOn:#24332C;
     --chipOnInk:#A8D4BD;
     --barBg:#33312D;
+    --warn:#D2A45F;
+    --warnBg:#2B2519;
+    --act:#8FB4CC;
+    --actBg:#1E2830;
   }
   @media (prefers-color-scheme:dark){
     html:not([data-theme="light"]){
@@ -144,6 +175,10 @@
       --chipOn:#24332C;
       --chipOnInk:#A8D4BD;
       --barBg:#33312D;
+      --warn:#D2A45F;
+      --warnBg:#2B2519;
+      --act:#8FB4CC;
+      --actBg:#1E2830;
     }
   }
   html{-webkit-text-size-adjust:100%}
@@ -186,9 +221,38 @@
   .tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .prog{display:flex;align-items:center;gap:10px;flex:1 1 220px;min-width:0}
   .progText{font-size:13px;color:var(--ink2);white-space:nowrap;font-variant-numeric:tabular-nums}
+  @keyframes bumpfade{0%{color:var(--accent)}100%{color:var(--ink2)}}
+  .progText.bump{animation:bumpfade .9s ease}
   .bar{flex:1 1 80px;height:3px;background:var(--barBg);border-radius:2px;overflow:hidden;min-width:60px}
   .bar>i{display:block;height:100%;width:0;background:var(--accent);border-radius:2px;transition:width .25s ease}
+  /* P4：进度条压成顶栏底边 2px 细线，进度文字 sr-only 保留 + 移到筛选栏右侧 */
+  .topbar>.prog{
+    position:absolute;left:0;right:0;bottom:0;height:2px;
+    padding:0;gap:0;min-width:0;flex:none;pointer-events:none
+  }
+  .topbar>.prog .progText{
+    position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+    clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0
+  }
+  .topbar>.prog .bar{display:block;width:100%;height:2px;border-radius:0;min-width:0;flex:none}
+  .topbar>.prog .bar>i{display:block;height:2px;width:0;background:var(--accent);border-radius:0;
+    transition:width .25s ease}
+  .inlineprog{margin-left:auto;font-size:12px;color:var(--ink2);
+    font-variant-numeric:tabular-nums;white-space:nowrap;padding:0 4px}
+  .inlineprogrow{display:flex;justify-content:flex-end;padding:2px 0}
   .acts{display:flex;gap:8px;margin-left:auto}
+  .acts{position:relative}
+  .morebtn{display:inline-flex;align-items:center;gap:4px;font-size:16px;line-height:1;padding:0 10px}
+  .morebtn .dot{width:7px;height:7px;margin:0}
+  .moremenu{position:absolute;top:calc(100% + 6px);right:0;z-index:26;
+    display:flex;flex-direction:column;gap:2px;min-width:140px;padding:6px;
+    background:var(--card);border:1px solid var(--line2);border-radius:8px;
+    box-shadow:0 6px 20px rgba(0,0,0,.10)}
+  .moremenu[hidden]{display:none !important}
+  .moremenu .btn{justify-content:flex-start;width:100%;min-height:40px;border:0;border-radius:6px;
+    text-align:left;font-size:14px}
+  .moremenu .btn:hover{background:var(--chip)}
+  @media print{ .morebtn,.moremenu{display:none !important} }
   .btn{
     min-height:44px;min-width:44px;padding:0 14px;
     background:transparent;color:var(--ink);
@@ -249,6 +313,21 @@
     background:var(--chipOn);color:var(--chipOnInk);
     border-color:var(--accent);font-weight:600;
   }
+  .filterbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .filterToggle{min-height:44px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;
+    background:transparent;border:1px solid var(--line2);border-radius:6px;
+    font:inherit;font-size:13.5px;color:var(--ink2);cursor:pointer}
+  .filterToggle[aria-expanded="true"]{background:var(--chipOn);color:var(--chipOnInk);border-color:var(--accent)}
+  .filterToggle .caret{transition:transform .18s ease}
+  .filterToggle[aria-expanded="true"] .caret{transform:rotate(90deg)}
+  .filterCount{min-width:17px;padding:0 4px;font-size:11px;line-height:15px;border-radius:8px;
+    text-align:center;background:var(--accentBg);color:var(--accent);font-variant-numeric:tabular-nums}
+  .filterClear{min-height:44px;padding:0 12px;background:transparent;border:1px solid transparent;
+    font:inherit;font-size:13px;color:var(--ink2);cursor:pointer;text-decoration:underline;
+    text-underline-offset:2px}
+  .filterClear:hover{color:var(--ink)}
+  .facetbox{padding-top:8px}
+  .facetbox[hidden]{display:none !important}
 
   /* ---------- 级别分组 ---------- */
   .grp{margin:22px 0 0;border-top:1px solid var(--line);padding-top:10px}
@@ -262,6 +341,13 @@
   .grp[data-level="C"] .gbar{background:var(--lvC)}
   .gtitle{font-size:14px;font-weight:600;letter-spacing:.02em}
   .gcount{font-size:13px;color:var(--ink2);margin-left:auto;font-variant-numeric:tabular-nums}
+  .gprog{flex:0 0 40px;height:3px;background:var(--barBg);border-radius:2px;overflow:hidden;margin-left:6px}
+  .gprog>i{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width .25s ease}
+  .grp[data-level="B"] .gprog>i{background:var(--lvB)}
+  .grp[data-level="C"] .gprog>i{background:var(--lvC)}
+  @media (max-width:560px){ .gprog{flex-basis:26px} }
+  @media screen and (orientation:landscape) and (max-height:540px){ .gprog{flex-basis:24px;height:2px} }
+  @media print{ .gprog{display:none !important} }
   .caret{transition:transform .18s ease;color:var(--ink2);font-size:12px}
   .grp[open]>summary .caret{transform:rotate(90deg)}
 
@@ -283,7 +369,7 @@
   }
   .card>summary::-webkit-details-marker{display:none}
   .no{font-size:12.5px;color:var(--ink2);font-variant-numeric:tabular-nums;flex:0 0 auto}
-  .nm{font-size:15.5px;font-weight:600;flex:1 1 180px;min-width:0;overflow-wrap:anywhere}
+  .nm{font-size:15.5px;font-weight:600;flex:1 1 180px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
   .badge{
     font-size:11.5px;line-height:1.5;padding:1px 6px;
@@ -308,9 +394,14 @@
     font-size:11.5px;line-height:1.5;padding:1px 6px;
     background:var(--chip);color:var(--ink2);border-radius:3px;white-space:nowrap;
   }
+  .bodytagrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+  .sigchip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px}
+  .bodytagrow .form{font-size:11.5px}
 
   /* 勾选 */
   .mwrap{flex:0 0 auto;margin-left:auto;display:flex;align-items:center}
+  @keyframes tickPop{0%{transform:scale(1)}35%{transform:scale(1.18)}100%{transform:scale(1)}}
+  .mwrap.tick{animation:tickPop .28s ease}
   .mwrap label{
     display:flex;align-items:center;gap:7px;
     min-height:44px;padding:0 2px;
@@ -343,7 +434,36 @@
   .field p{margin:0;font-size:14.5px;line-height:1.7;min-width:0;overflow-wrap:anywhere}
   .field p.warn{color:var(--ink)}
   .ref{color:var(--accent);text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:1px}
+  .refjump{cursor:pointer;text-underline-offset:2px;text-decoration-thickness:1px;
+    border-radius:2px;padding:0 1px}
+  .refjump:hover{color:var(--ink);background:var(--accentBg)}
+  .refjump:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  @media print{ .refjump{text-decoration:none;background:transparent !important} }
+  .reflinks{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0}
+  .refchip{display:inline-flex;align-items:baseline;gap:5px;max-width:100%;
+    padding:2px 8px;border:1px solid var(--line2);border-radius:999px;
+    background:var(--chip);color:var(--ink);font-size:12.5px;line-height:1.6;
+    text-decoration:none;cursor:pointer;
+    transition:background .15s ease,border-color .15s ease}
+  .refchip:hover{background:var(--chipOn);border-color:var(--accent);color:var(--chipOnInk)}
+  .refchip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .refchip-id{color:var(--ink2);font-variant-numeric:tabular-nums;flex:0 0 auto;font-size:11.5px}
+  .refchip-name{max-width:14em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  @media (max-width:560px){ .refchip-name{max-width:9em} }
+  @media print{
+    .refchip{background:#fff !important;border:1px solid #888 !important;color:#000 !important;
+      padding:1px 6px;font-size:12px}
+    .refchip-id{color:#000 !important}
+  }
   .low{font-size:12px;color:var(--ink2);border-left:2px solid var(--line2);padding-left:8px;display:inline-block}
+  .field-warn{border-left:3px solid var(--warn);background:var(--warnBg);
+    margin:8px 0;padding:8px 10px 8px 10px;border-radius:0 4px 4px 0;border-bottom:0}
+  .field-warn .k{color:var(--warn);font-weight:600;flex-basis:76px}
+  .field-action{border-left:3px solid var(--act);background:var(--actBg);
+    margin:8px 0;padding:8px 10px 8px 10px;border-radius:0 4px 4px 0;border-bottom:0}
+  .field-action .k{color:var(--act);font-weight:600;flex-basis:76px}
+  .field-warn p,.field-action p{font-weight:500;line-height:1.75}
+  .field-warn,.field-action{border-bottom:0}
 
   /* ---------- 解题方法 / 知识网络（新增字段渲染） ---------- */
   .mthbox,.netbox{flex:1 1 auto;min-width:0}
@@ -366,6 +486,10 @@
   .exhead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:4px}
   .exlabel{font-size:12px;color:var(--ink2);letter-spacing:.03em}
   .excount{font-size:12px;color:var(--ink2)}
+  .extoggle{margin-left:auto;background:transparent;border:1px solid var(--line2);border-radius:5px;
+    padding:0 9px;min-height:28px;font:inherit;font-size:12px;color:var(--ink2);cursor:pointer}
+  .extoggle:hover{background:var(--chip);color:var(--ink)}
+  @media print{ .extoggle{display:none !important} }
   .extype{
     font-size:11.5px;line-height:1.5;padding:1px 6px;
     border:1px solid var(--line2);border-radius:3px;color:var(--ink2);white-space:nowrap;
@@ -398,6 +522,16 @@
   }
   .stats b{color:var(--ink);font-weight:600}
   .stats .ver{font-size:12px;color:var(--ink2);opacity:.85;margin-left:auto}
+  .printfooter{display:none}
+  @media print{
+    .printfooter{
+      display:block;position:fixed;left:0;right:0;bottom:0;
+      padding:4px 0 0;border-top:1px solid #ccc;
+      font-size:9pt;line-height:1.4;color:#666;text-align:center;
+      background:#fff;
+    }
+    .wrap{padding-bottom:16mm}
+  }
 
   /* ---------- 提示 ---------- */
   .toast{
@@ -558,6 +692,9 @@
     .mth{border-left-color:#bbb}
     .mthno,.mthwhen,.netlab{color:#000 !important}
     .card.sigfocus>summary{outline:0}
+    .field-warn,.field-action{background:#fff !important;border-left:2px solid #888 !important;
+      margin:6px 0;padding:6px 8px}
+    .field-warn .k,.field-action .k{color:#000 !important}
   }
   @media (max-width:560px){
     .flabel{width:100%}
@@ -584,15 +721,13 @@
     .scope{display:none}
     .subjects{max-width:none;flex:0 1 auto;min-width:0}
     .tab{font-size:12px;padding:4px 6px;min-height:28px}
-    .prog{flex:1 1 110px;gap:8px}
-    .progText{font-size:11.5px}
-    .bar{min-width:44px}
     .acts{gap:5px;margin-left:0}
     .btn{min-height:32px;min-width:32px;padding:0 9px;font-size:12.5px}
     .btn.small{min-height:28px;padding:0 7px;font-size:11.5px}
 
     /* 筛选：三层 facet 横排并允许换行 */
     .filters{flex-direction:row;flex-wrap:wrap;gap:6px 16px;padding-bottom:8px;margin-bottom:4px}
+    .facetbox{flex:1 1 100%}   /* 折叠态 .filterbar 一行、.facetbox 另起一行，避免横向溢出 */
     .facet{gap:4px 6px}
     .flabel{width:auto;font-size:11.5px;flex:0 0 auto}
     .chip{min-height:32px;padding:0 10px;font-size:12.5px}
@@ -687,6 +822,22 @@
   .navtab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .navpane{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:10px 14px 30px}
   .navpane[hidden]{display:none !important}
+  /* P4：目录抽屉顶部常驻搜索入口 */
+  .tocsearch{padding:0 0 8px;position:sticky;top:0;z-index:1;background:var(--card)}
+  .tocsearchbtn{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;
+    min-height:40px;padding:0 10px;background:var(--bg);
+    border:1px solid var(--line2);border-radius:6px;cursor:pointer;
+    font:inherit;font-size:13px;color:var(--ink2);text-align:left}
+  .tocsearchbtn:hover{border-color:var(--accent);color:var(--ink)}
+  .tocsearchbtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .tocsearchico{font-size:15px;line-height:1;flex:0 0 auto}
+  .tocsearchph{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tocsearchkbd{flex:0 0 auto;font-size:11px;line-height:1.5;padding:0 6px;
+    border:1px solid var(--line2);border-radius:4px;color:var(--ink2);background:var(--card)}
+  @media print{ .tocsearch{display:none !important} }
+  @media screen and (orientation:landscape) and (max-height:540px){
+    .tocsearchbtn{min-height:32px;font-size:12.5px}
+  }
 
   /* 目录：级别分组 */
   .tocgrp{margin:4px 0 0;border-top:1px solid var(--line)}
@@ -747,6 +898,9 @@
   .navhithead{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;font-size:11.5px;color:var(--ink2)}
   .navhitname{display:block;margin:3px 0 0;font-size:14px;font-weight:600;line-height:1.5;overflow-wrap:anywhere}
   .navhitsnip{display:block;margin:4px 0 0;font-size:12.5px;line-height:1.75;color:var(--ink2);overflow-wrap:anywhere}
+  .navmark{background:transparent;color:inherit;font-weight:600;
+    box-shadow:inset 0 -0.55em 0 var(--accentBg);padding:0 1px;border-radius:2px}
+  @media print{ .navmark{box-shadow:none !important} }
 
   /* 跳转高亮 */
   .card.flash{background:var(--accentBg);outline:2px solid var(--accent);outline-offset:2px}
@@ -865,9 +1019,12 @@
     <button class="btn" id="tocBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="navDrawer" title="知识点目录">目录</button>
     <button class="btn" id="searchBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="navDrawer" title="搜索知识点">搜索</button>
     <button class="btn" id="favBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="favDrawer" title="我的收藏 · 当前科目">我的收藏<span class="favcount" id="favCount" hidden>0</span></button>
-    <button class="btn" id="themeBtn" type="button">深色</button>
-    <button class="btn" id="printBtn" type="button">打印</button>
-    <button class="btn" id="syncBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="syncDrawer" title="多端进度同步"><span class="dot" id="syncDot"></span>同步</button>
+    <button class="btn morebtn" id="moreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="moreMenu" title="更多">⋯<span class="dot" id="moreDot"></span></button>
+    <div class="moremenu" id="moreMenu" role="menu" hidden>
+      <button class="btn" id="themeBtn" type="button" role="menuitem">深色</button>
+      <button class="btn" id="printBtn" type="button" role="menuitem">打印</button>
+      <button class="btn" id="syncBtn" type="button" role="menuitem" aria-haspopup="dialog" aria-expanded="false" aria-controls="syncDrawer"><span class="dot" id="syncDot"></span>同步</button>
+    </div>
   </div>
 </header>
 
@@ -890,6 +1047,7 @@
   <div class="filters" id="filters"></div>
   <main id="groups"></main>
   <footer class="stats" id="stats"></footer>
+  <div class="printfooter" id="printFooter"></div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite">点卡片展开，勾选即记录掌握</div>
@@ -926,6 +1084,13 @@
     <button class="navtab" id="navTabSearch" type="button" role="tab" aria-selected="false" aria-controls="navSearchPane" tabindex="-1">搜索</button>
   </div>
   <div class="navpane" id="navTocPane" role="tabpanel" aria-labelledby="navTabToc">
+    <div class="tocsearch" role="search">
+      <button class="tocsearchbtn" id="tocSearchBtn" type="button" aria-label="搜索知识点">
+        <span class="tocsearchico" aria-hidden="true">⌕</span>
+        <span class="tocsearchph">搜索编号、名称、内容…</span>
+        <span class="tocsearchkbd" aria-hidden="true">/</span>
+      </button>
+    </div>
     <div id="navTocBody"></div>
   </div>
   <div class="navpane" id="navSearchPane" role="tabpanel" aria-labelledby="navTabSearch" hidden>
@@ -6204,7 +6369,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.5.0";
+  var APP_VERSION = "3.10.0";
   var DATA_VERSION = "2026-10-26";
 
   var LEVEL_ORDER = ["A", "B", "C"];
@@ -6274,7 +6439,8 @@
   });
 
   var SID = null;
-  var filters = { level: "全部", form: "全部", source: "全部", signal: "全部", notes: "全部" };
+  var filters = { level: "全部", form: "全部", source: "全部", signal: "全部", notes: "全部", mastery: "全部" };
+  var filterOpen = false;   // 筛选面板展开状态，跨 renderFilters 重渲染保持
 
   function cur() {
     for (var i = 0; i < DATA.subjects.length; i++) {
@@ -6500,6 +6666,29 @@
     syncMarkDirty();
   });
 
+  /* ---------------- 更多菜单（顶栏收拢：深色/打印/同步） ---------------- */
+  var moreBtn = byId("moreBtn");
+  var moreMenu = byId("moreMenu");
+  function closeMore() { moreMenu.hidden = true; moreBtn.setAttribute("aria-expanded", "false"); }
+  moreBtn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    var open = moreMenu.hidden;
+    moreMenu.hidden = !open;
+    moreBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  document.addEventListener("click", function (e) {
+    if (moreMenu.hidden) return;
+    if (moreMenu.contains(e.target) || moreBtn.contains(e.target)) return;
+    closeMore();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !moreMenu.hidden) closeMore();
+  });
+  // 菜单项点击后先收起菜单，再执行原按钮行为（原监听会照常触发）
+  ["themeBtn", "printBtn", "syncBtn"].forEach(function (id) {
+    byId(id).addEventListener("click", closeMore);
+  });
+
   /* ---------------- 科目切换器 ---------------- */
   var subjectsBox = byId("subjects");
   var ovBtn = byId("ovBtn");
@@ -6584,6 +6773,7 @@
     filters.source = "全部";
     filters.signal = "全部";
     filters.notes = "全部";
+    filters.mastery = "全部";
   }
 
   function sourcesOf(list) {
@@ -6599,10 +6789,101 @@
     return out;
   }
 
+  function activeFilterCount() {
+    var n = 0;
+    if (filters.level !== "全部") n++;
+    if (filters.form !== "全部") n++;
+    if (filters.source !== "全部") n++;
+    if (filters.notes !== "全部") n++;
+    if (filters.signal !== "全部") n++;
+    if (filters.mastery !== "全部") n++;
+    return n;
+  }
+
+  // P4：筛选栏右侧的进度文字（renderFilters 重建 filterbar 后也会清空它，故两处都刷新）
+  function refreshInlineProg() {
+    var ip = byId("inlineProg");
+    if (!ip) return;
+    var list = pts();
+    var done = list.filter(function (k) { return isDone(k.id); }).length;
+    ip.textContent = "已完成 " + done + " / " + list.length;
+  }
+
   function renderFilters() {
     var box = byId("filters");
     box.innerHTML = "";
     var list = pts();
+
+    var bar = el("div", "filterbar");
+
+    var toggle = txt("button", "filterToggle", "筛选 ");
+    toggle.type = "button";
+    toggle.setAttribute("aria-expanded", filterOpen ? "true" : "false");
+    var cnt = txt("span", "filterCount", String(activeFilterCount()));
+    if (activeFilterCount() === 0) cnt.hidden = true;
+    toggle.appendChild(cnt);
+    toggle.appendChild(txt("span", "caret", "▸"));
+    toggle.addEventListener("click", function () {
+      filterOpen = !filterOpen;
+      var fb = box.querySelector(".facetbox");
+      if (fb) fb.hidden = !filterOpen;
+      toggle.setAttribute("aria-expanded", filterOpen ? "true" : "false");
+    });
+    bar.appendChild(toggle);
+
+    // 级别快切：复用 .chip，点击写 filters.level 后局部刷新
+    ["全部"].concat(LEVEL_ORDER.filter(function (l) {
+      return list.some(function (k) { return k.level === l; });
+    })).forEach(function (lv) {
+      var q = txt("button", "chip", lv);
+      q.type = "button";
+      q.setAttribute("data-quick-level", lv);
+      q.setAttribute("aria-pressed", filters.level === lv ? "true" : "false");
+      q.addEventListener("click", function () {
+        filters.level = lv;
+        renderFilters();
+        renderGroups();
+      });
+      bar.appendChild(q);
+    });
+
+    // 「只看未掌握」高频开关：常驻 filterbar，不放进折叠面板
+    var onlyUndone = txt("button", "chip", "只看未掌握");
+    onlyUndone.type = "button";
+    onlyUndone.id = "onlyUndone";
+    onlyUndone.setAttribute("data-toggle", "mastery");
+    onlyUndone.setAttribute("aria-pressed", filters.mastery === "未掌握" ? "true" : "false");
+    onlyUndone.addEventListener("click", function () {
+      filters.mastery = (filters.mastery === "未掌握") ? "全部" : "未掌握";
+      onlyUndone.setAttribute("aria-pressed", filters.mastery === "未掌握" ? "true" : "false");
+      var m = activeFilterCount();
+      cnt.textContent = String(m);
+      cnt.hidden = m === 0;
+      clear.hidden = m === 0;
+      renderGroups();
+    });
+    bar.appendChild(onlyUndone);
+
+    var inlineProg = txt("span", "inlineprog", "");
+    inlineProg.id = "inlineProg";
+    inlineProg.setAttribute("aria-live", "polite");
+    bar.appendChild(inlineProg);
+
+    var clear = txt("button", "filterClear", "清除筛选");
+    clear.type = "button";
+    if (activeFilterCount() === 0) clear.hidden = true;
+    clear.addEventListener("click", function () {
+      resetFilters();
+      renderFilters();
+      renderGroups();
+      focusSignal("全部");
+    });
+    bar.appendChild(clear);
+
+    box.appendChild(bar);
+
+    var fbox = el("div", "facetbox");
+    if (!filterOpen) fbox.hidden = true;
 
     facet("级别", "level", ["全部"].concat(LEVEL_ORDER.filter(function (l) {
       return list.some(function (k) { return k.level === l; });
@@ -6613,6 +6894,8 @@
     facet("来源层级", "source", ["全部"].concat(sourcesOf(list)));
     facet("笔记", "notes", ["全部", "有笔记"]);   // [note]
     if (filters.signal !== "全部") facet("题型信号", "signal", ["全部", filters.signal]);
+
+    box.appendChild(fbox);
 
     function facet(label, key, options) {
       var row = el("div", "facet");
@@ -6626,12 +6909,18 @@
           row.querySelectorAll(".chip").forEach(function (c) {
             c.setAttribute("aria-pressed", c.textContent === opt ? "true" : "false");
           });
+          var m = activeFilterCount();
+          cnt.textContent = String(m);
+          cnt.hidden = m === 0;
+          clear.hidden = m === 0;
           renderGroups();
         });
         row.appendChild(b);
       });
-      box.appendChild(row);
+      fbox.appendChild(row);
     }
+
+    refreshInlineProg();
   }
 
   /* ---------------- 卡片 ---------------- */
@@ -6656,21 +6945,6 @@
     if (k.section) tags.appendChild(txt("span", "badge sec", k.section));
     if (k.source) tags.appendChild(txt("span", "badge src", k.source));
     tags.appendChild(txt("span", k.refs ? "badge refs" : "badge none", k.refs ? k.refs : "试卷未出现"));
-    if (k.signal) {
-      var sig = txt("span", "badge sig", "信号：" + k.signal);
-      sig.title = "题干出现这类特征时用本节方法；点一下只看同信号的知识点";
-      sig.setAttribute("data-signal", k.signal);
-      sig.addEventListener("click", function (ev) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        filters.signal = (filters.signal === k.signal) ? "全部" : k.signal;
-        renderFilters();
-        renderGroups();
-        focusSignal(filters.signal);
-      });
-      tags.appendChild(sig);
-    }
-    (k.forms || []).forEach(function (f) { tags.appendChild(txt("span", "form", f)); });
     sum.appendChild(tags);
     sum.appendChild(buildNoteBtn(k.id));   // [note] .mwrap 之前的笔记按钮
 
@@ -6687,6 +6961,9 @@
     cb.addEventListener("change", function () {
       markDone(k.id, cb.checked);
       d.classList.toggle("done", cb.checked);
+      mw.classList.remove("tick");
+      void mw.offsetWidth;      // 强制重排以重启动画
+      mw.classList.add("tick");
       renderProgress();
       renderStats();
       if (!ovPanel.hidden) renderOverview();
@@ -6697,21 +6974,35 @@
     d.appendChild(sum);
 
     var body = el("div", "body");
+
+    var sigRow = el("div", "bodytagrow");
+    if (k.signal) {
+      var sigChip = txt("button", "chip sigchip", "信号：" + k.signal);
+      sigChip.type = "button";
+      sigChip.title = "点一下只看同信号的知识点";
+      sigChip.addEventListener("click", function () {
+        filters.signal = (filters.signal === k.signal) ? "全部" : k.signal;
+        renderFilters(); renderGroups(); focusSignal(filters.signal);
+      });
+      sigRow.appendChild(sigChip);
+    }
+    if (k.forms && k.forms.length) {
+      k.forms.forEach(function (f) { sigRow.appendChild(txt("span", "form", f)); });
+    }
+    if (sigRow.childNodes.length) body.appendChild(sigRow);
+
     if (k.content) body.appendChild(field("内容", k.content));
-    if (k.trap) body.appendChild(field("易错点", k.trap));
-    if (k.action) body.appendChild(field("最低拿分动作", k.action));
+    if (k.trap) body.appendChild(field("易错点", k.trap, "warn"));
+    if (k.action) body.appendChild(field("最低拿分动作", k.action, "action"));
     if (k.methods && k.methods.length) body.appendChild(buildMethods(k));
     if (k.links && k.links.length) {
       var f = field("关联", "");
       var p = f.querySelector("p");
-      k.links.forEach(function (id, i) {
+      p.className = "reflinks";
+      k.links.forEach(function (id) {
         var target = findPoint(id);
-        if (i) p.appendChild(document.createTextNode(" · "));
-        if (!target) { p.appendChild(document.createTextNode(id)); return; }
-        var a = el("a", "ref");
-        a.href = "#k-" + id;
-        a.textContent = id + " " + target.name;
-        p.appendChild(a);
+        if (!target) { p.appendChild(txt("span", "refchip-id", id)); return; }
+        p.appendChild(refChip(id, target.name));
       });
       body.appendChild(f);
     }
@@ -6731,6 +7022,12 @@
     body.appendChild(noteBoxKp);
     if (hasNote(SID, noteKeyKp(k.id))) { d.classList.add("hasnote"); noteBoxKp.hidden = false; }
     if (k.examples && k.examples.length) body.appendChild(buildExamples(k));
+    d.addEventListener("toggle", function () {
+      if (d.open && d.getAttribute("data-math") !== "1") {
+        renderMath(d);
+        d.setAttribute("data-math", "1");
+      }
+    });
     d.appendChild(body);
     return d;
   }
@@ -6761,13 +7058,24 @@
     return f;
   }
 
+  function refChip(id, name) {
+    var a = el("a", "refchip refjump");
+    a.href = "#k-" + id;
+    a.setAttribute("data-jump", id);
+    a.title = id + " " + (name || "");
+    a.appendChild(txt("span", "refchip-id", id));
+    a.appendChild(txt("span", "refchip-name", name || ""));
+    a.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      jumpToPoint(id);
+    });
+    return a;
+  }
+
   function pointLink(id) {
     var target = findPoint(id);
     if (!target) return document.createTextNode(id);
-    var a = el("a", "ref");
-    a.href = "#k-" + id;
-    a.textContent = id + " " + target.name;
-    return a;
+    return refChip(id, target.name);
   }
 
   function buildNetwork(k) {
@@ -6780,10 +7088,11 @@
       if (!ids.length) return;
       var line = el("div", "netline");
       line.appendChild(txt("span", "netlab", pair[1] + "："));
-      ids.forEach(function (id, i) {
+      ids.forEach(function (id) {
         if (!id) return;
-        if (i) line.appendChild(document.createTextNode(" · "));
-        line.appendChild(pointLink(id));
+        var target = findPoint(id);
+        if (!target) { line.appendChild(txt("span", "refchip-id", id)); return; }
+        line.appendChild(refChip(id, target.name));
       });
       box.appendChild(line);
     });
@@ -6810,6 +7119,17 @@
     var head = el("div", "exhead");
     head.appendChild(txt("span", "exlabel", "例题"));
     head.appendChild(txt("span", "excount", "共 " + k.examples.length + " 道"));
+    var toggleAll = txt("button", "extoggle", "全部收起");
+    toggleAll.type = "button";
+    toggleAll.setAttribute("data-ex-toggle", k.id);
+    toggleAll.addEventListener("click", function () {
+      var sols = box.querySelectorAll(".exsol");
+      var anyOpen = false;
+      for (var i = 0; i < sols.length; i++) if (sols[i].open) { anyOpen = true; break; }
+      for (var j = 0; j < sols.length; j++) sols[j].open = !anyOpen;
+      toggleAll.textContent = anyOpen ? "全部展开" : "全部收起";
+    });
+    head.appendChild(toggleAll);
     box.appendChild(head);
 
     k.examples.forEach(function (ex, i) {
@@ -6829,7 +7149,11 @@
       var sol = el("details", "exsol");
       var sm = el("summary");
       sm.appendChild(txt("span", "caret2", "▸"));
-      sm.appendChild(txt("span", "", "看解析"));
+      var label = txt("span", "exsol-text", "看解析");
+      sm.appendChild(label);
+      sol.addEventListener("toggle", function () {
+        label.textContent = sol.open ? "收起解析" : "看解析";
+      });
       sol.appendChild(sm);
       var a = el("div", "sol");
       a.innerHTML = safeHtml(ex.a);
@@ -6843,8 +7167,8 @@
     return box;
   }
 
-  function field(label, text) {
-    var f = el("div", "field");
+  function field(label, text, variant) {
+    var f = el("div", "field" + (variant ? " field-" + variant : ""));
     f.appendChild(txt("span", "k", label));
     var p = el("p");
     p.innerHTML = safeHtml(text);
@@ -6854,6 +7178,8 @@
 
   /* ---------------- 渲染 ---------------- */
   function matches(k) {
+    if (filters.mastery === "未掌握" && isDone(k.id)) return false;
+    if (filters.mastery === "已掌握" && !isDone(k.id)) return false;
     if (filters.level !== "全部" && k.level !== filters.level) return false;
     if (filters.form !== "全部" && (k.forms || []).indexOf(filters.form) === -1) return false;
     if (filters.source !== "全部" && k.source !== filters.source) return false;
@@ -6891,6 +7217,11 @@
       s.appendChild(el("span", "gbar"));
       s.appendChild(txt("span", "gtitle", LEVEL_NAME[lv]));
       s.appendChild(txt("span", "gcount", done + " / " + total));
+      var gprog = el("span", "gprog");
+      var gi = el("i");
+      gi.style.width = total ? ((done / total) * 100).toFixed(1) + "%" : "0%";
+      gprog.appendChild(gi);
+      s.appendChild(gprog);
       s.appendChild(txt("span", "caret", "▸"));
       g.appendChild(s);
 
@@ -6898,7 +7229,14 @@
       box.appendChild(g);
     });
 
-    renderMath(box);
+    var cards = box.querySelectorAll(".card");
+    for (var ci = 0; ci < cards.length; ci++) {
+      var cd = cards[ci];
+      if (cd.open && cd.getAttribute("data-math") !== "1") {
+        renderMath(cd);
+        cd.setAttribute("data-math", "1");
+      }
+    }
     noteAutosizeAll(box);   // [note]
     focusSignal(filters.signal);
   }
@@ -6906,9 +7244,20 @@
   function renderProgress() {
     var list = pts();
     var done = list.filter(function (k) { return isDone(k.id); }).length;
-    byId("progText").textContent = "已完成 " + done + " / " + list.length;
+    var pt = byId("progText");
+    pt.textContent = "已完成 " + done + " / " + list.length;
+    pt.classList.remove("bump"); void pt.offsetWidth; pt.classList.add("bump");
     var pct = list.length ? (done / list.length) * 100 : 0;
     byId("progBar").style.width = pct.toFixed(1) + "%";
+
+    var ip = byId("inlineProg");
+    if (ip) ip.textContent = "已完成 " + done + " / " + list.length;
+
+    var pf = byId("printFooter");
+    if (pf) {
+      pf.textContent = "知识点复习 · v" + APP_VERSION + " · 数据 " + DATA_VERSION +
+        " · 已掌握 " + done + " / " + list.length;
+    }
 
     var ph = byId("printHead");
     var s = cur();
@@ -7148,6 +7497,7 @@
     if (!card) { resetFilters(); renderAll(); card = byId("k-" + kid); }
     if (!card) return;
     card.open = true;
+    if (card.getAttribute("data-math") !== "1") { renderMath(card); card.setAttribute("data-math", "1"); }
     var exs = card.querySelectorAll(".ex");
     var target = exs[i] || card;
     if (exs[i]) {
@@ -7155,6 +7505,7 @@
       if (d) d.open = true;
     }
     target.scrollIntoView({ block: "center", behavior: "smooth" });
+    flashCard(card);
   }
 
   favBtn.addEventListener("click", function () {
@@ -7687,6 +8038,8 @@
   // [sync] 状态圆点：灰=未配置 黄=同步中 绿=已同步 红=失败 蓝=有本地改动待推送
   function setSyncState(kind, text) {
     if (syncDot) syncDot.className = "dot" + (kind ? " " + kind : "");
+    var md = byId("moreDot");
+    if (md) md.className = "dot" + (kind ? " " + kind : "");
     if (syncHintEl) syncHintEl.textContent = text || "";
     if (syncBtn) syncBtn.title = "多端进度同步 · " + (text || "");
   }
@@ -8115,6 +8468,11 @@
       notes.textContent = r.notes ? clipLine(r.notes, 64) : ("本机 v" + APP_VERSION + " → 远端 v" + r.version);
       notes.title = r.notes || "";
     }
+    var rv = r.version;
+    var ubLater = byId("ubLater"), ubIgnore = byId("ubIgnore"), ubGo = byId("ubGo");
+    if (ubGo) ubGo.setAttribute("aria-label", "立即更新到 v" + rv);
+    if (ubLater) ubLater.setAttribute("aria-label", "稍后提醒：本次打开期间不再弹出 v" + rv + " 更新横幅");
+    if (ubIgnore) ubIgnore.setAttribute("aria-label", "忽略 v" + rv + "：以后自动检查时不再提示该版本，可手动取消忽略");
     updBar.hidden = false;
   }
 
@@ -8217,6 +8575,7 @@
       row.appendChild(go);
       var ig = txt("button", "btn small", isIgnored(rv) ? "取消忽略" : ("忽略 v" + rv));
       ig.type = "button";
+      ig.title = "忽略该版本后，自动检查不再提示它；可在本区块手动取消忽略";
       ig.addEventListener("click", function () {
         var was = isIgnored(rv);
         if (was) unignoreVersion(rv); else ignoreVersion(rv);
@@ -8578,6 +8937,23 @@
     return seg;
   }
 
+  /* 搜索命中词安全高亮：全程 textNode/textContent，绝不拼 innerHTML，<、& 等字符也不会破坏结构 */
+  function navMark(text, q) {
+    var s = String(text == null ? "" : text);
+    if (!q) return document.createTextNode(s);
+    var low = s.toLowerCase(), ql = q.toLowerCase(), frag = document.createDocumentFragment();
+    var i = 0, j;
+    while ((j = low.indexOf(ql, i)) !== -1) {
+      if (j > i) frag.appendChild(document.createTextNode(s.slice(i, j)));
+      var m = el("mark", "navmark");
+      m.textContent = s.slice(j, j + q.length);
+      frag.appendChild(m);
+      i = j + q.length;
+    }
+    if (i < s.length) frag.appendChild(document.createTextNode(s.slice(i)));
+    return frag;
+  }
+
   /* ---------------- 目录 ---------------- */
   function renderToc() {
     navTocBody.innerHTML = "";
@@ -8713,8 +9089,15 @@
       ih.appendChild(txt("span", "badge lv", k.level));
       it.appendChild(ih);
 
-      it.appendChild(txt("span", "navhitname", k.name || ""));
-      if (h.snip) it.appendChild(txt("span", "navhitsnip", h.label + "：" + h.snip));
+      var nmSpan = el("span", "navhitname");
+      nmSpan.appendChild(navMark(k.name || "", q));
+      it.appendChild(nmSpan);
+      if (h.snip) {
+        var sn = el("span", "navhitsnip");
+        sn.appendChild(document.createTextNode(h.label + "："));
+        sn.appendChild(navMark(h.snip, q));
+        it.appendChild(sn);
+      }
 
       navBindHit(it, k.id);
       navHits.appendChild(it);
@@ -8730,6 +9113,16 @@
         jumpToPoint(kid);
       }
     });
+  }
+
+  function flashCard(card) {
+    if (!card) return;
+    card.classList.add("flash");
+    if (NAV_FLASH_TIMER) clearTimeout(NAV_FLASH_TIMER);
+    NAV_FLASH_TIMER = setTimeout(function () {
+      card.classList.remove("flash");
+      NAV_FLASH_TIMER = null;
+    }, NAV_FLASH_MS);
   }
 
   /* ---------------- 统一跳转 ---------------- */
@@ -8753,13 +9146,9 @@
       p = p.parentNode;
     }
     card.open = true;
+    if (card.getAttribute("data-math") !== "1") { renderMath(card); card.setAttribute("data-math", "1"); }
     card.scrollIntoView({ block: "center", behavior: "smooth" });
-    card.classList.add("flash");
-    if (NAV_FLASH_TIMER) clearTimeout(NAV_FLASH_TIMER);
-    NAV_FLASH_TIMER = setTimeout(function () {
-      card.classList.remove("flash");
-      NAV_FLASH_TIMER = null;
-    }, NAV_FLASH_MS);
+    flashCard(card);
   }
 
   /* ---------------- 抽屉开合与 tab ---------------- */
@@ -8819,6 +9208,10 @@
     setNavTab("search", true);
     navInput.focus();
   });
+  byId("tocSearchBtn").addEventListener("click", function () {
+    setNavTab("search", true);
+    navInput.focus();
+  });
   navClear.addEventListener("click", function () {
     navInput.value = "";
     renderSearch();
@@ -8842,7 +9235,62 @@
     if (e.key === "Escape" && !navDrawer.hidden) closeNav();
   });
 
-  
+  /* ---------------- 抽屉 focus trap（收藏 / 同步 / 目录搜索 共用） ---------------- */
+  var FOCUS_SEL = 'a[href],button:not([disabled]),textarea,input:not([type="hidden"]),select,[tabindex]:not([tabindex="-1"])';
+
+  function trapFocusIn(drawer, e) {
+    if (!drawer || drawer.hidden) return;
+    if (e.key !== "Tab") return;
+    var nodes = drawer.querySelectorAll(FOCUS_SEL);
+    var list = [], i;
+    for (i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (n.offsetParent === null && n.getClientRects().length === 0) continue; // 跳过不可见
+      if (n.getAttribute("aria-hidden") === "true") continue;
+      list.push(n);
+    }
+    if (!list.length) return;
+    var first = list[0], last = list[list.length - 1], act = document.activeElement;
+    if (e.shiftKey) {
+      if (act === first || !drawer.contains(act)) { e.preventDefault(); last.focus(); }
+    } else {
+      if (act === last || !drawer.contains(act)) { e.preventDefault(); first.focus(); }
+    }
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (!favDrawer.hidden) trapFocusIn(favDrawer, e);
+    else if (!syncDrawer.hidden) trapFocusIn(syncDrawer, e);
+    else if (!navDrawer.hidden) trapFocusIn(navDrawer, e);
+  });
+
+  /* ---------------- 全局快捷键（Ctrl/Cmd+K 与 /） ---------------- */
+  function openSearchFocus() {
+    if (!navDrawer.hidden) {
+      setNavTab("search", true);
+      navInput.focus();
+      return;
+    }
+    openNav("search");
+  }
+
+  document.addEventListener("keydown", function (e) {
+    var t = e.target || {};
+    var tag = (t.tagName || "").toUpperCase();
+    var editing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || t.isContentEditable === true;
+
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === "k" || e.key === "K")) {
+      e.preventDefault();
+      openSearchFocus();
+      return;
+    }
+    if (e.key === "/" && !editing && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+      e.preventDefault();
+      openSearchFocus();
+    }
+  });
+
+
   /* ---------------- [note] 就地笔记（v3.1.0 新增） ----------------
      存储：SNAP.notes[sid][noteKey] = { text, t }，noteKey = "kp:<kid>" / "ex:<kid>:<i>"。
      规则：笔记是用户纯文本 → 一律用 value / textContent 写入（不过 innerHTML、不参与 KaTeX）；
