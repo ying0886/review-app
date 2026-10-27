@@ -2,9 +2,14 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.10.0
+  APP_VERSION: 3.10.1
   DATA_VERSION: 2026-10-26
-  本次变更: P4 收尾（APP_VERSION 3.10.0 / DATA_VERSION 不变，不动数据块、快照格式与 KaTeX 内嵌资源）——
+  本次变更: P4.1 布局修复（APP_VERSION 3.10.1 / DATA_VERSION 不变，纯 CSS，不动数据与逻辑）——
+             ①废除手机横屏（max-height:540px）下的 .card .body 两列网格，恢复单列流式布局，消除信号/内容左右错位与大片空白；
+             ②宽屏（>=900px 且非横屏）有笔记卡片两栏规则重写：.bodytagrow 与 .examples 跨满整行，仅知识点笔记（data-notekey 以 kp: 开头）固定右栏 sticky，例题内笔记留在左列流中；
+             ③竖屏（<=560px）字段改上下结构：左侧 84px 固定标签改为正文上方一行小字（强调色），释放左侧留白，内容占满整行；
+             ④.bodytagrow 改虚线分隔 + 下边距，.reflinks 补内边距，保证信号行与关联 chip 流式对齐无空洞。
+  上次变更: P4 收尾（APP_VERSION 3.10.0 / DATA_VERSION 不变，不动数据块、快照格式与 KaTeX 内嵌资源）——
              ①进度条压成顶栏底边 2px 细线（.prog absolute 贴底通栏，.progText 用 sr-only 保留），进度文字移到筛选栏右侧 #inlineProg；
              ②全局快捷键：Ctrl/Cmd+K 与「/」打开搜索抽屉并聚焦（输入框内不拦截、Ctrl+Shift+K 不抢）；
              ③目录抽屉顶部常驻搜索入口（按钮转发，非真 input，避免焦点撕裂；sticky 固定）；
@@ -105,7 +110,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.10.0">
+<meta name="app-version" content="3.10.1">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -394,7 +399,7 @@
     font-size:11.5px;line-height:1.5;padding:1px 6px;
     background:var(--chip);color:var(--ink2);border-radius:3px;white-space:nowrap;
   }
-  .bodytagrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+  .bodytagrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 0;margin-bottom:4px;border-bottom:1px dashed var(--line2)}
   .sigchip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px}
   .bodytagrow .form{font-size:11.5px}
 
@@ -439,7 +444,7 @@
   .refjump:hover{color:var(--ink);background:var(--accentBg)}
   .refjump:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   @media print{ .refjump{text-decoration:none;background:transparent !important} }
-  .reflinks{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0}
+  .reflinks{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0;padding:4px 0}
   .refchip{display:inline-flex;align-items:baseline;gap:5px;max-width:100%;
     padding:2px 8px;border:1px solid var(--line2);border-radius:999px;
     background:var(--chip);color:var(--ink);font-size:12.5px;line-height:1.6;
@@ -708,6 +713,12 @@
     .topbar h1,.btn{white-space:nowrap}
     .acts{gap:6px}
     .acts .btn{padding:0 10px}
+    /* P4.1：竖屏字段改为上下结构，释放左侧 84px 固定标签的空间 */
+    .field{flex-direction:column;gap:4px;padding:10px 0}
+    .field .k{flex:none;width:auto;font-size:11px;font-weight:600;color:var(--accent);padding-top:0;letter-spacing:.05em}
+    .field-warn .k,.field-action .k{flex-basis:auto}
+    .field-warn .k{color:var(--warn)}
+    .field-action .k{color:var(--act)}
   }
   /* ---------- 手机横屏自适应（纯 CSS，不改结构/数据；screen 限定保证打印不受影响） ---------- */
   @media screen and (orientation: landscape) and (max-height: 540px){
@@ -746,14 +757,10 @@
     .mwrap label{min-height:36px;font-size:12px;gap:5px}
     .mbox{width:16px;height:16px}
 
-    /* 展开内容：两列网格，例题独占整行 */
-    .card .body{
-      display:grid;grid-template-columns:repeat(2,1fr);column-gap:24px;
-      row-gap:0;padding:2px 0 10px;width:100%;
-    }
+    /* 展开内容：单列流式布局（P4.1 废除两列网格，避免信号/内容左右错位） */
     .card .body>.field{min-width:0;width:100%}
     .card .body>.field:last-child{border-bottom:0}
-    .card .body>.examples{grid-column:1 / -1;width:100%}
+    .card .body>.examples{width:100%}
     .k{flex:0 0 84px}
     .field p{font-size:14.5px}
     .examples{margin-top:8px}
@@ -968,14 +975,35 @@
   /* 宽屏（>=900px 且非手机横屏）：有笔记的卡片正文两栏，笔记在右栏 sticky，例题独占整行 */
   @media screen and (min-width:900px) and (min-height:541px){
     .card.hasnote>.body{
-      display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,330px);
-      column-gap:22px;align-items:start;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(260px,330px);
+      column-gap:22px;
+      align-items:start;
     }
-    .card.hasnote>.body>*{grid-column:1;min-width:0}
-    .card.hasnote>.body>.examples{grid-column:1 / -1}
-    .card.hasnote>.body>.notebox{
-      grid-column:2;grid-row:1;position:sticky;top:72px;align-self:start;
+    /* 默认所有内容都在左侧第一列 */
+    .card.hasnote>.body>*{
+      grid-column:1;
+      min-width:0;
+    }
+    /* 信号标签行和例题区跨满整行 */
+    .card.hasnote>.body>.bodytagrow,
+    .card.hasnote>.body>.examples{
+      grid-column:1 / -1;
+    }
+    /* 仅知识点笔记固定在右侧，且跨越足够的行数防止被其他元素挤下去 */
+    .card.hasnote>.body>.notebox[data-notekey^="kp:"]{
+      grid-column:2;
+      grid-row:1 / span 20;
+      position:sticky;
+      top:72px;
+      align-self:start;
       margin-top:0;
+    }
+    /* 例题内的笔记仍保留在左侧流中 */
+    .card.hasnote>.body>.examples .notebox{
+      position:static;
+      grid-column:auto;
+      grid-row:auto;
     }
   }
   /* 手机横屏（max-height:540px 已是两列 grid）：笔记块跨满整行，不嵌套冲突 */
@@ -6369,7 +6397,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.10.0";
+  var APP_VERSION = "3.10.1";
   var DATA_VERSION = "2026-10-26";
 
   var LEVEL_ORDER = ["A", "B", "C"];
