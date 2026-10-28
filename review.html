@@ -2,9 +2,14 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.10.1
+  APP_VERSION: 3.11.0
   DATA_VERSION: 2026-10-26
-  本次变更: P4.1 布局修复（APP_VERSION 3.10.1 / DATA_VERSION 不变，纯 CSS，不动数据与逻辑）——
+  本次变更: 首页新增「每日一句」励志诗句框（APP_VERSION 3.11.0 / DATA_VERSION 不变）——
+             ①在 .wrap 内 printhead 与 filters 之间插入 .dailyquote 区块（section + dqText/dqDate/dqFrom），诗句与出处由 JS 按自然日填充，HTML 里留默认句兜底；
+             ②新增内联 QUOTES 数组（40 条毛泽东诗词，按创作年代升序）、dailyDayIndex()（自 2026-01-01 起天数取模、负数保护）、renderDailyQuote()（textContent 写入），启动与 visibilitychange 切回时刷新，同日稳定、跨日必换；
+             ③新增一段 CSS（追加在样式表末尾）：衬线字体、accentBg 浅底 + accent 左竖条、≤560px 与手机横屏字号内边距压缩、打印降级为浅灰 9.5pt 小字且日期出处分两行/并排；
+             ④未动 #review-data 数据、KaTeX、同步快照、笔记、收藏、筛选、目录搜索、打印逻辑；无网络请求、零新依赖、file:// 直接可开。
+  上次变更: P4.1 布局修复（APP_VERSION 3.10.1 / DATA_VERSION 不变，纯 CSS，不动数据与逻辑）——
              ①废除手机横屏（max-height:540px）下的 .card .body 两列网格，恢复单列流式布局，消除信号/内容左右错位与大片空白；
              ②宽屏（>=900px 且非横屏）有笔记卡片两栏规则重写：.bodytagrow 与 .examples 跨满整行，仅知识点笔记（data-notekey 以 kp: 开头）固定右栏 sticky，例题内笔记留在左列流中；
              ③竖屏（<=560px）字段改上下结构：左侧 84px 固定标签改为正文上方一行小字（强调色），释放左侧留白，内容占满整行；
@@ -110,7 +115,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.10.1">
+<meta name="app-version" content="3.11.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -1024,6 +1029,44 @@
       padding:0 !important;font-size:13px !important;
     }
   }
+  /* ---------- [每日一句] 毛泽东诗词 · 按自然日轮换（v3.11.0 新增，追加在样式表末尾） ---------- */
+  .dailyquote{
+    background:var(--accentBg);
+    border:1px solid var(--line);
+    border-left:3px solid var(--accent);
+    border-radius:0 6px 6px 0;
+    margin-bottom:14px;
+    padding:12px 14px 12px 16px;
+  }
+  .dqtext{
+    font-family:"Songti SC","STSong","Kaiti SC","KaiTi",Georgia,serif;
+    font-size:16px;line-height:1.75;letter-spacing:.02em;
+    color:var(--ink);margin:0;
+  }
+  .dqmeta{
+    margin:6px 0 0;font-size:12px;color:var(--ink2);
+    display:flex;flex-wrap:wrap;gap:4px 10px;
+  }
+  .dqdate{flex-basis:100%;font-variant-numeric:tabular-nums}
+  .dqmeta cite{font-style:normal}
+  @media (max-width:560px){
+    .dqtext{font-size:15px}
+    .dailyquote{padding:10px 12px}
+  }
+  @media screen and (orientation:landscape) and (max-height:540px){
+    .dqtext{font-size:13.5px}
+    .dailyquote{padding:6px 10px}
+  }
+  @media print{
+    .dailyquote{
+      background:none !important;border:none !important;
+      padding:0;margin:2px 0 8px;
+      break-inside:avoid;page-break-inside:avoid;
+    }
+    .dqtext{font-size:9.5pt;line-height:1.5;color:#666 !important}
+    .dqmeta{font-size:9.5pt;color:#666 !important}
+    .dqdate{flex-basis:auto}
+  }
 </style>
 </head>
 <body>
@@ -1072,6 +1115,10 @@
 
 <div class="wrap">
   <div class="printhead" id="printHead"></div>
+  <section class="dailyquote" id="dailyQuote" aria-label="每日一句">
+    <p class="dqtext" id="dqText">雄关漫道真如铁，而今迈步从头越。</p>
+    <p class="dqmeta"><span class="dqdate" id="dqDate"></span><cite id="dqFrom"></cite></p>
+  </section>
   <div class="filters" id="filters"></div>
   <main id="groups"></main>
   <footer class="stats" id="stats"></footer>
@@ -6397,7 +6444,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.10.1";
+  var APP_VERSION = "3.11.0";
   var DATA_VERSION = "2026-10-26";
 
   var LEVEL_ORDER = ["A", "B", "C"];
@@ -9641,6 +9688,72 @@
     });
   }
 
+  /* ---------------- 每日一句（毛泽东诗词 · 按自然日轮换，v3.11.0 新增） ---------------- */
+  var QUOTES = [
+    { t:'孩儿立志出乡关，学不成名誓不还。', s:'毛泽东《七绝·改诗赠父亲》1910' },
+    { t:'君行吾为发浩歌，鲲鹏击浪从兹始。', s:'毛泽东《七古·送纵宇一郎东行》1918' },
+    { t:'恰同学少年，风华正茂；书生意气，挥斥方遒。', s:'毛泽东《沁园春·长沙》1925' },
+    { t:'问苍茫大地，谁主沉浮？', s:'毛泽东《沁园春·长沙》1925' },
+    { t:'到中流击水，浪遏飞舟？', s:'毛泽东《沁园春·长沙》1925' },
+    { t:'敌军围困万千重，我自岿然不动。', s:'毛泽东《西江月·井冈山》1928' },
+    { t:'早已森严壁垒，更加众志成城。', s:'毛泽东《西江月·井冈山》1928' },
+    { t:'人生易老天难老，岁岁重阳。', s:'毛泽东《采桑子·重阳》1929' },
+    { t:'一年一度秋风劲，不似春光。胜似春光，寥廓江天万里霜。', s:'毛泽东《采桑子·重阳》1929' },
+    { t:'六月天兵征腐恶，万丈长缨要把鲲鹏缚。', s:'毛泽东《蝶恋花·从汀州向长沙》1930' },
+    { t:'万木霜天红烂漫，天兵怒气冲霄汉。', s:'毛泽东《渔家傲·反第一次大“围剿”》1931' },
+    { t:'山，快马加鞭未下鞍。惊回首，离天三尺三。', s:'毛泽东《十六字令三首》1934' },
+    { t:'山，倒海翻江卷巨澜。奔腾急，万马战犹酣。', s:'毛泽东《十六字令三首》1934' },
+    { t:'雄关漫道真如铁，而今迈步从头越。', s:'毛泽东《忆秦娥·娄山关》1935' },
+    { t:'红军不怕远征难，万水千山只等闲。', s:'毛泽东《七律·长征》1935' },
+    { t:'五岭逶迤腾细浪，乌蒙磅礴走泥丸。', s:'毛泽东《七律·长征》1935' },
+    { t:'更喜岷山千里雪，三军过后尽开颜。', s:'毛泽东《七律·长征》1935' },
+    { t:'不到长城非好汉，屈指行程二万。', s:'毛泽东《清平乐·六盘山》1935' },
+    { t:'太平世界，环球同此凉热。', s:'毛泽东《念奴娇·昆仑》1935' },
+    { t:'俱往矣，数风流人物，还看今朝。', s:'毛泽东《沁园春·雪》1936' },
+    { t:'山舞银蛇，原驰蜡象，欲与天公试比高。', s:'毛泽东《沁园春·雪》1936' },
+    { t:'宜将剩勇追穷寇，不可沽名学霸王。', s:'毛泽东《七律·人民解放军占领南京》1949' },
+    { t:'天若有情天亦老，人间正道是沧桑。', s:'毛泽东《七律·人民解放军占领南京》1949' },
+    { t:'不管风吹浪打，胜似闲庭信步。', s:'毛泽东《水调歌头·游泳》1956' },
+    { t:'万里长江横渡，极目楚天舒。', s:'毛泽东《水调歌头·游泳》1956' },
+    { t:'为有牺牲多壮志，敢教日月换新天。', s:'毛泽东《七律·到韶山》1959' },
+    { t:'喜看稻菽千重浪，遍地英雄下夕烟。', s:'毛泽东《七律·到韶山》1959' },
+    { t:'冷眼向洋看世界，热风吹雨洒江天。', s:'毛泽东《七律·登庐山》1959' },
+    { t:'中华儿女多奇志，不爱红装爱武装。', s:'毛泽东《七绝·为女民兵题照》1961' },
+    { t:'待到山花烂漫时，她在丛中笑。', s:'毛泽东《卜算子·咏梅》1961' },
+    { t:'已是悬崖百丈冰，犹有花枝俏。', s:'毛泽东《卜算子·咏梅》1961' },
+    { t:'金猴奋起千钧棒，玉宇澄清万里埃。', s:'毛泽东《七律·和郭沫若同志》1961' },
+    { t:'独有英雄驱虎豹，更无豪杰怕熊罴。', s:'毛泽东《七律·冬云》1962' },
+    { t:'梅花欢喜漫天雪，冻死苍蝇未足奇。', s:'毛泽东《七律·冬云》1962' },
+    { t:'一万年太久，只争朝夕。', s:'毛泽东《满江红·和郭沫若同志》1963' },
+    { t:'多少事，从来急；天地转，光阴迫。', s:'毛泽东《满江红·和郭沫若同志》1963' },
+    { t:'四海翻腾云水怒，五洲震荡风雷激。', s:'毛泽东《满江红·和郭沫若同志》1963' },
+    { t:'久有凌云志，重上井冈山。', s:'毛泽东《水调歌头·重上井冈山》1965' },
+    { t:'可上九天揽月，可下五洋捉鳖。', s:'毛泽东《水调歌头·重上井冈山》1965' },
+    { t:'世上无难事，只要肯登攀。', s:'毛泽东《水调歌头·重上井冈山》1965' }
+  ];
+
+  function dailyDayIndex(n) {
+    var d = new Date();
+    var days = Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
+               - Date.UTC(2026, 0, 1)) / 86400000);
+    return ((days % n) + n) % n;   // 负数保护
+  }
+
+  function renderDailyQuote() {
+    var idx = dailyDayIndex(QUOTES.length);
+    var q = QUOTES[idx];
+    var d = new Date();
+    var t = byId("dqText"), f = byId("dqFrom"), dd = byId("dqDate");
+    if (t) t.textContent = q.t;
+    if (f) f.textContent = q.s;
+    if (dd) dd.textContent = (d.getMonth() + 1) + "月" + d.getDate() + "日 · 每日一句";
+  }
+
+  // 从后台切回时重算索引；跨日则就地更新文案，不重渲染整页
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") renderDailyQuote();
+  });
+
   /* ---------------- 启动 ---------------- */
   try {
     migrateLegacy();
@@ -9651,6 +9764,7 @@
     lsSet(LS_ACTIVE, SID);
     applyTheme(lsGet(LS_THEME, null));
     renderAll();
+    renderDailyQuote();
 
     if (movedV3) {
       var tst = byId("toast");
