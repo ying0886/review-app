@@ -2,9 +2,20 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.18.0
+  APP_VERSION: 3.19.0
   DATA_VERSION: 2026-10-31
-  本次变更: 跨设备同步扩到「刷题记录」，并补上定时同步、冲突收敛与错误分级（APP_VERSION 3.18.0 / DATA_VERSION 不变，不动数据）——
+  本次变更: 移除「体系信号」筛选维度（APP_VERSION 3.19.0 / DATA_VERSION 不变，不动数据）——
+             ①筛选侧：filters 去掉 signal 字段；删除「题型信号」facet、matches() 里的 signal 判断、「清除筛选」里的 focusSignal("全部")、
+               activeFilterCount() 的 signal 计数、renderGroups() 末尾的 focusSignal 调用，以及 focusSignal() 函数本身（不再高亮同类卡片）；
+             ②卡片侧：展开区「信号：…」由可点 chip 降级为纯标签 span.sigtag——点击不再改 filters、不再 renderFilters/renderGroups，
+               title 从「点一下只看同信号的知识点」改为「题干特征提示（仅作阅读参考，不参与筛选）」，信息保留、可交互性去掉；
+             ③样式：删除 .badge.sig（v3.0 版面遗留）、.card.sigfocus>summary 高亮、窄屏 .badge.sig{min-width:0} 与打印里对应的两条规则；
+               新增 .sigtag（允许换行、不溢出），打印态改为白底灰边；
+             ④提示与默认态：筛选维度 6→4（级别 / 考查形态 / 来源层级 / 笔记），计数徽标与「清除筛选」的显隐按新维度重算，
+               filters 无 signal 键即默认「全部」；数据里的 k.signal 字段保留（界面只作展示，check.mjs 不依赖它）；
+             ⑤受影响面核查：搜索、概览、收藏、笔记、打印、同步快照、刷题徽标都不读 signal，未受影响；
+               新增 _tmp/no-signal-test.mjs（20 条断言）覆盖筛选项、点击无副作用、计数复位、打印样式与无报错。
+  上次变更: 跨设备同步扩到「刷题记录」，并补上定时同步、冲突收敛与错误分级（APP_VERSION 3.18.0 / DATA_VERSION 不变，不动数据）——
              ①同步范围五类：知识点已掌握 mastery、例题收藏 favs、笔记 notes、偏好 prefs.theme、刷题记录 quiz；
                不同步：当前科目、同步令牌与通道配置、已忽略版本号、刷题窗口内的临时作答状态（都是本机的东西）；
              ②刷题记录并入快照：新增可选字段 quiz（{科目:{知识点#题干前20字:{r,n,w,t}}}）与 quizReset（{科目:重置时刻}），
@@ -186,7 +197,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.18.0">
+<meta name="app-version" content="3.19.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -465,18 +476,17 @@
   .badge.sec{color:var(--ink2);font-variant-numeric:tabular-nums}
   .badge.refs{color:var(--ink2);opacity:.75;white-space:normal;overflow-wrap:anywhere;max-width:100%}
   .badge.none{color:var(--ink2);opacity:.55;border-style:dashed}
-  .badge.sig{
-    color:var(--ink2);background:var(--chip);border-color:var(--line2);
-    cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;
-  }
-  .badge.sig:hover{color:var(--accent);border-color:var(--accent)}
-  .card.sigfocus>summary{outline:1.5px solid var(--accent);outline-offset:2px;border-radius:4px}
   .form{
     font-size:11.5px;line-height:1.5;padding:1px 6px;
     background:var(--chip);color:var(--ink2);border-radius:3px;white-space:nowrap;
   }
   .bodytagrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 0;margin-bottom:4px;border-bottom:1px dashed var(--line2)}
-  .sigchip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px}
+  /* 信号：只作「题干特征」提示，不可点、不参与筛选（原 .sigchip 是筛选入口，已废弃） */
+  .sigtag{
+    max-width:100%;white-space:normal;overflow-wrap:anywhere;
+    font-size:12.5px;line-height:1.6;padding:2px 10px;
+    border:1px solid var(--line2);border-radius:6px;color:var(--ink2);
+  }
   .bodytagrow .form{font-size:11.5px}
 
   /* 勾选 */
@@ -787,11 +797,10 @@
     .drawer,.drawerScrim,.favbtn,.favcount{display:none !important}
     .ex,.sol{break-inside:avoid;page-break-inside:avoid}
     .katex{font-size:1em;break-inside:avoid}
-    .badge.sig{background:#fff !important;border:1px solid #888;white-space:normal;overflow:visible;text-overflow:clip}
+    .sigtag{background:#fff !important;border:1px solid #888;color:#444}
     .mth,.netline,.mthsteps li{break-inside:avoid;page-break-inside:avoid}
     .mth{border-left-color:#bbb}
     .mthno,.mthwhen,.netlab{color:#000 !important}
-    .card.sigfocus>summary{outline:0}
     .field-warn,.field-action{background:#fff !important;border-left:2px solid #888 !important;
       margin:6px 0;padding:6px 8px}
     .field-warn .k,.field-action .k{color:#000 !important}
@@ -800,7 +809,6 @@
     .flabel{width:100%}
     .nm{flex:1 1 100%}
     .tags{order:3;min-width:0}
-    .badge.sig{min-width:0}   /* v3.1.0 附带修复：窄屏下长「信号」徽标不再把页面撑出横向滚动 */
     .mwrap{order:2}
     .scope{display:none}
     .subjects{max-width:calc(100% - 165px);flex:1 1 0;min-width:0}
@@ -13814,7 +13822,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.18.0";
+  var APP_VERSION = "3.19.0";
   var DATA_VERSION = "2026-10-31";
 
   var LEVEL_ORDER = ["A", "B", "C"];
@@ -13884,7 +13892,7 @@
   });
 
   var SID = null;
-  var filters = { level: "全部", form: "全部", source: "全部", signal: "全部", notes: "全部", mastery: "全部" };
+  var filters = { level: "全部", form: "全部", source: "全部", notes: "全部", mastery: "全部" };
   var filterOpen = false;   // 筛选面板展开状态，跨 renderFilters 重渲染保持
 
   function cur() {
@@ -14216,7 +14224,6 @@
     filters.level = "全部";
     filters.form = "全部";
     filters.source = "全部";
-    filters.signal = "全部";
     filters.notes = "全部";
     filters.mastery = "全部";
   }
@@ -14240,7 +14247,6 @@
     if (filters.form !== "全部") n++;
     if (filters.source !== "全部") n++;
     if (filters.notes !== "全部") n++;
-    if (filters.signal !== "全部") n++;
     if (filters.mastery !== "全部") n++;
     return n;
   }
@@ -14321,7 +14327,6 @@
       resetFilters();
       renderFilters();
       renderGroups();
-      focusSignal("全部");
     });
     bar.appendChild(clear);
 
@@ -14338,7 +14343,6 @@
     })));
     facet("来源层级", "source", ["全部"].concat(sourcesOf(list)));
     facet("笔记", "notes", ["全部", "有笔记"]);   // [note]
-    if (filters.signal !== "全部") facet("题型信号", "signal", ["全部", filters.signal]);
 
     box.appendChild(fbox);
 
@@ -14422,16 +14426,13 @@
 
     var body = el("div", "body");
 
+    /* 信号只作「题干特征」提示，不再参与筛选：从可点 chip 降级为纯标签，
+       点击不再改 filters、也不再高亮同类卡片 */
     var sigRow = el("div", "bodytagrow");
     if (k.signal) {
-      var sigChip = txt("button", "chip sigchip", "信号：" + k.signal);
-      sigChip.type = "button";
-      sigChip.title = "点一下只看同信号的知识点";
-      sigChip.addEventListener("click", function () {
-        filters.signal = (filters.signal === k.signal) ? "全部" : k.signal;
-        renderFilters(); renderGroups(); focusSignal(filters.signal);
-      });
-      sigRow.appendChild(sigChip);
+      var sigTag = txt("span", "sigtag", "信号：" + k.signal);
+      sigTag.title = "题干特征提示（仅作阅读参考，不参与筛选）";
+      sigRow.appendChild(sigTag);
     }
     if (k.forms && k.forms.length) {
       k.forms.forEach(function (f) { sigRow.appendChild(txt("span", "form", f)); });
@@ -14548,18 +14549,6 @@
     return f;
   }
 
-  function focusSignal(sg) {
-    var box = byId("groups");
-    if (!box) return;
-    var cards = box.querySelectorAll(".card");
-    for (var i = 0; i < cards.length; i++) {
-      var kid = cards[i].id.replace(/^k-/, "");
-      var p = findPoint(kid);
-      var on = !!(sg && sg !== "全部" && p && p.signal === sg);
-      cards[i].classList.toggle("sigfocus", on);
-    }
-  }
-
   function buildExamples(k) {
     var box = el("div", "examples");
 
@@ -14635,7 +14624,6 @@
     if (filters.level !== "全部" && k.level !== filters.level) return false;
     if (filters.form !== "全部" && (k.forms || []).indexOf(filters.form) === -1) return false;
     if (filters.source !== "全部" && k.source !== filters.source) return false;
-    if (filters.signal !== "全部" && k.signal !== filters.signal) return false;
     if (filters.notes === "有笔记" && !noteCardHas(k.id)) return false;   // [note]
     return true;
   }
@@ -14690,7 +14678,6 @@
       }
     }
     noteAutosizeAll(box);   // [note]
-    focusSignal(filters.signal);
   }
 
   function renderProgress() {
