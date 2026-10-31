@@ -2,9 +2,19 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.19.0
+  APP_VERSION: 3.20.0
   DATA_VERSION: 2026-10-31
-  本次变更: 移除「体系信号」筛选维度（APP_VERSION 3.19.0 / DATA_VERSION 不变，不动数据）——
+  本次变更: 错题回顾——答错时把「我答了什么」存下来，回到知识点卡片能再看一遍（APP_VERSION 3.20.0 / DATA_VERSION 不变，不动数据）——
+             ①存储：刷题记录在 {r,n,w,t} 上增加三个可选字段：wa＝最近一次答错的作答原文、wt＝该次时间、wm＝类型（opt/fill/self）；
+               作答内容截断到 120 字，防止超长填空把快照撑大；答对不清空 wa，只是把展示降级为「曾答错」，便于回顾；
+             ②写入：qzAnswer 存选项字母、qzCheckFill 存输入原文、qzSelf 存空串＋wm=self；三条路径共用 qzCount→qzSaveRec；
+             ③展示：例题行在题号行下方新增 p.exwrong——未改正显示「上次答错：B. 低阶无穷小　应选 A. 高阶无穷小　·　10-31 21:33」，
+               已改正显示「曾答错：…（已改正）」并转为中性灰；例题区头部显示「共 3 道 · 错过 2 道」；没答错的题不占位；
+               选项文本含 LaTeX（\frac、^、_）时只给字母，避免把源码糊在卡片上；
+             ④刷题小结的错题清单也补一行「本次作答：…」，当场就能看到自己错在哪；
+             ⑤同步：wa/wt 纳入 mergeQuizMap（wt 新者胜、同刻按 wm 定序，保证幂等/交换/结合）与 sameProgress（回读校验能发现错答差异）；
+             ⑥兼容：旧记录没有 wa/wt，照常加载、不显示错答行；数据块与题库格式未动。
+  上次变更: 移除「体系信号」筛选维度（APP_VERSION 3.19.0 / DATA_VERSION 不变，不动数据）——
              ①筛选侧：filters 去掉 signal 字段；删除「题型信号」facet、matches() 里的 signal 判断、「清除筛选」里的 focusSignal("全部")、
                activeFilterCount() 的 signal 计数、renderGroups() 末尾的 focusSignal 调用，以及 focusSignal() 函数本身（不再高亮同类卡片）；
              ②卡片侧：展开区「信号：…」由可点 chip 降级为纯标签 span.sigtag——点击不再改 filters、不再 renderFilters/renderGroups，
@@ -197,7 +207,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.19.0">
+<meta name="app-version" content="3.20.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -586,6 +596,12 @@
     border:1px solid var(--line2);border-radius:3px;color:var(--ink2);white-space:nowrap;
   }
   .exno{font-size:11.5px;color:var(--ink2);font-variant-numeric:tabular-nums}
+  /* [quiz] 错答回顾行：仅在有错答记录时出现，未答错不占位 */
+  .exwrong{
+    margin:0 0 6px;font-size:12px;line-height:1.7;color:var(--warn);
+    overflow-wrap:anywhere;
+  }
+  .exwrong.fixed{color:var(--ink2);opacity:.85}
   .exq{margin:0 0 6px;font-size:14.5px;line-height:1.75;overflow-wrap:anywhere}
   .exsol{margin:0}
   .exsol>summary{
@@ -798,6 +814,7 @@
     .ex,.sol{break-inside:avoid;page-break-inside:avoid}
     .katex{font-size:1em;break-inside:avoid}
     .sigtag{background:#fff !important;border:1px solid #888;color:#444}
+    .exwrong,.exwrong.fixed{color:#444 !important;opacity:1}
     .mth,.netline,.mthsteps li{break-inside:avoid;page-break-inside:avoid}
     .mth{border-left-color:#bbb}
     .mthno,.mthwhen,.netlab{color:#000 !important}
@@ -1262,6 +1279,7 @@
   .qwrong li:hover .qwl-stem{color:var(--accent)}
   .qwl-stem{display:block;color:var(--ink);font-size:13.5px;overflow-wrap:anywhere}
   .qwl-meta{display:block;color:var(--ink2);font-size:12px;margin-top:3px}
+  .qwl-ans{display:block;color:var(--warn);font-size:12px;margin-top:2px;overflow-wrap:anywhere}
   .qwl-act{display:flex;gap:8px;margin-top:7px}
   .qempty{padding:40px 0;text-align:center;color:var(--ink2);font-size:14px}
 
@@ -13822,7 +13840,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.19.0";
+  var APP_VERSION = "3.20.0";
   var DATA_VERSION = "2026-10-31";
 
   var LEVEL_ORDER = ["A", "B", "C"];
@@ -14554,7 +14572,7 @@
 
     var head = el("div", "exhead");
     head.appendChild(txt("span", "exlabel", "例题"));
-    head.appendChild(txt("span", "excount", "共 " + k.examples.length + " 道"));
+    head.appendChild(txt("span", "excount", qzExCountText(SID, k.id, k.examples.length)));
     var toggleAll = txt("button", "extoggle", "全部收起");
     toggleAll.type = "button";
     toggleAll.setAttribute("data-ex-toggle", k.id);
@@ -14581,6 +14599,10 @@
       h.appendChild(buildFavBtn(k.id, i));
       h.appendChild(buildNoteBtn(k.id, i));   // [note]
       item.appendChild(h);
+
+      var wrongLine = txt("p", "exwrong", "");
+      wrongLine.hidden = true;                // 有错答记录才显示，由 qzPaintEx 填充
+      item.appendChild(wrongLine);
 
       var q = el("p", "exq");
       q.innerHTML = safeHtml(ex.q);
@@ -15137,6 +15159,21 @@
        ③w 夹到 n 以内，杜绝 w>n 的脏数据。 */
   function qzNum(x) { var v = Number(x); return (isFinite(v) && v > 0) ? Math.floor(v) : 0; }
 
+  /* 错答内容（wa/wt/wm）同样按「最近一次」合并：wt 新者胜；
+     wt 相同用类型名定序，与合并顺序无关，保证两端一致。 */
+  function pickWrong(a, b) {
+    var aw = (a && typeof a.wa === "string") ? a.wa : "";
+    var bw = (b && typeof b.wa === "string") ? b.wa : "";
+    var at = a ? normT(a.wt) : 0, bt = b ? normT(b.wt) : 0;
+    if (!at && !bt) return { wa: "", wt: 0, wm: "" };
+    var side;
+    if (at > bt) side = 0;
+    else if (bt > at) side = 1;
+    else side = (String(a.wm || "") >= String(b.wm || "")) ? 0 : 1;
+    if (side === 0) return { wa: aw, wt: at, wm: a.wm || (aw ? "opt" : "self") };
+    return { wa: bw, wt: bt, wm: b.wm || (bw ? "opt" : "self") };
+  }
+
   function pickQuizEntry(a, b) {
     if (!a && !b) return null;
     var at = a ? normT(a.t) : -1, bt = b ? normT(b.t) : -1;
@@ -15149,7 +15186,8 @@
     var n = Math.max(a ? qzNum(a.n) : 0, b ? qzNum(b.n) : 0);
     var w = Math.max(a ? qzNum(a.w) : 0, b ? qzNum(b.w) : 0);
     if (w > n) w = n;
-    return { r: r, n: n, w: w, t: t };
+    var we = pickWrong(a, b);   // [quiz] 最近一次错答的原文
+    return { r: r, n: n, w: w, t: t, wa: we.wa, wt: we.wt, wm: we.wm };
   }
 
   function mergeQuizMap(L, R) {
@@ -15185,6 +15223,8 @@
         if (qzNum(ea.n) !== qzNum(eb.n)) return false;
         if (qzNum(ea.w) !== qzNum(eb.w)) return false;
         if (normT(ea.t) !== normT(eb.t)) return false;
+        if (String(ea.wa == null ? "" : ea.wa) !== String(eb.wa == null ? "" : eb.wa)) return false;
+        if (normT(ea.wt) !== normT(eb.wt)) return false;
       }
     }
     return true;
@@ -17370,7 +17410,8 @@
   /* 题库由 _build/build-quiz.mjs 从例题派生：item = {s 科目, k 知识点, i 例题序号,
      q 去掉选项的题干, o 选项数组, a 答案下标, e 填空标准答案}。
      题干的展示文本与解析仍从 review-data 里取，题库只补「可点击的结构」。 */
-  var LS_QUIZ = "review.quiz.v1";
+  var LS_QUIZ = "review.quiz.v1";        // 旧键：只读用于迁移，不再写入
+  var QZ_WA_MAX = 120;                   // [quiz] 错答内容最长保留多少字（防止长填空把快照撑大）
   var QQUIZ = null;
   try { QQUIZ = JSON.parse(byId("quiz-data").textContent); } catch (e) { QQUIZ = null; }
   var QZ_READY = !!(QQUIZ && QQUIZ.v === 1 && QQUIZ.items && QQUIZ.items.length);
@@ -17417,22 +17458,36 @@
     var m = qzData()[sid];
     return (m && m[key]) ? m[key] : null;
   }
-  function qzSaveRec(sid, key, right) {
+  /* [quiz] 写一条作答记录。wrong 只在答错时传入：{wa 作答内容, wm 类型}；
+     答对时保留上一次的错答（供「曾答错」回顾），不清空。 */
+  function qzSaveRec(sid, key, right, wrong) {
     var q = qzData();
     if (!q[sid]) q[sid] = {};
-    var old = q[sid][key];
-    q[sid][key] = {
+    var old = q[sid][key], t = nowMs();
+    var rec = {
       r: right ? 1 : 0,
       n: (old && old.n ? old.n : 0) + 1,
       w: (old && old.w ? old.w : 0) + (right ? 0 : 1),
-      t: nowMs()
+      t: t
     };
-    commitSnap(nowMs());   // 落盘并前移 updatedAt
+    if (old && typeof old.wa === "string") {      // 历史错答：原样带过来
+      rec.wa = old.wa;
+      rec.wt = qzNum(old.wt);
+      rec.wm = old.wm || "opt";
+    }
+    if (!right && wrong) {                        // 本次答错：覆盖为最新一次错答
+      rec.wa = String(wrong.wa == null ? "" : wrong.wa).slice(0, QZ_WA_MAX);
+      rec.wt = t;
+      rec.wm = wrong.wm || "opt";
+    }
+    q[sid][key] = rec;
+    commitSnap(t);         // 落盘并前移 updatedAt
     syncMarkDirty();       // 标脏：配了通道就 3s 防抖推送
   }
 
   /* 旧版刷题记录（review.quiz.v1）一次性并入快照：逐条判断，快照里已有的以快照为准，
-     因此可重复执行；迁完不删旧键，留作降级备份。 */  function migrateQuizToSnap() {
+     因此可重复执行；迁完不删旧键，留作降级备份。 */
+  function migrateQuizToSnap() {
     var old = lsGet(LS_QUIZ, null);
     if (!old || typeof old !== "object") return 0;
     var q = qzData(), n = 0, sid, k;
@@ -17468,9 +17523,10 @@
      记录键与刷题写入时完全同构（知识点#题干前20字），因此旧记录零迁移、旧数据照常命中。
      用题库的 item.i（真实例题下标）定位，同一知识点内题干前 20 字雷同的两道题也不会互相串记录。 */
   var QZIDX = null;
+  var QZITEM = null;    // 同一份索引顺带存题库条目：展示错答时要取选项文本与正确答案
 
   function qzIdxBuild() {
-    var out = {};
+    var out = {}, items = {};
     if (!QZ_READY) return out;
     for (var n = 0; n < QQUIZ.items.length; n++) {
       var it = QQUIZ.items[n], sub = qzSubject(it.s);
@@ -17480,12 +17536,22 @@
       if (!out[it.s]) out[it.s] = {};
       if (!out[it.s][it.k]) out[it.s][it.k] = {};
       out[it.s][it.k][it.i] = it.k + "#" + qzFp(kp.examples[it.i].q);
+      if (!items[it.s]) items[it.s] = {};
+      if (!items[it.s][it.k]) items[it.s][it.k] = {};
+      items[it.s][it.k][it.i] = it;
     }
+    QZITEM = items;
     return out;
   }
   function qzIdx() {
     if (QZIDX === null) QZIDX = qzIdxBuild();
     return QZIDX;
+  }
+  function qzItem(sid, kid, i) {
+    qzIdx();                       // 确保 QZITEM 已建好
+    var m = QZITEM && QZITEM[sid];
+    m = m && m[kid];
+    return (m && m[i]) ? m[i] : null;
   }
   /* 题库里没有这道例题时返回 null（不显示标识），与「有键但从未作答」区分开 */
   function qzExRec(sid, kid, i) {
@@ -17510,6 +17576,24 @@
     }
     return { total: total, done: done, right: right, wrong: done - right,
              rate: done ? Math.round(right / done * 100) : 0 };
+  }
+
+  /* 该知识点里「留下过错答记录」的例题数（不论后来是否已经改正） */
+  function qzWrongCount(sid, kid) {
+    var m = qzIdx()[sid];
+    m = m && m[kid];
+    if (!m) return 0;
+    var n = 0;
+    for (var i in m) {
+      if (!has0(m, i)) continue;
+      var r = qzRecOf(sid, m[i]);
+      if (r && typeof r.wa === "string" && normT(r.wt)) n++;
+    }
+    return n;
+  }
+  function qzExCountText(sid, kid, total) {
+    var wn = qzWrongCount(sid, kid);
+    return "共 " + total + " 道" + (wn ? " · 错过 " + wn + " 道" : "");
   }
 
   /* ---------- 两个徽标的绘制 ---------- */
@@ -17549,17 +17633,96 @@
       " 道，点击开始刷题");
   }
 
+  /* 短时间：错答行只用月-日 时:分，别把年份塞进一行小字 */
+  function qzWhen(ms) {
+    var t = normT(ms);
+    if (!t) return "";
+    var d = new Date(t), p = function (n) { return (n < 10 ? "0" : "") + n; };
+    return p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+  /* 选项/填空里可能带 \(...\) 与 <br>，这里的错答行只用纯文本，先剥掉标记 */
+  function qzPlain(s) {
+    return String(s == null ? "" : s)
+      .replace(/<br\s*\/?>/gi, " ")
+      .replace(/\\\(|\\\)/g, "")
+      .replace(/<[^>]+>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  function qzClip(s, n) {
+    var t = qzPlain(s);
+    return t.length > n ? (t.slice(0, n) + "…") : t;
+  }
+
+  /* 错答行的文案：拆成「类型 → 前缀 → 正文 → 整行」四层，
+     卡片上要带时间与「已改正」，刷题小结里只要正文，避免用字符串后处理去砍时间。 */
+  function qzWrongKind(r, it) {
+    var wm = r && r.wm, wa = (r && typeof r.wa === "string") ? r.wa : "";
+    if (wm === "self" || wm === "fill" || wm === "opt") return (wm === "opt" && !wa) ? "self" : wm;
+    if (!wa) return "self";
+    return (it && it.o) ? "opt" : "fill";
+  }
+  function qzWrongLabel(r, it) {
+    var kind = qzWrongKind(r, it), fixed = r && r.r === 1;
+    if (kind === "self") return fixed ? "曾自评：" : "上次自评：";
+    if (kind === "fill") return fixed ? "曾填：" : "上次填：";
+    return fixed ? "曾答错：" : "上次答错：";
+  }
+  /* 选项文本里带 LaTeX（\frac、^、_ 等）就只给字母——题干下面的选项本来就是渲染好的，
+     在这一行再塞一段源码反而更乱 */
+  function qzOptLabel(o) {
+    var raw = String(o == null ? "" : o);
+    if (/[\\^_{}]/.test(raw)) return "";
+    return qzClip(raw, 16);
+  }
+  function qzWrongBody(r, it) {
+    var kind = qzWrongKind(r, it), wa = (r && typeof r.wa === "string") ? r.wa : "";
+    if (kind === "self") return "没做对";
+    if (kind === "fill") {
+      var f = qzClip(wa, 24) || "（空）";
+      if (it && it.e !== undefined && String(it.e)) f += "　参考答案 " + qzClip(it.e, 24);
+      return f;
+    }
+    var pick = String(wa).toUpperCase(), ai = QMARKS.indexOf(pick);
+    var hasPick = (ai >= 0 && it && it.o && it.o[ai] !== undefined);
+    var lbl = hasPick ? qzOptLabel(it.o[ai]) : "";
+    var out = hasPick ? (pick + (lbl ? ". " + lbl : "")) : qzClip(wa, 24);
+    if (it && it.a >= 0 && it.o && it.o[it.a] !== undefined) {
+      var rl = qzOptLabel(it.o[it.a]);
+      out += "　应选 " + QMARKS.charAt(it.a) + (rl ? ". " + rl : "");
+    }
+    return out;
+  }
+  function qzWrongText(r, it) {
+    if (!r || !normT(r.wt)) return "";
+    var fixed = r.r === 1;
+    return qzWrongLabel(r, it) + qzWrongBody(r, it) + "　·　" + qzWhen(r.wt) + (fixed ? "（已改正）" : "");
+  }
+
   function qzPaintEx(host, kid, i) {
     var tag = host.querySelector(".exdone");
-    if (!tag) return;
+    var line = host.querySelector(".exwrong");
     var r = qzExRec(SID, kid, i);
-    if (!r) { tag.hidden = true; return; }
+    if (!tag) return;
+    if (!r) {
+      tag.hidden = true;
+      if (line) line.hidden = true;
+      return;
+    }
     var ok = r.r === 1;
     tag.hidden = false;
     tag.className = "exdone " + (ok ? "ok" : "no");
     tag.textContent = ok ? "刷过 · 对" : "刷过 · 错";
     tag.title = "刷题记录：做过 " + (r.n || 1) + " 次，错 " + (r.w || 0) + " 次，最近一次" +
       (ok ? "答对" : "答错") + " · " + fmtTime(r.t);
+
+    if (!line) return;
+    var wt = qzWrongText(r, qzItem(SID, kid, i));
+    if (!wt) { line.hidden = true; return; }
+    line.hidden = false;
+    line.className = "exwrong" + (ok ? " fixed" : "");
+    line.textContent = wt;
+    line.title = ok ? "这条错答已经被你改正，留作回顾" : "这道题最近一次答错的内容";
   }
 
   /* 就地重绘一张卡片（作答、改判后调用，不重渲染 DOM，展开状态与滚动位置都不动） */
@@ -17567,6 +17730,8 @@
     var card = byId("k-" + kid);
     if (!card) return;
     qzPaintRate(card.querySelector("[data-qzrate]"), kid);
+    var ec = card.querySelector(".excount");
+    if (ec) ec.textContent = qzExCountText(SID, kid, card.querySelectorAll(".ex[data-exi]").length);
     var exs = card.querySelectorAll(".ex[data-exi]");
     for (var i = 0; i < exs.length; i++) {
       qzPaintEx(exs[i], kid, parseInt(exs[i].getAttribute("data-exi"), 10));
@@ -17829,7 +17994,7 @@
     var q = QZ.list[QZ.pos], it = q.it;
     var right = idx === it.a;
     QZ.done[QZ.pos] = { right: right, picked: idx, mode: "opt" };
-    qzCount(right, q);
+    qzCount(right, q, right ? null : { wa: QMARKS.charAt(idx), wm: "opt" });
     qzMarkOpts(idx, it.a);
     qzFeedback(right, it.a >= 0 ? "正确答案 " + QMARKS.charAt(it.a) : "");
     if (!right) qzToggleExpl(true);
@@ -17849,7 +18014,7 @@
     if (QZ.done[QZ.pos]) return;
     var q = QZ.list[QZ.pos];
     QZ.done[QZ.pos] = { right: !!right, picked: -1, mode: "self" };
-    qzCount(!!right, q);
+    qzCount(!!right, q, right ? null : { wa: "", wm: "self" });
     var opts = byId("qOpts").querySelectorAll(".qopt");
     for (var i = 0; i < opts.length; i++) opts[i].disabled = true;
     if (right) opts[0].className = "qopt right"; else opts[1].className = "qopt wrong";
@@ -17865,7 +18030,7 @@
     if (!String(val).trim()) { byId("qFill").focus(); return; }
     var right = qzFillMatch(val, it.e);
     QZ.done[QZ.pos] = { right: right, picked: -1, mode: "fill", val: val };
-    qzCount(right, q);
+    qzCount(right, q, right ? null : { wa: String(val), wm: "fill" });
     byId("qFill").disabled = true;
     byId("qFillCheck").disabled = true;
     qzFeedback(right, "参考答案：" + it.e);
@@ -17922,19 +18087,20 @@
     fb.appendChild(b);
   }
 
-  function qzCount(right, q) {
+  function qzCount(right, q, wrong) {
     var rec = QZ.rec;
     rec.answered++;
     if (right) rec.right++;
     else rec.wrong.push({
       pos: QZ.pos, key: q.key, stem: (q.it.q || q.ex.q), type: q.ex.type,
-      kpName: q.kp.name, kid: q.kp.id, ei: q.it.i
+      kpName: q.kp.name, kid: q.kp.id, ei: q.it.i,
+      wa: wrong ? String(wrong.wa || "") : "", wm: wrong ? (wrong.wm || "opt") : "opt"
     });
     var t = q.ex.type;
     if (!rec.byType[t]) rec.byType[t] = { n: 0, right: 0 };
     rec.byType[t].n++;
     if (right) rec.byType[t].right++;
-    qzSaveRec(QZ.sid, q.key, right);
+    qzSaveRec(QZ.sid, q.key, right, wrong);
     qzRefreshKp(q.kp.id);   // [quiz] 卡片上的「刷过」标识与正确率即时跟上
   }
 
@@ -18054,6 +18220,11 @@
           var r = qzRecOf(QZ.sid, w.key);
           var times = (r && r.w) ? r.w : 1;
           li.appendChild(txt("span", "qwl-meta", w.kpName + " · " + w.type + " · 已错 " + times + " 次"));
+          if (w.wa !== undefined || w.wm === "self") {
+            var mineIt = qzItem(QZ.sid, w.kid, w.ei);
+            var mine = qzWrongBody({ wa: w.wa, wm: w.wm, r: 0 }, mineIt);
+            if (mine) li.appendChild(txt("span", "qwl-ans", "本次作答：" + mine));
+          }
 
           var acts = el("div", "qwl-act");
           var again = txt("button", "btn small", "重做");
@@ -18220,7 +18391,8 @@
     QZ: QZ, items: QQUIZ, pool: qzPoolOf, enter: function () { qzEnter(); }, exit: qzExit,
     buildList: qzBuildList, startRun: qzStartRun, answer: qzAnswer, checkFill: qzCheckFill,
     next: qzNext, prev: qzPrev, summary: qzSummary, store: function () { return qzData(); }, LS: LS_QUIZ,
-    kpStat: qzKpStat, idx: qzIdx, exRec: qzExRec, practiceKp: qzPracticeKp, refreshMarks: qzRefreshMarks
+    kpStat: qzKpStat, idx: qzIdx, exRec: qzExRec, practiceKp: qzPracticeKp, refreshMarks: qzRefreshMarks,
+    item: qzItem, wrongCount: qzWrongCount, wrongText: qzWrongText, wrongBody: qzWrongBody, wrongLabel: qzWrongLabel
   };
 
   /* ---------------- 启动 ---------------- */
