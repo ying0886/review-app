@@ -2,9 +2,17 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.20.0
+  APP_VERSION: 3.21.0
   DATA_VERSION: 2026-10-31
-  本次变更: 错题回顾——答错时把「我答了什么」存下来，回到知识点卡片能再看一遍（APP_VERSION 3.20.0 / DATA_VERSION 不变，不动数据）——
+  本次变更: 薄弱知识点——把错题按知识点归类，列出错误次数与错误率，点一行只练这一组（APP_VERSION 3.21.0 / DATA_VERSION 不变，不动数据）——
+             ①口径：错误次数＝该知识点各题 rec.w 之和（累计答错次数）；错误率＝累计错次÷累计作答次数（rec.n 之和，未刷不计分母）；
+               未改正＝最近一次作答仍为错的题数；只统计至少错过一次的考点，与设置页统计同源；
+             ②位置：刷题设置页「开始刷题」下方新增 .qweak 卡片，进设置页即重算；判分过程中不重绘，不打断作答；
+             ③排序：尚未改正的错题数 → 累计错次 → 错误率 → 最近错过的时间；默认列前 6 个，可展开全部；
+             ④交互：点一行调 qzPracticeKp，只练该知识点的题；行内标注「共 N 题 · M 题尚未改正」，右侧「错 X 次 / 错误率 Y%」；
+             ⑤小结页在「考点分布」下加「查看薄弱知识点（N）」，一键回设置页并定位到列表；
+             ⑥无记录时给空态文案，题库缺失时整块隐藏；导出 qzWeakList 供自测。
+  上次变更: 错题回顾——答错时把「我答了什么」存下来，回到知识点卡片能再看一遍（APP_VERSION 3.20.0 / DATA_VERSION 不变，不动数据）——
              ①存储：刷题记录在 {r,n,w,t} 上增加三个可选字段：wa＝最近一次答错的作答原文、wt＝该次时间、wm＝类型（opt/fill/self）；
                作答内容截断到 120 字，防止超长填空把快照撑大；答对不清空 wa，只是把展示降级为「曾答错」，便于回顾；
              ②写入：qzAnswer 存选项字母、qzCheckFill 存输入原文、qzSelf 存空串＋wm=self；三条路径共用 qzCount→qzSaveRec；
@@ -207,7 +215,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.20.0">
+<meta name="app-version" content="3.21.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -1283,6 +1291,36 @@
   .qwl-act{display:flex;gap:8px;margin-top:7px}
   .qempty{padding:40px 0;text-align:center;color:var(--ink2);font-size:14px}
 
+  /* [weak] 薄弱知识点：按知识点聚合错次与错误率，点一行只练这一组 */
+  .qweak{margin:22px 0 0;padding:14px 16px 12px;background:var(--card);border:1px solid var(--line);border-radius:8px}
+  .qwhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .qwhead h3{margin:0;font-size:14px;font-weight:600;color:var(--ink)}
+  .qwsum{font-size:11.5px;color:var(--ink2);font-variant-numeric:tabular-nums}
+  .qwhint{margin:6px 0 0;font-size:12px;line-height:1.75;color:var(--ink2)}
+  .qwlist{list-style:none;margin:8px 0 0;padding:0}
+  .qwitem{margin:0}
+  .qwrow{
+    display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:10px;width:100%;
+    padding:9px 6px;background:transparent;border:0;border-top:1px solid var(--line);
+    text-align:left;font:inherit;color:var(--ink);cursor:pointer;
+  }
+  .qwrow:hover{background:var(--chip)}
+  .qwrow:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px}
+  .qwrank{font-size:11.5px;color:var(--ink2);text-align:center;font-variant-numeric:tabular-nums}
+  .qwmain{min-width:0}
+  .qwname{display:block;font-size:13.5px;line-height:1.55;overflow-wrap:anywhere}
+  .qwmeta{display:block;font-size:11.5px;color:var(--ink2);margin-top:2px;overflow-wrap:anywhere}
+  .qwstat{text-align:right;white-space:nowrap}
+  .qwerr{display:block;font-size:13px;font-weight:600;color:var(--warn);font-variant-numeric:tabular-nums}
+  .qwerr.fixed{color:var(--ink2);font-weight:400}
+  .qwrate{display:block;font-size:11.5px;color:var(--ink2);font-variant-numeric:tabular-nums;margin-top:1px}
+  .qwmore{
+    margin:10px 0 0;width:100%;min-height:38px;background:transparent;
+    border:1px dashed var(--line2);border-radius:6px;color:var(--ink2);
+    font:inherit;font-size:12.5px;cursor:pointer;
+  }
+  .qwmore:hover{color:var(--accent);border-color:var(--accent)}
+
   @media (max-width:640px){
     .quiz{padding:12px 10px 80px}
     .qcard{padding:14px 12px 12px}
@@ -1291,6 +1329,9 @@
     .qacts .btn{flex:1 1 auto;min-height:42px;padding:0 8px}
     .qhead{flex-wrap:wrap}
     .qmeta{max-width:100%;text-align:left}
+    .qweak{padding:12px 12px 10px}
+    .qwrow{grid-template-columns:18px 1fr auto;gap:8px;padding:9px 4px}
+    .qwname{font-size:13px}
   }
 </style>
 </head>
@@ -1378,6 +1419,8 @@
         <button class="btn" id="qBegin" type="button">开始刷题</button>
         <button class="btn small" id="qReset" type="button">重置本科目进度</button>
       </div>
+      <!-- [weak] 薄弱知识点：由刷题记录按知识点聚合，点一行直接练这一组 -->
+      <div class="qweak" id="qWeak"></div>
       <p class="qnote">选择/判断点选项即判分，填空输入后回车核对；计算、简答、编程题作答后看解析自评。<br>
         键盘：A–D 或 1–4 选答，空格跳过，回车下一步，Esc 退出。</p>
     </div>
@@ -13840,7 +13883,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.20.0";
+  var APP_VERSION = "3.21.0";
   var DATA_VERSION = "2026-10-31";
 
   var LEVEL_ORDER = ["A", "B", "C"];
@@ -17596,6 +17639,117 @@
     return "共 " + total + " 道" + (wn ? " · 错过 " + wn + " 道" : "");
   }
 
+  /* ---------- 薄弱知识点 ---------- */
+  /* 口径（与刷题设置页的统计同源，都读 rec.r/n/w）：
+     错误次数 = 该知识点下各题 rec.w 之和，是「累计答错次数」，不是错题道数；
+     错误率   = 累计错次 ÷ 累计作答次数（rec.n 之和），没刷过的不进分母；
+     未改正   = 最近一次作答仍为错的题数（rec.r === 0），用来排序与提示。
+     只统计「至少错过一次」的知识点，没错过的不进列表。 */
+  var QZ_WEAK_ALL = false;
+
+  function qzWeakList(sid) {
+    var idx = qzIdx()[sid], sub = qzSubject(sid), out = [];
+    if (!idx || !sub) return out;
+    for (var kid in idx) {
+      if (!has0(idx, kid)) continue;
+      var m = idx[kid], kp = qzKpOf(sub, kid);
+      if (!kp) continue;
+      var total = 0, tries = 0, errs = 0, open = 0, fixed = 0, last = 0, i, r;
+      for (i in m) {
+        if (!has0(m, i)) continue;
+        total++;
+        r = qzRecOf(sid, m[i]);
+        if (!r) continue;
+        tries += qzNum(r.n);
+        errs += qzNum(r.w);
+        if (r.r === 0) open++; else fixed++;
+        if (normT(r.t) > last) last = normT(r.t);
+      }
+      if (!errs) continue;
+      out.push({
+        kid: kid, name: kp.name || kid, section: kp.section || "", level: kp.level || "",
+        total: total, tries: tries, errs: errs, open: open, fixed: fixed, last: last,
+        /* 数据被外部改坏时 w 可能大于 n，错误率封顶 100% 以免出现 300% 这种脏值 */
+        rate: tries ? Math.min(100, Math.round(errs / tries * 100)) : 100
+      });
+    }
+    /* 排序：还有未改正错题的在前 → 累计错次多 → 错误率高 → 最近错过的在前 */
+    out.sort(function (a, b) {
+      if (b.open !== a.open) return b.open - a.open;
+      if (b.errs !== a.errs) return b.errs - a.errs;
+      if (b.rate !== a.rate) return b.rate - a.rate;
+      return b.last - a.last;
+    });
+    return out;
+  }
+
+  function qzWeakItem(w, rank) {
+    var li = el("li", "qwitem");
+    var b = el("button", "qwrow");
+    b.type = "button";
+    b.setAttribute("data-kid", w.kid);
+    b.title = w.name + "：累计作答 " + w.tries + " 次，错 " + w.errs + " 次（错误率 " + w.rate +
+      "%）；共 " + w.total + " 题，" + (w.open ? w.open + " 题尚未改正" : "错题已全部改正") +
+      "。点击只练这一组题目";
+    b.appendChild(txt("span", "qwrank", String(rank + 1)));
+    var main = el("span", "qwmain");
+    main.appendChild(txt("span", "qwname", w.name));
+    main.appendChild(txt("span", "qwmeta",
+      (w.section ? w.section + " · " : "") + "共 " + w.total + " 题 · " +
+      (w.open ? w.open + " 题尚未改正" : "已改正")));
+    b.appendChild(main);
+    var st = el("span", "qwstat");
+    st.appendChild(txt("span", "qwerr" + (w.open ? "" : " fixed"), "错 " + w.errs + " 次"));
+    st.appendChild(txt("span", "qwrate", "错误率 " + w.rate + "%"));
+    b.appendChild(st);
+    b.addEventListener("click", function () { qzPracticeKp(w.kid); });
+    li.appendChild(b);
+    return li;
+  }
+
+  /* 进刷题设置页时重绘；判分过程中不重绘，避免打断正在做的题 */
+  function qzRenderWeak() {
+    var box = byId("qWeak");
+    if (!box) return;
+    if (!QZ_READY) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = "";
+    if (!QZ.sid) QZ.sid = SID;
+    var list = qzWeakList(QZ.sid), errSum = 0, i;
+    for (i = 0; i < list.length; i++) errSum += list[i].errs;
+
+    var head = el("div", "qwhead");
+    head.appendChild(txt("h3", "", "薄弱知识点"));
+    head.appendChild(txt("span", "qwsum", list.length
+      ? list.length + " 个考点 · 累计错 " + errSum + " 次" : "暂无错题"));
+    box.appendChild(head);
+
+    if (!list.length) {
+      box.appendChild(txt("p", "qwhint",
+        "还没有答错的记录。刷一组题，答错的题会自动按知识点归类到这里，标出错误次数与错误率。"));
+
+      return;
+    }
+    box.appendChild(txt("p", "qwhint",
+      "按「尚未改正的错题数 → 累计错次 → 错误率」排序；错误率＝累计错次 ÷ 累计作答次数。点一行只练这个知识点的题。"));
+
+    var ul = el("ul", "qwlist");
+    var show = QZ_WEAK_ALL ? list.length : Math.min(list.length, 6);
+    for (i = 0; i < show; i++) ul.appendChild(qzWeakItem(list[i], i));
+    box.appendChild(ul);
+
+    if (list.length > 6) {
+      var more = txt("button", "qwmore",
+        QZ_WEAK_ALL ? "收起，只看前 6 个" : "展开全部 " + list.length + " 个");
+      more.type = "button";
+      more.addEventListener("click", function () {
+        QZ_WEAK_ALL = !QZ_WEAK_ALL;
+        qzRenderWeak();
+      });
+      box.appendChild(more);
+    }
+  }
+
   /* ---------- 两个徽标的绘制 ---------- */
   function qzRateBadge(k) {
     if (!QZ_READY) return null;
@@ -17862,6 +18016,8 @@
     var rate = done ? Math.round(right / done * 100) : 0;
     byId("qStat").textContent = (sub ? sub.name : "") + " · 共 " + pool.length + " 题 · 已做 " +
       done + (done ? "（正确率 " + rate + "%，错 " + wrong + "）" : "");
+
+    qzRenderWeak();   // [weak] 每次进设置页都按最新记录重算
   }
 
   function qzOption(value, label) {
@@ -18269,6 +18425,16 @@
       }));
     }
     acts.appendChild(qzBtnNode("再来一组", function () { qzStartRun(qzBuildList(), "再来一组"); }));
+    /* [weak] 本组结束后直接跳到完整列表，省一次「返回设置 + 往下找」 */
+    var wl = qzWeakList(QZ.sid);
+    if (wl.length) {
+      acts.appendChild(qzBtnNode("薄弱知识点（" + wl.length + "）", function () {
+        qzShow("setup");
+        qzRenderSetup();
+        var box = byId("qWeak");
+        if (box && box.scrollIntoView) box.scrollIntoView({ block: "center" });
+      }));
+    }
     acts.appendChild(qzBtnNode("返回设置", function () { qzShow("setup"); qzRenderSetup(); }));
     qzSum.appendChild(acts);
 
@@ -18392,7 +18558,8 @@
     buildList: qzBuildList, startRun: qzStartRun, answer: qzAnswer, checkFill: qzCheckFill,
     next: qzNext, prev: qzPrev, summary: qzSummary, store: function () { return qzData(); }, LS: LS_QUIZ,
     kpStat: qzKpStat, idx: qzIdx, exRec: qzExRec, practiceKp: qzPracticeKp, refreshMarks: qzRefreshMarks,
-    item: qzItem, wrongCount: qzWrongCount, wrongText: qzWrongText, wrongBody: qzWrongBody, wrongLabel: qzWrongLabel
+    item: qzItem, wrongCount: qzWrongCount, wrongText: qzWrongText, wrongBody: qzWrongBody, wrongLabel: qzWrongLabel,
+    weakList: qzWeakList, renderWeak: qzRenderWeak
   };
 
   /* ---------------- 启动 ---------------- */
