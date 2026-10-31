@@ -2,9 +2,42 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.16.0
+  APP_VERSION: 3.18.0
   DATA_VERSION: 2026-10-31
-  本次变更: 录入「本年考试题」——普通化学 I 期末卷 32 题（APP_VERSION 3.16.0 / DATA_VERSION 2026-10-31）——
+  本次变更: 跨设备同步扩到「刷题记录」，并补上定时同步、冲突收敛与错误分级（APP_VERSION 3.18.0 / DATA_VERSION 不变，不动数据）——
+             ①同步范围五类：知识点已掌握 mastery、例题收藏 favs、笔记 notes、偏好 prefs.theme、刷题记录 quiz；
+               不同步：当前科目、同步令牌与通道配置、已忽略版本号、刷题窗口内的临时作答状态（都是本机的东西）；
+             ②刷题记录并入快照：新增可选字段 quiz（{科目:{知识点#题干前20字:{r,n,w,t}}}）与 quizReset（{科目:重置时刻}），
+               沿用 schema 2、不升版本号，旧档缺字段自动补 {} 照常加载；旧的 review.quiz.v1 在启动时逐条并入（幂等），旧键保留作降级备份；
+             ③合并规则：r/t 按时间新者胜、同刻「对优先」，保证幂等/交换/结合，两端必然收敛；
+               n/w 取各端最大值而非相加（避免 A→远端→B→远端 的往返把次数越刷越大）；w 夹到 n；
+               重置写科目级时间戳，合并时丢弃早于它的条目——只删本地键的话，远端旧记录会在下次合并时复活；
+             ④设备与平台：Windows 桌面（Edge / Chrome，file:// 直接打开）、Android（Chrome）、iOS/iPadOS（Safari / Edge），
+               建议 2–3 台同时使用；中转通道用 GitHub Gist（推荐，天然支持 CORS）、WebDAV（坚果云 / Nextcloud）或自建端点；
+             ⑤实时 + 定时：改动后 3 秒防抖推送、切后台立即推、首屏 1.5 秒拉一次；
+               新增「自动同步」间隔（关闭 / 5 / 15 / 30 / 60 分钟，默认 15），定时任务做全量「先拉→合并→再推」，
+               只在页面前台运行，回到前台若已超过间隔就立即补一次；
+             ⑥失败处理：401/403/404 与远端 JSON 损坏判为配置错误，不重试、直接提示去哪儿改；
+               网络 / 超时 / 429 / 5xx / 回读不一致才走 3s→10s→30s 退避重试，并提示「第 n/3 次」；
+               离线时不排队重试，标「离线待同步」，online 事件恢复后立即补一次全量；
+             ⑦一致性：sameProgress 纳入 quiz 与 quizReset，推送后的回读校验现在会真的比对刷题记录；
+               远端快照落地后自动重绘卡片徽标，不需要手动刷新；
+             ⑧另外修正 _build/sync-smoke.mjs 的一条过时断言：首屏卡片默认折叠、公式不渲染，KaTeX 计数需先展开首卡。
+  上次变更: 知识点 ↔ 例题 ↔ 刷题进度三者打通（APP_VERSION 3.17.0 / DATA_VERSION 不变，只改前端展示层）——
+             ①关联数据的存储与查询：不新增存储。启动时由内嵌题库重建索引（科目 → 知识点 → 例题序号 → 记录键），
+               记录键沿用刷题模块的「知识点#题干前20字」，直接读已有的 localStorage 键 review.quiz.v1，旧记录零迁移、照常命中；
+               索引按题库的 item.i（真实例题下标）定位，同一知识点内题干前 20 字雷同的两道题不会互相串记录；
+             ②知识点正确率：rate = 该知识点内「最近一次作答为对」的已刷题数 ÷ 该知识点已刷题数，四舍五入取整；
+               分母只算已刷（没刷过的不进分母），与刷题设置页口径完全一致；同一题反复刷只按最后一次算；
+             ③卡片摘要新增可点徽标：已刷显示「刷题 3/4 · 75%」（已刷/该知识点题数 · 正确率），未刷显示虚线灰字「未刷题」，
+               点一下直接开这一组的刷题；配色按正确率分档：≥80% 墨绿、60–79% 中性灰、<60% 警示橙（对/错沿用选项判分配色）；
+             ④例题行头新增「刷过」标识：刷过的题在「第 N 题」后显示「刷过 · 对」/「刷过 · 错」，
+               悬停给出做过次数、累计错次与最近作答时间；没刷过则不渲染该标识；
+             ⑤无数据时的处理：题库缺失（#quiz-data 解析失败或为空）整块关联静默关闭、不渲染任何徽标；知识点无例题同样不占位；
+               有例题但零记录只显示「未刷题」，不显示 0%；
+             ⑥刷新时机：每次作答、改判「其实等价」、退出刷题、重置本科目进度后即时重绘徽标，不整体重渲染（卡片展开状态不丢）；
+             ⑦数据块、题库、快照格式、同步逻辑、刷题模式的既有行为均未改动。
+  上次变更: 录入「本年考试题」——普通化学 I 期末卷 32 题（APP_VERSION 3.16.0 / DATA_VERSION 2026-10-31）——
              ①来源：《普通化学 I》期末试卷（判断 10 + 单选 20 + 计算 2，共 32 题），卷面未附答案，答案与解析按教材标准解推导，refs 统一标注「本年考试题 判N / 选N / 计算N」；
              ②归入现有「新大学化学」科目第一章：并入 13 条既有知识点（热力学基本概念、第一定律、恒压热恒容热、生成函数、熵与第三定律、ΔG 判据、标准平衡常数、ΔGθ−Kθ 换算、平衡移动与惰性气体、多重平衡、速率方程与级数、活化能与温度、一级反应），另新建 2 条（c1s5-05 催化剂只改动力学、c1s5-06 基元反应与浓度影响）；
              ③知识点 44→46、例题 103→135（判断 38、选择 60、计算 30、填空 4、简答 3），A 级 15→17；节数仍 15，未新增章节；
@@ -153,7 +186,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.16.0">
+<meta name="app-version" content="3.18.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -561,6 +594,25 @@
   .sol p{margin:0 0 6px}
   .sol p:last-child{margin-bottom:0}
   .sol b{font-weight:600}
+
+  /* ---------- 刷题关联：知识点正确率徽标 + 例题「刷过」标识 ---------- */
+  .badge.qz{
+    font:inherit;font-size:11.5px;line-height:1.5;padding:1px 6px;letter-spacing:.02em;
+    border:1px solid var(--accent);border-radius:3px;background:var(--accentBg);color:var(--accent);
+    cursor:pointer;font-variant-numeric:tabular-nums;white-space:nowrap;
+  }
+  .badge.qz.mid{border-color:var(--line2);background:transparent;color:var(--ink2)}
+  .badge.qz.bad{border-color:var(--warn);background:var(--warnBg);color:var(--warn)}
+  .badge.qz.none{border-color:var(--line2);border-style:dashed;background:transparent;color:var(--ink2);opacity:.62}
+  .badge.qz:hover{border-color:var(--accent);color:var(--accent);opacity:1}
+  .badge.qz:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .exdone{
+    font-size:11px;line-height:1.5;padding:0 5px;border:1px solid currentColor;border-radius:3px;
+    white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:.02em;
+  }
+  .exdone.ok{color:var(--accent);background:var(--accentBg)}
+  .exdone.no{color:var(--warn);background:var(--warnBg)}
+  @media print{ .badge.qz,.exdone{background:transparent !important;color:#444 !important;border-color:#bbb !important} }
 
   /* ---------- 底部统计 ---------- */
   .stats{
@@ -13762,7 +13814,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.16.0";
+  var APP_VERSION = "3.18.0";
   var DATA_VERSION = "2026-10-31";
 
   var LEVEL_ORDER = ["A", "B", "C"];
@@ -14335,6 +14387,8 @@
 
     var tags = el("span", "tags");
     tags.appendChild(txt("span", "badge lv", k.level));
+    var qzRate = qzRateBadge(k);                      // [quiz] 刷题正确率（题库缺失/无例题时不渲染）
+    if (qzRate) tags.appendChild(qzRate);
     if (k.section) tags.appendChild(txt("span", "badge sec", k.section));
     if (k.source) tags.appendChild(txt("span", "badge src", k.source));
     tags.appendChild(txt("span", k.refs ? "badge refs" : "badge none", k.refs ? k.refs : "试卷未出现"));
@@ -14527,10 +14581,14 @@
 
     k.examples.forEach(function (ex, i) {
       var item = el("div", "ex");
+      item.setAttribute("data-exi", String(i));       // [quiz] 供刷题标识就地重绘定位
 
       var h = el("div", "exhead");
       h.appendChild(txt("span", "extype", ex.type));
       h.appendChild(txt("span", "exno", "第 " + (i + 1) + " 题"));
+      var doneTag = txt("span", "exdone", "");
+      doneTag.hidden = true;                          // 有刷题记录才显示
+      h.appendChild(doneTag);
       h.appendChild(buildFavBtn(k.id, i));
       h.appendChild(buildNoteBtn(k.id, i));   // [note]
       item.appendChild(h);
@@ -14553,6 +14611,7 @@
       sol.appendChild(a);
       item.appendChild(sol);
       item.appendChild(buildNoteBox(k.id, i));   // [note] 例题笔记（.exsol 之后）
+      qzPaintEx(item, k.id, i);                  // [quiz] 例题「刷过」标识
 
       box.appendChild(item);
     });
@@ -14990,7 +15049,15 @@
   function cloneSnap(o) { return JSON.parse(JSON.stringify(o)); }
 
   function emptySnap() {
-    return { schema: 2, deviceId: deviceInfo().id, updatedAt: nowMs(), mastery: {}, favs: {}, prefs: {}, notes: {} };
+    return { schema: 2, deviceId: deviceInfo().id, updatedAt: nowMs(), mastery: {}, favs: {}, prefs: {}, notes: {}, quiz: {}, quizReset: {} };
+  }
+
+  /* [sync] 快照可选字段 quiz（刷题记录）：缺省补 {}，不升 schema——
+     旧档没有这个字段也必须被判为合法，否则升级瞬间会被当成坏数据重建，丢失已掌握/收藏。 */
+  function snapFillQuiz(o) {
+    if (!o || typeof o !== "object") return o;
+    if (!o.quiz || typeof o.quiz !== "object" || Object.prototype.toString.call(o.quiz) === "[object Array]") o.quiz = {};
+    return o;
   }
   function entryOf(map, sid, kid) { var m = map && map[sid]; return m && m[kid] ? m[kid] : null; }
 
@@ -15021,10 +15088,13 @@
     var raw = lsRaw(LS_SNAP), o = null;
     if (raw) { try { o = JSON.parse(raw); } catch (e) { o = null; } }
     if (validSnap(o)) {
+      // 补齐可选字段后就落盘一次：导出的 JSON 结构完整，也避免每次启动重复补
+      var needFill = !(o.notes && typeof o.notes === "object") ||
+        !(o.quiz && typeof o.quiz === "object") || !o.deviceId;
       o = snapFillNotes(o);   // [note] 旧档没有 notes 就补 {}，不报错
-      if (o.deviceId) return o;
-      o.deviceId = deviceInfo().id;
-      lsSet(LS_SNAP, o);
+      o = snapFillQuiz(o);    // [sync] 旧档没有 quiz 就补 {}，旧数据结构不变
+      if (!o.deviceId) o.deviceId = deviceInfo().id;
+      if (needFill) lsSet(LS_SNAP, o);
       return o;
     }
     var built = snapFromLegacy();
@@ -15073,12 +15143,109 @@
     return out;
   }
 
+  /* [sync] 刷题记录合并：结构 {sid: {"知识点#题干前20字": {r,n,w,t}}}
+     规则（三条都是为了「两端最终看到一模一样的数据」）：
+       ①r/t 按 t 新者胜；t 相同则「对优先」——tie-break 与合并顺序无关，保证幂等、交换、结合；
+       ②n/w 取两端最大值，不做相加——同一份数据在 A→远端→B→远端 的往返里不会被重复累加；
+       ③w 夹到 n 以内，杜绝 w>n 的脏数据。 */
+  function qzNum(x) { var v = Number(x); return (isFinite(v) && v > 0) ? Math.floor(v) : 0; }
+
+  function pickQuizEntry(a, b) {
+    if (!a && !b) return null;
+    var at = a ? normT(a.t) : -1, bt = b ? normT(b.t) : -1;
+    var r, t;
+    if (!a) { r = b.r === 1 ? 1 : 0; t = bt; }
+    else if (!b) { r = a.r === 1 ? 1 : 0; t = at; }
+    else if (at > bt) { r = a.r === 1 ? 1 : 0; t = at; }
+    else if (bt > at) { r = b.r === 1 ? 1 : 0; t = bt; }
+    else { r = (a.r === 1 || b.r === 1) ? 1 : 0; t = at; }   // 同刻：对优先
+    var n = Math.max(a ? qzNum(a.n) : 0, b ? qzNum(b.n) : 0);
+    var w = Math.max(a ? qzNum(a.w) : 0, b ? qzNum(b.w) : 0);
+    if (w > n) w = n;
+    return { r: r, n: n, w: w, t: t };
+  }
+
+  function mergeQuizMap(L, R) {
+    var out = {}, sids = {}, sid, k, n, e;
+    L = L || {}; R = R || {};
+    for (sid in L) if (has0(L, sid)) sids[sid] = 1;
+    for (sid in R) if (has0(R, sid)) sids[sid] = 1;
+    for (sid in sids) if (has0(sids, sid)) {
+      var lm = L[sid] || {}, rm = R[sid] || {}, keys = {}, m = {};
+      for (k in lm) if (has0(lm, k)) keys[k] = 1;
+      for (k in rm) if (has0(rm, k)) keys[k] = 1;
+      n = 0;
+      for (k in keys) if (has0(keys, k)) {
+        e = pickQuizEntry(lm[k], rm[k]);
+        if (e) { m[k] = e; n++; }
+      }
+      if (n) out[sid] = m;
+    }
+    return out;
+  }
+
+  /* 结构级比较（sameProgress 用）：键集合与每条 r/n/w/t 全等才算一致 */
+  function sameQuiz(A, B) {
+    A = A || {}; B = B || {};
+    if (countEntries(A) !== countEntries(B)) return false;
+    var sid, k, ea, eb;
+    for (sid in A) if (has0(A, sid)) {
+      var am = A[sid] || {}, bm = B[sid] || {};
+      for (k in am) if (has0(am, k)) {
+        ea = am[k] || {}; eb = bm[k];
+        if (!eb) return false;
+        if ((ea.r === 1 ? 1 : 0) !== (eb.r === 1 ? 1 : 0)) return false;
+        if (qzNum(ea.n) !== qzNum(eb.n)) return false;
+        if (qzNum(ea.w) !== qzNum(eb.w)) return false;
+        if (normT(ea.t) !== normT(eb.t)) return false;
+      }
+    }
+    return true;
+  }
+
+  /* [sync] 科目级「重置」时间戳：{sid: t}
+     只删本地键的话，远端旧记录会在下一次合并时复活；记下重置时刻，合并时把早于它的条目两端一起丢掉，
+     于是「重置」才真正跨设备生效，且这一步同样幂等、可交换。 */
+  function mergeResetMap(L, R) {
+    var out = {}, sid, v;
+    L = L || {}; R = R || {};
+    for (sid in L) if (has0(L, sid)) out[sid] = normT(L[sid]);
+    for (sid in R) if (has0(R, sid)) {
+      v = normT(R[sid]);
+      out[sid] = (out[sid] === undefined) ? v : Math.max(out[sid], v);
+    }
+    return out;
+  }
+  function sameResetMap(A, B) {
+    A = A || {}; B = B || {};
+    var sid, n = 0, m = 0;
+    for (sid in A) if (has0(A, sid)) { n++; if (!B || !has0(B, sid) || normT(A[sid]) !== normT(B[sid])) return false; }
+    for (sid in B) if (has0(B, sid)) m++;
+    return n === m;
+  }
+  function dropReset(map, resetMap) {
+    var out = {}, sid, k, cut, rm, m, n;
+    if (!map) return out;
+    for (sid in map) if (has0(map, sid)) {
+      cut = resetMap ? normT(resetMap[sid]) : 0;
+      rm = map[sid] || {};
+      m = {}; n = 0;
+      for (k in rm) if (has0(rm, k)) {
+        if (cut && normT(rm[k] && rm[k].t) < cut) continue;   // 重置之前刷的，视为已作废
+        m[k] = rm[k]; n++;
+      }
+      if (n) out[sid] = m;
+    }
+    return out;
+  }
+
   function mergeSnapshot(local, remote) {
     if (!local && !remote) return null;
-    if (!local) return snapFillNotes(cloneSnap(remote));
-    if (!remote) return snapFillNotes(cloneSnap(local));
+    if (!local) return snapFillQuiz(snapFillNotes(cloneSnap(remote)));
+    if (!remote) return snapFillQuiz(snapFillNotes(cloneSnap(local)));
     var lt = normT(local.updatedAt), rt = normT(remote.updatedAt);
     var newer = lt >= rt ? local : remote;
+    var qr = mergeResetMap(local.quizReset, remote.quizReset);   // [sync] 先合并重置时刻，再据此过滤
     var out = {
       schema: 2,
       deviceId: local.deviceId || remote.deviceId || "",
@@ -15086,6 +15253,8 @@
       mastery: mergeMap(local.mastery, remote.mastery),
       favs: mergeMap(local.favs, remote.favs),
       notes: mergeTextMap(local.notes, remote.notes),   // [note] 逐条按 t 取大；空文本墓碑参与比较
+      quiz: mergeQuizMap(dropReset(local.quiz, qr), dropReset(remote.quiz, qr)),   // [sync] 逐题合并
+      quizReset: qr,
       prefs: {}
     };
     var p = newer.prefs || {};
@@ -15116,6 +15285,8 @@
       }
     }
     if (JSON.stringify(a.prefs || {}) !== JSON.stringify(b.prefs || {})) return false;
+    if (!sameResetMap(a.quizReset, b.quizReset)) return false;   // [sync]
+    if (!sameQuiz(a.quiz, b.quiz)) return false;   // [sync] 刷题记录也参与一致性判定
     return sameNotes(a.notes, b.notes);   // [note]
   }
 
@@ -15133,9 +15304,10 @@
   }
 
   function syncCfg() {
-    var c = lsGet(LS_SYNCCFG, null), d = { channel: "gist", gist: {}, webdav: {}, custom: {} };
+    var c = lsGet(LS_SYNCCFG, null), d = { channel: "gist", auto: "15", gist: {}, webdav: {}, custom: {} };
     if (c && typeof c === "object") {
       if (c.channel === "gist" || c.channel === "webdav" || c.channel === "custom") d.channel = c.channel;
+      if (c.auto !== undefined && c.auto !== null && c.auto !== "") d.auto = String(c.auto);
       ["gist", "webdav", "custom"].forEach(function (k) {
         if (c[k] && typeof c[k] === "object") d[k] = c[k];
       });
@@ -15449,6 +15621,7 @@
     var ad = syncAdapter(), meta = syncMeta();
     if (!ad) { setSyncState("", "未配置"); return; }
     if (SYNC_BUSY) { setSyncState("busy", "同步中"); return; }
+    if (meta.pending && syncOffline()) { setSyncState("dirty", "离线待同步"); return; }   // [sync] 离线优先播报
     if (meta.lastError) { setSyncState("err", "同步失败"); return; }
     if (meta.pending) { setSyncState("dirty", "待推送"); return; }
     if (meta.lastSyncAt) { setSyncState("ok", "已同步"); return; }
@@ -15492,6 +15665,7 @@
         lsSet(LS_DEVICE, d);
         continue;
       }
+      if (path.length === 1) { c[path[0]] = node.value; continue; }   // [sync] 单段配置（如 auto）
       if (!c[path[0]]) c[path[0]] = {};
       c[path[0]][path[1]] = node.value;
     }
@@ -15502,12 +15676,20 @@
     if (!syncStatEl) return;
     var meta = syncMeta(), ad = syncAdapter(), s = snap();
     syncStatEl.innerHTML = "";
+    var autoMin = syncAutoMin();
+    var rc = meta.remoteCount;
     var rows = [
       ["通道", ad ? ad.name : "未配置"],
-      ["状态", ad ? (SYNC_BUSY ? "同步中" : (meta.pending ? "有本地改动待推送" : (meta.lastError ? "上次失败" : "空闲"))) : "未配置同步通道"],
+      ["状态", !ad ? "未配置同步通道"
+        : (SYNC_BUSY ? "同步中"
+        : (syncOffline() ? "离线（改动留在本机）"
+        : (meta.pending ? "有本地改动待推送" : (meta.lastError ? "上次失败" : "空闲"))))],
+      ["自动同步", autoMin ? ("每 " + autoMin + " 分钟" + (ad ? "" : "（配好通道后生效）")) : "关闭（只靠改动触发）"],
       ["上次同步", fmtTime(meta.lastSyncAt)],
-      ["本地条目", countEntries(s.mastery) + " 掌握 / " + countEntries(s.favs) + " 收藏 / " + countNotesAll(s.notes) + " 笔记"],
-      ["远端条目", meta.remoteCount === undefined || meta.remoteCount === null ? "—" : (meta.remoteCount.mastery + " 掌握 / " + meta.remoteCount.favs + " 收藏")],
+      ["本地条目", countEntries(s.mastery) + " 掌握 / " + countEntries(s.favs) + " 收藏 / " +
+        countNotesAll(s.notes) + " 笔记 / " + countEntries(s.quiz) + " 刷题"],
+      ["远端条目", (rc === undefined || rc === null) ? "—"
+        : (rc.mastery + " 掌握 / " + rc.favs + " 收藏 / " + (rc.quiz === undefined ? "—" : rc.quiz) + " 刷题")],
       ["上次错误", meta.lastError ? meta.lastError : "无"]
     ];
     rows.forEach(function (r) {
@@ -15562,6 +15744,33 @@
     }
 
     syncBodyEl.appendChild(sfield("设备名", "deviceName", { val: dev.name || "", ph: "如 Windows-Edge / iPhone-Safari" }));
+
+    // [sync] 自动同步间隔：改动后 3s 的实时推送之外，再补一个定时全量（拉他端改动）
+    var auBox = el("div", "sfield"), auLab = txt("label", "", "自动同步");
+    auLab.setAttribute("for", "syncAuto");
+    var auSel = el("select");
+    auSel.id = "syncAuto";
+    auSel.setAttribute("data-k", "auto");
+    SYNC_AUTO_OPTS.forEach(function (o) {
+      var op = el("option");
+      op.value = String(o[0]);
+      op.textContent = o[1];
+      auSel.appendChild(op);
+    });
+    var curAuto = String(syncAutoMin()), autoOk = false;
+    SYNC_AUTO_OPTS.forEach(function (o) { if (String(o[0]) === curAuto) autoOk = true; });
+    auSel.value = autoOk ? curAuto : "15";
+    auSel.addEventListener("change", function () {
+      saveSyncCfg(collectSyncForm());
+      syncAutoArm();
+      renderSyncStat();
+      refreshSyncDot();
+      toastSync(syncAutoMin() ? ("已开启自动同步：每 " + syncAutoMin() + " 分钟拉取一次") : "已关闭自动同步", 3000);
+    });
+    auBox.appendChild(auLab);
+    auBox.appendChild(auSel);
+    syncBodyEl.appendChild(auBox);
+    syncBodyEl.appendChild(snote("改动后会 3 秒自动推送；定时同步负责把其他设备的改动拉回来（仅页面在前台时运行）。"));
 
     var row = el("div", "srow");
     [["立即同步", "full"], ["仅拉取", "pull"], ["仅推送", "push"]].forEach(function (o) {
@@ -16058,6 +16267,7 @@
     var s = snap(), th = s.prefs.theme;
     if (th === "dark" || th === "light") applyTheme(th);
     renderAll();
+    qzRefreshMarks();   // [sync] 他端带来的刷题记录要立刻反映到卡片徽标
     if (!favDrawer.hidden) renderFavDrawer();
     if (syncDrawer && !syncDrawer.hidden) renderSyncStat();
   }
@@ -16070,30 +16280,44 @@
       return {
         changed: changed,
         needPush: needPush,
-        remoteCount: { mastery: countEntries((remote && remote.mastery) || {}), favs: countEntries((remote && remote.favs) || {}) }
+        remoteCount: {
+          mastery: countEntries((remote && remote.mastery) || {}),
+          favs: countEntries((remote && remote.favs) || {}),
+          quiz: countEntries((remote && remote.quiz) || {})
+        }
       };
     });
   }
 
   function doPush(ad) {
-    return ad.push(snap()).then(function (r) {
+    var before = snap();
+    return ad.push(before).then(function (r) {
       if (r && r.snap) {
         SNAP = r.snap;
         commitSnap(r.snap.updatedAt);
+        // 推送内部是「先读→合并→再写」，他端新增的条目可能被一并带回来，界面要跟上
+        if (!sameProgress(r.snap, before)) afterRemoteApply();
       }
       return {
-        remoteCount: { mastery: countEntries(snap().mastery), favs: countEntries(snap().favs) },
+        remoteCount: {
+          mastery: countEntries(snap().mastery),
+          favs: countEntries(snap().favs),
+          quiz: countEntries(snap().quiz)
+        },
         changed: !!(r && r.changed)
       };
     });
   }
 
   // [sync] 统一入口：mode = full（先拉→合并→再推）/ pull / push
-  function syncNow(mode, attempt) {
+  function syncNow(mode, attempt, silent) {
     mode = mode || "full";
     var ad = syncAdapter();
-    if (!ad) { setSyncState("", "未配置"); refreshSyncDot(); toastSync("还没配置同步通道"); return Promise.resolve(false); }
-    if (SYNC_BUSY) { toastSync("同步进行中，请稍候"); return Promise.resolve(false); }
+    if (!ad) {
+      if (!silent) { setSyncState("", "未配置"); refreshSyncDot(); toastSync("还没配置同步通道"); }
+      return Promise.resolve(false);
+    }
+    if (SYNC_BUSY) { if (!silent) toastSync("同步进行中，请稍候"); return Promise.resolve(false); }
     SYNC_BUSY = true;
     if (SYNC_RETRY_TIMER) { clearTimeout(SYNC_RETRY_TIMER); SYNC_RETRY_TIMER = null; }
     if (SYNC_DEBOUNCE) { clearTimeout(SYNC_DEBOUNCE); SYNC_DEBOUNCE = null; }
@@ -16110,32 +16334,83 @@
 
     return chain.then(function (res) {
       SYNC_BUSY = false;
-      var patch = { lastSyncAt: nowMs(), lastError: "", pending: false };
+      var patch = { lastSyncAt: nowMs(), lastError: "", lastErrorCode: "", pending: false, offline: false };
       if (res && res.remoteCount) patch.remoteCount = res.remoteCount;
       syncSetMeta(patch);
+      syncTouched();
       refreshSyncDot();
       renderSyncStat();
       return true;
     }).catch(function (err) {
       SYNC_BUSY = false;
       var msg = (err && err.message) || "同步失败";
-      syncSetMeta({ lastError: msg, pending: true });
+      var code = (err && err.code) || "error";
+      syncSetMeta({ lastError: msg, lastErrorCode: code, pending: true });
       refreshSyncDot();
       renderSyncStat();
-      toastSync("同步失败：" + msg);
-      if (mode !== "pull" && (attempt || 0) < SYNC_RETRY_WAITS.length) {
+      /* 错误分两类：配置类（令牌失效、ID 写错、远端 JSON 坏了）重试一万次也没用，
+         直接说清楚去哪儿改；网络类才退避重试，避免无意义的 3 次请求和三次弹窗。 */
+      var fatal = (code === "auth" || code === "notfound" || code === "parse" || code === "unsupported");
+      if (fatal) {
+        setSyncState("err", "配置有误");
+        toastSync("同步失败：" + msg + "　这类错误重试无效，请到「同步」里检查配置", 6400);
+        return false;
+      }
+      if (syncOffline()) {
+        setSyncState("dirty", "离线待同步");
+        toastSync("当前离线：改动已存在本机，联网后会自动同步", 4600);
+        return false;
+      }
+      var wait = SYNC_RETRY_WAITS[attempt || 0];
+      if (mode !== "pull" && wait !== undefined) {
+        var nth = (attempt || 0) + 1;
+        toastSync("同步失败：" + msg + "（" + Math.round(wait / 1000) + " 秒后第 " + nth + "/" +
+          SYNC_RETRY_WAITS.length + " 次重试）", 5200);
         if (SYNC_RETRY_TIMER) clearTimeout(SYNC_RETRY_TIMER);
         SYNC_RETRY_TIMER = setTimeout(function () {
           SYNC_RETRY_TIMER = null;
           if (!syncAdapter()) return;
+          if (syncOffline()) { syncSetMeta({ pending: true }); refreshSyncDot(); return; }
           syncNow("push", (attempt || 0) + 1);
-        }, SYNC_RETRY_WAITS[attempt || 0]);
+        }, wait);
+      } else {
+        toastSync("同步失败：" + msg);
       }
       return false;
     });
   }
 
-  // [sync] 本地改动入口：由 markDone / setFav / 主题切换调用
+  /* [sync] ---------------- 定时同步：补上「别人改了，而我这台没动过」的场景 ----------------
+     实时推送（改动后 3s 防抖）只解决「我改了」；定时任务做全量（先拉→合并→再推），把另一台设备的改动带回来。
+     只在页面可见时执行：后台标签页的定时器会被浏览器节流，且此时同步没有意义。 */
+  var SYNC_AUTO_TIMER = null;
+  var SYNC_AUTO_OPTS = [[0, "关闭（只靠改动触发）"], [5, "每 5 分钟"], [15, "每 15 分钟"], [30, "每 30 分钟"], [60, "每 60 分钟"]];
+
+  function syncAutoMin() {
+    var n = Number(syncCfg().auto);
+    return (isFinite(n) && n > 0) ? n : 0;
+  }
+  function syncOffline() {
+    try { return typeof navigator !== "undefined" && navigator.onLine === false; }
+    catch (e) { return false; }
+  }
+  function syncAutoArm() {
+    if (SYNC_AUTO_TIMER) { clearTimeout(SYNC_AUTO_TIMER); SYNC_AUTO_TIMER = null; }
+    var ms = syncAutoMin() * 60000;
+    if (!ms) return;
+    SYNC_AUTO_TIMER = setTimeout(syncAutoTick, ms);
+  }
+  function syncAutoTick() {
+    SYNC_AUTO_TIMER = null;
+    if (!syncAutoMin()) return;
+    syncAutoArm();                                  // 先排下一次，中途任何 return 都不会断链
+    if (!syncAdapter()) return;
+    if (document.visibilityState !== "visible") return;
+    if (SYNC_BUSY || syncOffline()) return;
+    syncNow("full", 0, true);                       // silent：自动同步不弹「同步进行中」
+  }
+
+  // [sync] 本地改动入口：由 markDone / setFav / 主题切换 / 刷题判分调用
   function syncMarkDirty() {
     syncTouched();
     if (!syncAdapter()) { refreshSyncDot(); return; }
@@ -16196,6 +16471,8 @@
     lsDel(LS_SYNCMETA);
     if (SYNC_RETRY_TIMER) { clearTimeout(SYNC_RETRY_TIMER); SYNC_RETRY_TIMER = null; }
     if (SYNC_DEBOUNCE) { clearTimeout(SYNC_DEBOUNCE); SYNC_DEBOUNCE = null; }
+    if (SYNC_AUTO_TIMER) { clearTimeout(SYNC_AUTO_TIMER); SYNC_AUTO_TIMER = null; }
+    syncAutoArm();   // [sync] 配置清空后回到默认间隔，等下次配置通道后自动生效
     renderSyncDrawer();
     refreshSyncDot();
     toastSync("已清除同步配置（进度本身保留）");
@@ -16213,11 +16490,32 @@
   // [note] 先落地未保存的笔记，再推送同步
   document.addEventListener("visibilitychange", function () {
     flushAllNotes();
-    if (document.visibilityState === "hidden" && syncAdapter()) syncNow("push");
+    if (document.visibilityState === "hidden") {
+      if (syncAdapter()) syncNow("push");   // 切后台/锁屏前立即推送
+      return;
+    }
+    // [sync] 回到前台：距上次同步已超过设定间隔（或从未同步）就补一次全量；否则只重排定时器
+    var ms = syncAutoMin() * 60000, meta = syncMeta();
+    if (!ms || !syncAdapter()) { syncAutoArm(); return; }
+    if (!meta.lastSyncAt || nowMs() - normT(meta.lastSyncAt) >= ms) syncNow("full", 0, true);
+    else syncAutoArm();
+  });
+  // [sync] 网络恢复/断开：恢复时立刻补一次（把离线期间的改动推上去），断开时只改状态，不发请求
+  window.addEventListener("online", function () {
+    syncSetMeta({ offline: false });
+    refreshSyncDot();
+    renderSyncStat();
+    if (syncAdapter()) syncNow("full", 0, true);
+  });
+  window.addEventListener("offline", function () {
+    syncSetMeta({ offline: true, pending: true });
+    refreshSyncDot();
+    renderSyncStat();
   });
   window.addEventListener("beforeunload", function () { flushAllNotes(); });
   // [sync] 触发时机 1：首屏渲染完成后 1.5s 拉一次（不阻塞加载）
   setTimeout(function () {
+    syncAutoArm();   // [sync] 定时同步开始计时（间隔为 0 时内部直接返回）
     if (!syncAdapter()) { refreshSyncDot(); return; }
     var meta = syncMeta();
     syncNow(meta.pending ? "push" : "full");
@@ -17096,7 +17394,7 @@
     state: "setup", done: {}, rec: null, startTs: 0,
     cfg: { sec: "全部", type: "全部", order: "seq" }
   };
-  var qzStore = lsGet(LS_QUIZ, {}) || {};
+  /* [sync] 旧的 review.quiz.v1 不再直接读写：内容由 migrateQuizToSnap() 并入快照，之后统一走 snap.quiz。 */
 
   function qzSubject(sid) {
     for (var i = 0; i < DATA.subjects.length; i++) if (DATA.subjects[i].id === sid) return DATA.subjects[i];
@@ -17121,20 +17419,48 @@
     if (item.e !== undefined) return "fill";
     return "self";
   }
+  /* [sync] 刷题记录存在快照里（snap.quiz），按科目隔离、键口径不变；
+     每次现取 snap()，远端快照落地后引用自动跟着换，不需要手工失效缓存。 */
+  function qzData() {
+    var s = snap();
+    if (!s.quiz || typeof s.quiz !== "object" || Object.prototype.toString.call(s.quiz) === "[object Array]") s.quiz = {};
+    return s.quiz;
+  }
   function qzRecOf(sid, key) {
-    var m = qzStore[sid];
+    var m = qzData()[sid];
     return (m && m[key]) ? m[key] : null;
   }
   function qzSaveRec(sid, key, right) {
-    if (!qzStore[sid]) qzStore[sid] = {};
-    var old = qzStore[sid][key];
-    qzStore[sid][key] = {
+    var q = qzData();
+    if (!q[sid]) q[sid] = {};
+    var old = q[sid][key];
+    q[sid][key] = {
       r: right ? 1 : 0,
       n: (old && old.n ? old.n : 0) + 1,
       w: (old && old.w ? old.w : 0) + (right ? 0 : 1),
       t: nowMs()
     };
-    lsSet(LS_QUIZ, qzStore);
+    commitSnap(nowMs());   // 落盘并前移 updatedAt
+    syncMarkDirty();       // 标脏：配了通道就 3s 防抖推送
+  }
+
+  /* 旧版刷题记录（review.quiz.v1）一次性并入快照：逐条判断，快照里已有的以快照为准，
+     因此可重复执行；迁完不删旧键，留作降级备份。 */  function migrateQuizToSnap() {
+    var old = lsGet(LS_QUIZ, null);
+    if (!old || typeof old !== "object") return 0;
+    var q = qzData(), n = 0, sid, k;
+    for (sid in old) if (has0(old, sid)) {
+      var om = old[sid] || {};
+      if (!q[sid]) q[sid] = {};
+      for (k in om) if (has0(om, k)) {
+        if (q[sid][k]) continue;
+        var e = om[k] || {};
+        q[sid][k] = { r: e.r === 1 ? 1 : 0, n: qzNum(e.n), w: qzNum(e.w), t: normT(e.t) };
+        n++;
+      }
+    }
+    if (n) commitSnap(nowMs());
+    return n;
   }
 
   function qzPoolOf(sid) {
@@ -17148,6 +17474,141 @@
       out.push({ it: it, kp: kp, ex: kp.examples[it.i], key: it.k + "#" + qzFp(kp.examples[it.i].q) });
     }
     return out;
+  }
+
+  /* ---------- 知识点 / 例题 与刷题记录的关联 ---------- */
+  /* 不新增存储：启动时由内嵌题库重建索引 sid → 知识点 → 例题下标 → 记录键，
+     记录键与刷题写入时完全同构（知识点#题干前20字），因此旧记录零迁移、旧数据照常命中。
+     用题库的 item.i（真实例题下标）定位，同一知识点内题干前 20 字雷同的两道题也不会互相串记录。 */
+  var QZIDX = null;
+
+  function qzIdxBuild() {
+    var out = {};
+    if (!QZ_READY) return out;
+    for (var n = 0; n < QQUIZ.items.length; n++) {
+      var it = QQUIZ.items[n], sub = qzSubject(it.s);
+      if (!sub) continue;
+      var kp = qzKpOf(sub, it.k);
+      if (!kp || !kp.examples || !kp.examples[it.i]) continue;
+      if (!out[it.s]) out[it.s] = {};
+      if (!out[it.s][it.k]) out[it.s][it.k] = {};
+      out[it.s][it.k][it.i] = it.k + "#" + qzFp(kp.examples[it.i].q);
+    }
+    return out;
+  }
+  function qzIdx() {
+    if (QZIDX === null) QZIDX = qzIdxBuild();
+    return QZIDX;
+  }
+  /* 题库里没有这道例题时返回 null（不显示标识），与「有键但从未作答」区分开 */
+  function qzExRec(sid, kid, i) {
+    var m = qzIdx()[sid];
+    m = m && m[kid];
+    if (!m || m[i] === undefined) return null;
+    return qzRecOf(sid, m[i]);
+  }
+  /* 知识点刷题统计：分母只算已刷，同一题反复刷只按最近一次计，rate 四舍五入取整 */
+  function qzKpStat(sid, kid) {
+    var m = qzIdx()[sid];
+    m = m && m[kid];
+    if (!m) return null;
+    var total = 0, done = 0, right = 0;
+    for (var i in m) {
+      if (!has0(m, i)) continue;
+      total++;
+      var r = qzRecOf(sid, m[i]);
+      if (!r) continue;
+      done++;
+      if (r.r === 1) right++;
+    }
+    return { total: total, done: done, right: right, wrong: done - right,
+             rate: done ? Math.round(right / done * 100) : 0 };
+  }
+
+  /* ---------- 两个徽标的绘制 ---------- */
+  function qzRateBadge(k) {
+    if (!QZ_READY) return null;
+    var st = qzKpStat(SID, k.id);
+    if (!st || !st.total) return null;
+    var b = el("button", "badge qz");
+    b.type = "button";
+    b.setAttribute("data-qzrate", k.id);
+    b.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();      // 在 summary 里，别顺带把卡片折叠了
+      qzPracticeKp(k.id);
+    });
+    qzPaintRate(b, k.id);
+    return b;
+  }
+
+  function qzPaintRate(node, kid) {
+    if (!node) return;
+    var st = qzKpStat(SID, kid);
+    if (!st || !st.total) { node.hidden = true; return; }
+    node.hidden = false;
+    if (!st.done) {
+      node.className = "badge qz none";
+      node.textContent = "未刷题";
+      node.title = "这个知识点共 " + st.total + " 道例题，还没有刷题记录；点一下只刷这一组";
+      node.setAttribute("aria-label", "未刷题，该知识点共 " + st.total + " 道例题，点击开始刷题");
+      return;
+    }
+    node.className = "badge qz" + (st.rate >= 80 ? " good" : (st.rate < 60 ? " bad" : " mid"));
+    node.textContent = "刷题 " + st.done + "/" + st.total + " · " + st.rate + "%";
+    node.title = "已刷 " + st.done + " / 共 " + st.total + " 道：对 " + st.right + "、错 " + st.wrong +
+      "，正确率 " + st.rate + "%（按每道题最近一次作答计）；点一下只刷这个知识点";
+    node.setAttribute("aria-label", "刷题正确率 " + st.rate + "%，已刷 " + st.done + " / " + st.total +
+      " 道，点击开始刷题");
+  }
+
+  function qzPaintEx(host, kid, i) {
+    var tag = host.querySelector(".exdone");
+    if (!tag) return;
+    var r = qzExRec(SID, kid, i);
+    if (!r) { tag.hidden = true; return; }
+    var ok = r.r === 1;
+    tag.hidden = false;
+    tag.className = "exdone " + (ok ? "ok" : "no");
+    tag.textContent = ok ? "刷过 · 对" : "刷过 · 错";
+    tag.title = "刷题记录：做过 " + (r.n || 1) + " 次，错 " + (r.w || 0) + " 次，最近一次" +
+      (ok ? "答对" : "答错") + " · " + fmtTime(r.t);
+  }
+
+  /* 就地重绘一张卡片（作答、改判后调用，不重渲染 DOM，展开状态与滚动位置都不动） */
+  function qzRefreshKp(kid) {
+    var card = byId("k-" + kid);
+    if (!card) return;
+    qzPaintRate(card.querySelector("[data-qzrate]"), kid);
+    var exs = card.querySelectorAll(".ex[data-exi]");
+    for (var i = 0; i < exs.length; i++) {
+      qzPaintEx(exs[i], kid, parseInt(exs[i].getAttribute("data-exi"), 10));
+    }
+  }
+  /* 整科目重绘：退出刷题、重置进度、切科目后用 */
+  function qzRefreshMarks() {
+    var box = byId("groups");
+    if (!box || !box.querySelectorAll) return;
+    var cards = box.querySelectorAll(".card");
+    for (var c = 0; c < cards.length; c++) {
+      var kid = String(cards[c].id || "").replace(/^k-/, "");
+      if (!kid) continue;
+      qzPaintRate(cards[c].querySelector("[data-qzrate]"), kid);
+      var exs = cards[c].querySelectorAll(".ex[data-exi]");
+      for (var e = 0; e < exs.length; e++) {
+        qzPaintEx(exs[e], kid, parseInt(exs[e].getAttribute("data-exi"), 10));
+      }
+    }
+  }
+
+  /* 从卡片徽标直接开这一组的题：进刷题模式后只放该知识点的题，不改动既有筛选配置 */
+  function qzPracticeKp(kid) {
+    if (!QZ_READY) return;
+    qzEnter();
+    var only = [];
+    for (var i = 0; i < QZ.pool.length; i++) if (QZ.pool[i].kp.id === kid) only.push(QZ.pool[i]);
+    if (!only.length) { qzToast("该知识点暂无可用题目"); return; }
+    qzStartRun(only, "知识点练习");
   }
 
   /* ---------- 视图切换 ---------- */
@@ -17188,6 +17649,7 @@
     qzBtn.textContent = "刷题";
     qzBtn.setAttribute("aria-pressed", "false");
     QZ.state = "setup";
+    qzRefreshMarks();   // [quiz] 回到卡片模式前把整科目的标识与正确率重算一遍
     if (typeof refreshInlineProg === "function") refreshInlineProg();
   }
 
@@ -17465,6 +17927,7 @@
       var bt = QZ.rec.byType[q.ex.type];
       if (bt) bt.right++;
       qzSaveRec(QZ.sid, q.key, true);
+      qzRefreshKp(q.kp.id);   // [quiz] 改判为对，徽标同步
       fb.className = "qfb ok";
       fb.innerHTML = "";
       fb.appendChild(txt("span", "", "已记作正确。参考答案：" + q.it.e));
@@ -17485,6 +17948,7 @@
     rec.byType[t].n++;
     if (right) rec.byType[t].right++;
     qzSaveRec(QZ.sid, q.key, right);
+    qzRefreshKp(q.kp.id);   // [quiz] 卡片上的「刷过」标识与正确率即时跟上
   }
 
   function qzFeedback(right, extra) {
@@ -17740,10 +18204,15 @@
     byId("qOrderSel").addEventListener("change", function () { QZ.cfg.order = this.value; });
     byId("qReset").addEventListener("click", function () {
       if (!window.confirm("重置「" + (qzSubject(QZ.sid) || {}).name + "」的刷题进度与错题记录？此操作不可撤销。")) return;
-      qzStore[QZ.sid] = {};
-      lsSet(LS_QUIZ, qzStore);
+      var qzAll = qzData(), qzSnap = snap();
+      qzAll[QZ.sid] = {};
+      if (!qzSnap.quizReset || typeof qzSnap.quizReset !== "object") qzSnap.quizReset = {};
+      qzSnap.quizReset[QZ.sid] = nowMs();   // 墓碑：下次合并时把远端早于此刻的记录一并作废
+      commitSnap(nowMs());
+      syncMarkDirty();
       QZ.done = {};
       qzRenderSetup();
+      qzRefreshMarks();   // [quiz] 清空后徽标回落为「未刷题」
       qzToast("已重置本科目刷题进度");
     });
     byId("qNext").addEventListener("click", qzNext);
@@ -17763,7 +18232,8 @@
   window.__reviewQuiz = {
     QZ: QZ, items: QQUIZ, pool: qzPoolOf, enter: function () { qzEnter(); }, exit: qzExit,
     buildList: qzBuildList, startRun: qzStartRun, answer: qzAnswer, checkFill: qzCheckFill,
-    next: qzNext, prev: qzPrev, summary: qzSummary, store: function () { return qzStore; }, LS: LS_QUIZ
+    next: qzNext, prev: qzPrev, summary: qzSummary, store: function () { return qzData(); }, LS: LS_QUIZ,
+    kpStat: qzKpStat, idx: qzIdx, exRec: qzExRec, practiceKp: qzPracticeKp, refreshMarks: qzRefreshMarks
   };
 
   /* ---------------- 启动 ---------------- */
@@ -17772,6 +18242,7 @@
     var movedV3 = migrateMasteryV3();
     // [sync] 两次旧键迁移跑完，再把结果收敛进 v2 快照（首次升级只发生一次）
     snap();
+    migrateQuizToSnap();   // [sync] 旧版 review.quiz.v1 并入 snap.quiz（幂等）
     SID = pickSubject();
     lsSet(LS_ACTIVE, SID);
     applyTheme(lsGet(LS_THEME, null));
@@ -17812,7 +18283,9 @@
     webdavAdapter: webdavAdapter, customAdapter: customAdapter, classify: classify,
     syncNow: syncNow, syncMarkDirty: syncMarkDirty, exportSnapFile: exportSnapFile,
     importSnapFile: importSnapFile, countEntries: countEntries, deviceInfo: deviceInfo,
-    syncTouched: syncTouched, toastSync: toastSync
+    syncTouched: syncTouched, toastSync: toastSync,
+    syncAutoArm: syncAutoArm, syncAutoMin: syncAutoMin, syncAutoTick: syncAutoTick, syncOffline: syncOffline,
+    mergeQuizMap: mergeQuizMap, mergeResetMap: mergeResetMap, dropReset: dropReset, sameQuiz: sameQuiz
   };
   // [update] 调试出口：仅供自动化测试读取更新模块内部状态，不参与业务逻辑
   window.__reviewUpdate = {
