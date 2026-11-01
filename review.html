@@ -2,9 +2,21 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.27.0
+  APP_VERSION: 3.28.0
   DATA_VERSION: 2026-11-01
-  本次变更: 知识点掌握程度与刷题结果联动（APP_VERSION 3.27.0，数据未动）——
+  本次变更: 卡片上的掌握情况改为「状态徽标」，一眼看出这张卡当前是未掌握还是已掌握（APP_VERSION 3.28.0，数据未动）——
+             ①原徽标显示「刷题 3/3 · 67%」，要自己换算；现在直接显示当前状态：
+               「未开始」/「未掌握 · 正确率」/「薄弱 · 正确率」/「学习中 · 已刷进度」/「待复核 · 蒙对数」/「已掌握」；
+             ②判定与设置页「掌握程度」面板同一份口径（qzMasteryOf），不新增存储、不升 schema；
+             ③实时性：作答判分、改判「其实等价」、标记/取消蒙对、退出刷题、重置本科目进度、他端同步合并后都就地重绘徽标
+               （走 qzRefreshKp / qzRefreshMarks，不整页重渲染，卡片展开状态与滚动位置都不丢）；
+             ④配色按状态整颗上色：未掌握琥珀实底、薄弱琥珀描边、学习中灰、待复核蓝、已掌握墨绿、未开始灰虚线；
+               title 给出等级/掌握度/对错明细/累计错次，aria-label 同步，窄屏不溢出；
+             ⑤手动勾选文案由「已掌握」改为「手动」，避免与徽标重复；勾选仍只影响「只看未掌握」筛选与复习进度，
+               与刷题判定不一致时勾选区标警示色并说明「以徽标为准」，不改存储、不改变勾选行为；
+             ⑥不影响卡片其他功能：点击徽标仍只刷该知识点、不会顺带展开卡片；收藏、笔记、折叠、例题行均未改动；
+             ⑦自测 card-state-test 28 项（六态文案与配色、蒙对即时切换、作答后切换、勾选冲突提示、点击不误触、390px）。
+  上次变更: 知识点掌握程度与刷题结果联动（APP_VERSION 3.27.0，数据未动）——
              ①判定：题目全部答对且无蒙对＝已掌握；全对但含蒙对→待复核；有未改正错题时，≤ceil(题数/3) 且正确率≥50%→薄弱，
                否则→危险；刷过的都对但没刷完→待巩固；一条记录都没有→未开始；共 6 档，自上而下先命中者为准；
              ②掌握度分数（0–100，组内排序用）：100×对题数/总题数 − 10×未改正 − 3×已改正的历史错次 − 8×蒙对，
@@ -272,7 +284,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.27.0">
+<meta name="app-version" content="3.28.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -686,7 +698,7 @@
   .sol p:last-child{margin-bottom:0}
   .sol b{font-weight:600}
 
-  /* ---------- 刷题关联：知识点正确率徽标 + 例题「刷过」标识 ---------- */
+  /* ---------- 刷题关联：知识点「掌握状态」徽标 + 例题「刷过」标识 ---------- */
   .badge.qz{
     font:inherit;font-size:11.5px;line-height:1.5;padding:1px 6px;letter-spacing:.02em;
     border:1px solid var(--accent);border-radius:3px;background:var(--accentBg);color:var(--accent);
@@ -1418,10 +1430,16 @@
   .qmscore.tone-mid{color:var(--act)}
   .qmscore.tone-none{color:var(--ink3);font-weight:400}
   .qmscore.tone-good{color:var(--accent)}
-  /* 卡片徽标左侧的等级色条：不改文字、不挤布局 */
-  .badge.qz[data-tier="danger"],.badge.qz[data-tier="weak"]{box-shadow:inset 3px 0 0 var(--warn)}
-  .badge.qz[data-tier="review"],.badge.qz[data-tier="partial"]{box-shadow:inset 3px 0 0 var(--act)}
-  .badge.qz[data-tier="master"]{box-shadow:inset 3px 0 0 var(--accent)}
+  /* 卡片徽标＝掌握状态：按等级整颗上色，一眼能分辨「未掌握 / 学习中 / 已掌握」 */
+  .badge.qz.t-none{border-color:var(--line2);border-style:dashed;background:transparent;color:var(--ink2);opacity:.62}
+  .badge.qz.t-danger{border-color:var(--warn);background:var(--warnBg);color:var(--warn)}
+  .badge.qz.t-weak{border-color:var(--warn);background:transparent;color:var(--warn)}
+  .badge.qz.t-partial{border-color:var(--line2);background:transparent;color:var(--ink2)}
+  .badge.qz.t-review{border-color:var(--act);background:var(--actBg);color:var(--act)}
+  .badge.qz.t-master{border-color:var(--accent);background:var(--accentBg);color:var(--accent);font-weight:600}
+  /* 手动勾选与刷题判定不一致：勾选区标成警示色，提示以徽标为准 */
+  .mwrap[data-conflict="1"] .mbox{border-color:var(--warn)}
+  .mwrap[data-conflict="1"] .mtext{color:var(--warn)}
 
   /* [exam] 考试题型条：按科目数据 examFormat 渲染，点一下只练该题型 */
   .exambar{
@@ -14159,7 +14177,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.27.0";
+  var APP_VERSION = "3.28.0";
   var DATA_VERSION = "2026-11-01";
 
   var LEVEL_ORDER = ["A", "B", "C"];
@@ -14837,13 +14855,17 @@
     cb.setAttribute("aria-label", "标记已掌握：" + plainLabel(k.name));
     lab.appendChild(cb);
     lab.appendChild(el("span", "mbox"));
-    lab.appendChild(txt("span", "mtext", "已掌握"));
+    /* 文案不再叫「已掌握」：卡片徽标已经用「已掌握」表示刷题判定结果，
+       这里的勾选是手动标记，两者可能不一致（不一致时勾选区标警示色） */
+    lab.appendChild(txt("span", "mtext", "手动"));
+    lab.title = "手动标记为已掌握（只影响「只看未掌握」筛选与复习进度，不改变徽标的自动判定）";
     cb.addEventListener("change", function () {
       markDone(k.id, cb.checked);
       d.classList.toggle("done", cb.checked);
       mw.classList.remove("tick");
       void mw.offsetWidth;      // 强制重排以重启动画
       mw.classList.add("tick");
+      qzPaintConflict(k.id, qzMasteryOf(SID, k.id));   // [mastery] 勾选与判定是否一致，立刻反映
       renderProgress();
       renderStats();
       if (!ovPanel.hidden) renderOverview();
@@ -18936,31 +18958,59 @@
     return b;
   }
 
+  /* [mastery] 卡片徽标＝该知识点此刻的掌握状态，由刷题记录自动判定、随作答实时变化。
+     六态文案（右侧数字取最有信息量的那个：已答有错→正确率；没刷完→进度；含蒙对→蒙对数）：
+       未开始    一条记录都没有
+       未掌握    错题多或有未改正的错题        → 「未掌握 · 33%」
+       薄弱      还有个别错题没改正            → 「薄弱 · 67%」
+       学习中    刷过的都对，但还没刷完        → 「学习中 · 1/3」
+       待复核    全部答对，但含蒙对的题        → 「待复核 · 蒙 1」
+       已掌握    全部答对且无蒙对              → 「已掌握」
+     点击行为不变：只刷这个知识点。 */
+  function qzStateText(mt) {
+    var k = mt.tier.key;
+    if (k === "master") return "已掌握";
+    if (k === "none") return "未开始";
+    if (k === "review") return "待复核 · 蒙 " + mt.guess;
+    if (k === "partial") return "学习中 · " + mt.done + "/" + mt.total;
+    if (k === "weak") return "薄弱 · " + mt.rate + "%";
+    return "未掌握 · " + mt.rate + "%";
+  }
+
   function qzPaintRate(node, kid) {
     if (!node) return;
-    var st = qzKpStat(SID, kid);
-    if (!st || !st.total) { node.hidden = true; return; }
+    var mt = qzMasteryOf(SID, kid);      // [mastery] 与设置页面板同一份口径
+    if (!mt || !mt.total) { node.hidden = true; return; }
     node.hidden = false;
-    if (!st.done) {
-      node.className = "badge qz none";
-      node.setAttribute("data-tier", "none");
-      node.textContent = "未刷题";
-      node.title = "这个知识点共 " + st.total + " 道例题，还没有刷题记录；点一下只刷这一组";
-      node.setAttribute("aria-label", "未刷题，该知识点共 " + st.total + " 道例题，点击开始刷题");
-      return;
-    }
-    node.className = "badge qz" + (st.rate >= 80 ? " good" : (st.rate < 60 ? " bad" : " mid"));
-    node.textContent = "刷题 " + st.done + "/" + st.total + " · " + st.rate + "%";
-    var gn = qzGuessCountKp(SID, kid);   // [guess] 蒙对单独提示，不进正确率
-    var mt = qzMasteryOf(SID, kid);      // [mastery] 掌握等级（与设置页面板同源）
-    node.setAttribute("data-tier", mt ? mt.tier.key : "none");
-    node.title = "已刷 " + st.done + " / 共 " + st.total + " 道：对 " + st.right + "、错 " + st.wrong +
-      "，正确率 " + st.rate + "%（按每道题最近一次作答计）" +
-      (gn ? "；其中 " + gn + " 题你标了「蒙对」——算对但没真懂" : "") +
-      (mt ? "；掌握等级：" + mt.tier.label + "（掌握度 " + mt.score + "%）" : "") +
+    node.className = "badge qz t-" + mt.tier.key;
+    node.setAttribute("data-tier", mt.tier.key);
+    node.textContent = qzStateText(mt);
+    node.title = "掌握等级：" + mt.tier.label + "（掌握度 " + mt.score + "%）——" + mt.tier.hint +
+      "。共 " + mt.total + " 道题，已刷 " + mt.done + " 道：对 " + mt.right + "、错 " + mt.open +
+      (mt.done ? "；正确率 " + mt.rate + "%（按每道题最近一次作答计）" : "") +
+      (mt.ever ? "；累计答错 " + mt.errs + " 次" : "") +
+      (mt.guess ? "；其中 " + mt.guess + " 道标了「蒙对」——算对但没真懂" : "") +
       "；点一下只刷这个知识点";
-    node.setAttribute("aria-label", "刷题正确率 " + st.rate + "%，已刷 " + st.done + " / " + st.total +
-      " 道，点击开始刷题");
+    node.setAttribute("aria-label", "掌握状态：" + mt.tier.label + "，已刷 " + mt.done + " / " +
+      mt.total + " 道，点击开始刷题");
+    qzPaintConflict(kid, mt);
+  }
+
+  /* 手动勾选（.mwrap）与刷题判定不一致时给个说明：勾选是你自己的想法，徽标按记录自动判定。
+     只改提示与配色，不改勾选行为，也不改任何存储。 */
+  function qzPaintConflict(kid, mt) {
+    var card = byId("k-" + kid);
+    if (!card || !mt) return;
+    var mw = card.querySelector(".mwrap");
+    if (!mw) return;
+    if (isDone(kid) && mt.tier.key !== "master") {
+      mw.setAttribute("data-conflict", "1");
+      mw.title = "你手动勾了「已掌握」，但刷题记录判定为「" + mt.tier.label +
+        "」；勾选只是手动标记，卡片右上角的徽标按刷题结果自动更新";
+    } else {
+      mw.removeAttribute("data-conflict");
+      mw.removeAttribute("title");
+    }
   }
 
   /* 短时间：错答行只用月-日 时:分，别把年份塞进一行小字 */
@@ -19833,7 +19883,7 @@
       syncMarkDirty();
       QZ.done = {};
       qzRenderSetup();
-      qzRefreshMarks();   // [quiz] 清空后徽标回落为「未刷题」
+      qzRefreshMarks();   // [quiz] 清空后徽标回落为「未开始」
       qzToast("已重置本科目刷题进度");
     });
     byId("qNext").addEventListener("click", qzNext);
