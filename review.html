@@ -2,9 +2,10 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.30.0
+  APP_VERSION: 3.30.1
   DATA_VERSION: 2026-11-01
-  本次变更: 修好「刷题后同步偶发失败/延迟」——根因是超时阈值与请求次数，不是账号或网络本身（APP_VERSION 3.30.0，数据未动）——
+  本次变更: （3.30.1 补充）同步设置页说明文案改为与实际行为一致：3 秒防抖 + 连续改动 6 秒内必推、刷题中攒着退出再推。
+  上次变更: 修好「刷题后同步偶发失败/延迟」——根因是超时阈值与请求次数，不是账号或网络本身（APP_VERSION 3.30.0，数据未动）——
              ①超时一刀切 10 秒：写请求要把整份快照 PATCH 上去，国内访问 api.github.com 偶发 12s+ 就必然超时；
                现在分级——读 15 秒、写 30 秒并随体积递增（每 10KB +1 秒，上限 60 秒）；错误提示写明是哪一档；
              ②一次全量同步要 4 个往返（拉→读→写→回读），慢网下光等待就十几秒；push 现在复用刚拉到的远端快照，降到 3 个；
@@ -309,7 +310,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.30.0">
+<meta name="app-version" content="3.30.1">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -14208,7 +14209,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.30.0";
+  var APP_VERSION = "3.30.1";
   var DATA_VERSION = "2026-11-01";
 
   var LEVEL_ORDER = ["A", "B", "C"];
@@ -16716,7 +16717,8 @@
     auBox.appendChild(auLab);
     auBox.appendChild(auSel);
     syncBodyEl.appendChild(auBox);
-    syncBodyEl.appendChild(snote("改动后会 3 秒自动推送；定时同步负责把其他设备的改动拉回来（仅页面在前台时运行）。"));
+    syncBodyEl.appendChild(snote("改动后 3 秒自动推送（连续改动最长 6 秒内必推一次）；刷题过程中先攒着，退出刷题时统一推送。" +
+      "定时同步负责把其他设备的改动拉回来（仅页面在前台时运行）。"));
 
     var row = el("div", "srow");
     [["立即同步", "full"], ["仅拉取", "pull"], ["仅推送", "push"]].forEach(function (o) {
