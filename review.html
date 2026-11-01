@@ -2,9 +2,22 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.26.0
+  APP_VERSION: 3.27.0
   DATA_VERSION: 2026-11-01
-  本次变更: 修好 x_0 这类「纯文本数学」不渲染——上一版只兜底带 \命令的片段，把没有反斜杠的下标漏了（APP_VERSION 3.26.0 / DATA_VERSION 同日）——
+  本次变更: 知识点掌握程度与刷题结果联动（APP_VERSION 3.27.0，数据未动）——
+             ①判定：题目全部答对且无蒙对＝已掌握；全对但含蒙对→待复核；有未改正错题时，≤ceil(题数/3) 且正确率≥50%→薄弱，
+               否则→危险；刷过的都对但没刷完→待巩固；一条记录都没有→未开始；共 6 档，自上而下先命中者为准；
+             ②掌握度分数（0–100，组内排序用）：100×对题数/总题数 − 10×未改正 − 3×已改正的历史错次 − 8×蒙对，
+               夹到 0–100；于是「全对无蒙对」=100、「全对但曾错一次」=97，组内自然把「曾错的」排在纯掌握之前；
+             ③分组与排序：组序 危险→薄弱→待复核→待巩固→未开始→已掌握（差在前）；组内 掌握度低 → 未改正多 → 累计错次多 →
+               蒙对多 → 正确率低 → 最近做过的在前；未开始不与「危险」抢前排；
+             ④展示：刷题设置页新增「掌握程度」卡片——摘要「已掌握 x/N 个考点 · 平均 y%」+ 六组可折叠标题
+               （等级标签/数量/说明/平均掌握度）；行内 组内序号 + 知识点名 + 章节/进度/正确率/未改正/蒙对 + 掌握度%，点行只练该组、右侧「卡片」跳转；
+             ⑤入口：顺序下拉新增「先练最不熟的（按掌握度）」，直接沿用面板顺序；卡片徽标左侧按等级加 3px 色条（危险/薄弱琥珀、待复核/待巩固蓝、已掌握绿），
+               title 追加「掌握等级：X（掌握度 N%）」；设置页统计行追加「已掌握 x/N 个考点」；
+             ⑥不新增存储、不升 schema：全部由 snap.quiz 的逐题记录（r/n/w/t/wa/gz/gu）现算，跨设备同步自动跟随；
+             ⑦自测 mastery-test 30 项（六档判定、分数公式、分组与组内排序、面板结构、折叠交互、点行只练该组、顺序、徽标、390px 无溢出）。
+  上次变更: 修好 x_0 这类「纯文本数学」不渲染——上一版只兜底带 \命令的片段，把没有反斜杠的下标漏了（APP_VERSION 3.26.0 / DATA_VERSION 同日）——
              ①原因：x_0、f′(x_0)、x^{2}、H^{+} 这些写法没有 \lim 之类的命令，KaTeX 的 \(...\) 定界符也没写，
                所以既没被数据修复脚本扫到，也没被前端兜底扫到，一直是正文纯文本（正体），与旁边的公式（斜体）字体不一致；
              ②规则扩展：只要片段含上下标（_ ^）或数学标记（′ = < > ± × ÷ − ≤ ≥）就当作公式，但必须含字母（纯数字算式不动）；
@@ -259,7 +272,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.26.0">
+<meta name="app-version" content="3.27.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -1375,6 +1388,41 @@
   }
   .qwmore:hover{color:var(--accent);border-color:var(--accent)}
 
+  /* [mastery] 掌握程度：按等级分组，组标题可折叠；组内掌握度低的排前面 */
+  .qmgrp{margin-top:4px}
+  .qmhead{
+    display:flex;align-items:center;gap:8px;width:100%;
+    padding:9px 4px;background:transparent;border:0;border-top:1px solid var(--line);
+    font:inherit;color:var(--ink);cursor:pointer;text-align:left;min-height:38px;
+  }
+  .qmhead:hover{background:var(--chip)}
+  .qmhead:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px}
+  .qmtier{
+    flex:0 0 auto;font-size:11px;line-height:1.5;padding:1px 6px;border-radius:3px;
+    border:1px solid var(--line2);color:var(--ink2);white-space:nowrap;
+  }
+  .qmtier.tone-bad{color:var(--warn);border-color:var(--warn);background:var(--warnBg)}
+  .qmtier.tone-warn{color:var(--warn);border-color:var(--line2)}
+  .qmtier.tone-mid{color:var(--act);border-color:var(--line2)}
+  .qmtier.tone-none{color:var(--ink3);border-color:var(--line2);border-style:dashed}
+  .qmtier.tone-good{color:var(--accent);border-color:var(--accent);background:var(--accentBg)}
+  .qmcnt{flex:0 0 auto;font-size:11.5px;color:var(--ink2);font-variant-numeric:tabular-nums}
+  .qmhint{
+    flex:1 1 auto;min-width:0;font-size:11.5px;color:var(--ink3);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .qmavg{flex:0 0 auto;font-size:11.5px;color:var(--ink2);font-variant-numeric:tabular-nums}
+  .qmcaret{flex:0 0 auto;font-size:11.5px;color:var(--accent)}
+  .qmscore{display:block;font-size:13px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+  .qmscore.tone-bad,.qmscore.tone-warn{color:var(--warn)}
+  .qmscore.tone-mid{color:var(--act)}
+  .qmscore.tone-none{color:var(--ink3);font-weight:400}
+  .qmscore.tone-good{color:var(--accent)}
+  /* 卡片徽标左侧的等级色条：不改文字、不挤布局 */
+  .badge.qz[data-tier="danger"],.badge.qz[data-tier="weak"]{box-shadow:inset 3px 0 0 var(--warn)}
+  .badge.qz[data-tier="review"],.badge.qz[data-tier="partial"]{box-shadow:inset 3px 0 0 var(--act)}
+  .badge.qz[data-tier="master"]{box-shadow:inset 3px 0 0 var(--accent)}
+
   /* [exam] 考试题型条：按科目数据 examFormat 渲染，点一下只练该题型 */
   .exambar{
     display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;
@@ -1412,6 +1460,9 @@
     .qhead{flex-wrap:wrap}
     .qmeta{max-width:100%;text-align:left}
     .qweak{padding:12px 12px 10px}
+    .qmhint{display:none}          /* 窄屏省一行：组标题只留等级、数量、平均与折叠 */
+    .qmhead{gap:6px;padding:9px 2px}
+    .qmavg{font-size:11px}
     .qwrow{grid-template-columns:18px 1fr auto;gap:8px;padding:9px 4px}
     .qwname{font-size:13px}
     .qwitem{gap:4px}
@@ -1595,6 +1646,7 @@
         <span class="qlabel">顺序</span>
         <select class="qsel" id="qOrderSel">
           <option value="seq">原序（按知识点）</option>
+          <option value="mastery">先练最不熟的（按掌握度）</option>
           <option value="rand">随机打乱</option>
           <option value="wrong">只刷错题</option>
           <option value="guess">只刷蒙对的题</option>
@@ -1605,6 +1657,8 @@
         <button class="btn" id="qBegin" type="button">开始刷题</button>
         <button class="btn small" id="qReset" type="button">重置本科目进度</button>
       </div>
+      <!-- [mastery] 掌握程度：由刷题记录推导，按等级分组、组内最差在前 -->
+      <div class="qweak" id="qMastery"></div>
       <!-- [guess] 蒙对的题：手动标记、按标记时间倒序归集，可单练/跳卡片/撤销 -->
       <div class="qweak" id="qGuess"></div>
       <!-- [weak] 薄弱知识点：由刷题记录按知识点聚合，点一行直接练这一组 -->
@@ -14105,7 +14159,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.26.0";
+  var APP_VERSION = "3.27.0";
   var DATA_VERSION = "2026-11-01";
 
   var LEVEL_ORDER = ["A", "B", "C"];
@@ -18400,6 +18454,122 @@
     return "共 " + total + " 道" + (wn ? " · 错过 " + wn + " 道" : "") + (gn ? " · 蒙对 " + gn + " 道" : "");
   }
 
+  /* ---------- 掌握程度（由刷题记录推导，不新增存储、不升 schema） ---------- */
+  /* 逐知识点统计（口径与薄弱知识点同源，都读 snap.quiz 的逐题记录）：
+       total 该知识点题库题数；done 已作答数；right 最近一次答对数；open = done - right（尚未改正的错题）
+       tries = Σn 累计作答次数；errs = Σw 累计答错次数；guess 蒙对数；ever 曾答错过的题数；last 最近作答时刻
+     等级判定（自上而下，先命中者为准）：
+       未开始   done = 0
+       已掌握   done = total 且 open = 0 且 guess = 0        ← 题目全部答对，且没有蒙对
+       待复核   done = total 且 open = 0 且 guess > 0        ← 全对但含蒙对，表面会实际不稳
+       待巩固   open = 0（刷过的都答对了，但还没刷完）
+       薄弱     1 ≤ open ≤ ceil(total/3)，且正确率 ≥ 50%
+       危险     open > ceil(total/3)，或正确率 < 50%
+     掌握度 score（0–100，越大越好，组内排序依据）：
+       score = 100 × right/total − 10×open − 3×(errs−open) − 8×guess，再夹到 0–100
+       覆盖率×正确率打底，未改正错题每题扣 10，已改正的历史错次每次扣 3，蒙对每题扣 8；
+       于是「全对无蒙对」= 100，「全对但曾错一次」= 97 —— 组内排序自然把「曾错的」排在纯掌握之前。 */
+  var QZ_TIERS = [
+    { key: "danger",  label: "危险",   rank: 0, tone: "bad",  hint: "错题多或有未改正的错题" },
+    { key: "weak",    label: "薄弱",   rank: 1, tone: "warn", hint: "还有个别错题没改正" },
+    { key: "review",  label: "待复核", rank: 2, tone: "mid",  hint: "全部答对，但含蒙对的题" },
+    { key: "partial", label: "待巩固", rank: 3, tone: "mid",  hint: "刷过的都对，但还没刷完" },
+    { key: "none",    label: "未开始", rank: 4, tone: "none", hint: "还没有作答记录" },
+    { key: "master",  label: "已掌握", rank: 5, tone: "good", hint: "全部答对且无蒙对" }
+  ];
+
+  function qzTierOf(key) {
+    for (var i = 0; i < QZ_TIERS.length; i++) if (QZ_TIERS[i].key === key) return QZ_TIERS[i];
+    return QZ_TIERS[5];
+  }
+
+  function qzMasteryOf(sid, kid) {
+    var idx = qzIdx()[sid], m = idx && idx[kid];
+    var sub = qzSubject(sid), kp = sub ? qzKpOf(sub, kid) : null;
+    if (!m || !kp) return null;
+    var total = 0, done = 0, right = 0, tries = 0, errs = 0, guess = 0, ever = 0, last = 0, i, r;
+    for (i in m) {
+      if (!has0(m, i)) continue;
+      total++;
+      r = qzRecOf(sid, m[i]);
+      if (!r) continue;
+      done++;
+      if (r.r === 1) right++;
+      tries += qzNum(r.n);
+      errs += qzNum(r.w);
+      if (typeof r.wa === "string" && normT(r.wt)) ever++;
+      if (qzGuessOn(r)) guess++;
+      if (normT(r.t) > last) last = normT(r.t);
+    }
+    var open = done - right;
+    var rate = done ? Math.round(right / done * 100) : 0;
+    var cap = Math.ceil(total / 3);
+    var key;
+    if (!done) key = "none";
+    else if (done >= total && open === 0 && guess === 0) key = "master";
+    else if (done >= total && open === 0) key = "review";
+    else if (open === 0) key = "partial";
+    else if (open <= cap && rate >= 50) key = "weak";
+    else key = "danger";
+
+    var score = 100 * (total ? right / total : 0) - 10 * open - 3 * (errs - open) - 8 * guess;
+    score = Math.round(Math.max(0, Math.min(100, score)));
+    var tier = qzTierOf(key);
+    return {
+      kid: kid, name: kp.name || kid, section: kp.section || "", lv: kp.level || "",
+      total: total, done: done, right: right, open: open, tries: tries, errs: errs,
+      guess: guess, ever: ever, last: last, rate: rate, score: score,
+      tier: tier
+    };
+  }
+
+  /* 全科目按掌握程度排序：组序按 rank（差的在前），组内掌握度低 → 未改正多 → 累计错次多 → 蒙对多 → 正确率低 → 最近做过的在前 */
+  function qzMasteryList(sid) {
+    var idx = qzIdx()[sid], out = [];
+    if (!idx) return out;
+    for (var kid in idx) {
+      if (!has0(idx, kid)) continue;
+      var it = qzMasteryOf(sid, kid);
+      if (it) out.push(it);
+    }
+    out.sort(function (a, b) {
+      if (a.tier.rank !== b.tier.rank) return a.tier.rank - b.tier.rank;
+      if (a.score !== b.score) return a.score - b.score;
+      if (b.open !== a.open) return b.open - a.open;
+      if (b.errs !== a.errs) return b.errs - a.errs;
+      if (b.guess !== a.guess) return b.guess - a.guess;
+      if (a.rate !== b.rate) return a.rate - b.rate;
+      if (b.last !== a.last) return b.last - a.last;
+      return String(a.kid) < String(b.kid) ? -1 : 1;
+    });
+    return out;
+  }
+
+  /* 按等级分组；空组不返回，组序仍是「差 → 好」 */
+  function qzMasteryGroups(list) {
+    var out = [], by = {}, i, g;
+    for (i = 0; i < QZ_TIERS.length; i++) {
+      g = { key: QZ_TIERS[i].key, tier: QZ_TIERS[i], items: [], count: 0, avg: 0 };
+      by[g.key] = g;
+      out.push(g);
+    }
+    for (i = 0; i < list.length; i++) {
+      if (!by[list[i].tier.key]) continue;
+      by[list[i].tier.key].items.push(list[i]);
+    }
+    var res = [], sum;
+    for (i = 0; i < out.length; i++) {
+      g = out[i];
+      if (!g.items.length) continue;
+      g.count = g.items.length;
+      sum = 0;
+      for (var j = 0; j < g.items.length; j++) sum += g.items[j].score;
+      g.avg = Math.round(sum / g.items.length);
+      res.push(g);
+    }
+    return res;
+  }
+
   /* ---------- 薄弱知识点 ---------- */
   /* 口径（与刷题设置页的统计同源，都读 rec.r/n/w）：
      错误次数 = 该知识点下各题 rec.w 之和，是「累计答错次数」，不是错题道数；
@@ -18637,6 +18807,118 @@
     }
   }
 
+  /* ---------- 掌握程度面板 ---------- */
+  /* 分组默认展开状态：危险/薄弱/待复核（rank ≤ 2）展开，其余折叠；
+     用户点过的组记在 QZ_MAS_OPEN，重绘后保持。 */
+  var QZ_MAS_OPEN = {};
+
+  function qzMasOpen(key, rank, sole) {
+    if (QZ_MAS_OPEN[key] === undefined) return rank <= 2 || !!sole;
+    return !!QZ_MAS_OPEN[key];
+  }
+
+  function qzMasItem(it, n) {
+    var li = el("li", "qwitem");
+    var b = el("button", "qwrow");
+    b.type = "button";
+    b.setAttribute("data-kid", it.kid);
+    b.setAttribute("data-tier", it.tier.key);
+
+    var meta = (it.section ? it.section + " · " : "") + "共 " + it.total + " 题 · 已刷 " + it.done + "/" + it.total;
+    if (it.done) meta += " · 正确率 " + it.rate + "%";
+    if (it.open) meta += " · 未改正 " + it.open + " 题";
+    else if (it.ever) meta += " · 错题已全部改正";
+    if (it.guess) meta += " · 蒙对 " + it.guess + " 题";
+
+    b.title = "掌握度 " + it.score + "%（" + it.tier.label + "）：" + it.tier.hint +
+      "。该知识点共 " + it.total + " 题，已刷 " + it.done + " 题，正确率 " + it.rate + "%" +
+      (it.open ? "，还有 " + it.open + " 题没改正" : "") +
+      (it.ever ? "，累计答错 " + it.errs + " 次" : "") +
+      (it.guess ? "，其中 " + it.guess + " 题标了蒙对" : "") + "。点击只练这一组";
+
+    b.appendChild(txt("span", "qwrank", String((n || 0) + 1)));
+    var main = el("span", "qwmain");
+    main.appendChild(txt("span", "qwname", it.name));
+    main.appendChild(txt("span", "qwmeta", meta));
+    b.appendChild(main);
+
+    var st = el("span", "qwstat");
+    st.appendChild(txt("span", "qmscore tone-" + it.tier.tone, it.done ? it.score + "%" : "—"));
+    st.appendChild(txt("span", "qwrate", it.done ? "掌握度" : "未作答"));
+    b.appendChild(st);
+    b.addEventListener("click", function () { qzPracticeKp(it.kid); });
+    li.appendChild(b);
+
+    var jump = txt("button", "qwjump", "卡片");
+    jump.type = "button";
+    jump.setAttribute("data-jump", it.kid);
+    jump.title = "跳到「" + it.name + "」的知识点卡片（会退出刷题模式）";
+    jump.setAttribute("aria-label", "跳转到知识点卡片：" + it.name);
+    jump.addEventListener("click", function () { qzJumpCard(it.kid); });
+    li.appendChild(jump);
+    return li;
+  }
+
+  function qzRenderMastery() {
+    var box = byId("qMastery");
+    if (!box) return;
+    if (!QZ_READY) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = "";
+    if (!QZ.sid) QZ.sid = SID;
+
+    var list = qzMasteryList(QZ.sid), groups = qzMasteryGroups(list);
+    var mastered = 0, sum = 0, i;
+    for (i = 0; i < list.length; i++) {
+      sum += list[i].score;
+      if (list[i].tier.key === "master") mastered++;
+    }
+    var avg = list.length ? Math.round(sum / list.length) : 0;
+
+    var head = el("div", "qwhead");
+    head.appendChild(txt("h3", "", "掌握程度"));
+    head.appendChild(txt("span", "qwsum", list.length
+      ? "已掌握 " + mastered + "/" + list.length + " 个考点 · 平均 " + avg + "%"
+      : "暂无考点"));
+    box.appendChild(head);
+
+    if (!list.length) {
+      box.appendChild(txt("p", "qwhint", "这个科目还没有可练习的题库。"));
+      return;
+    }
+    box.appendChild(txt("p", "qwhint",
+      "按刷题记录自动判定：题目全部答对且无蒙对＝已掌握；有未改正的错题按数量分「薄弱」「危险」；全对但含蒙对单列「待复核」。按等级分组，组内掌握度低的排前面。"));
+
+    for (i = 0; i < groups.length; i++) {
+      var g = groups[i], open = qzMasOpen(g.key, g.tier.rank, groups.length === 1);
+      var wrap = el("div", "qmgrp");
+
+      var h = txt("button", "qmhead", "");
+      h.type = "button";
+      h.setAttribute("aria-expanded", open ? "true" : "false");
+      h.title = g.tier.hint + "；点一下" + (open ? "收起" : "展开");
+      h.appendChild(txt("span", "qmtier tone-" + g.tier.tone, g.tier.label));
+      h.appendChild(txt("span", "qmcnt", g.count + " 个"));
+      h.appendChild(txt("span", "qmhint", g.tier.hint));
+      h.appendChild(txt("span", "qmavg", "平均 " + g.avg + "%"));
+      h.appendChild(txt("span", "qmcaret", open ? "收起" : "展开"));
+      (function (key, rank, sole) {
+        h.addEventListener("click", function () {
+          QZ_MAS_OPEN[key] = !qzMasOpen(key, rank, sole);
+          qzRenderMastery();
+        });
+      })(g.key, g.tier.rank, groups.length === 1);
+      wrap.appendChild(h);
+
+      if (open) {
+        var ul = el("ul", "qwlist");
+        for (var j = 0; j < g.items.length; j++) ul.appendChild(qzMasItem(g.items[j], j));
+        wrap.appendChild(ul);
+      }
+      box.appendChild(wrap);
+    }
+  }
+
   /* ---------- 两个徽标的绘制 ---------- */
   function qzRateBadge(k) {
     if (!QZ_READY) return null;
@@ -18661,6 +18943,7 @@
     node.hidden = false;
     if (!st.done) {
       node.className = "badge qz none";
+      node.setAttribute("data-tier", "none");
       node.textContent = "未刷题";
       node.title = "这个知识点共 " + st.total + " 道例题，还没有刷题记录；点一下只刷这一组";
       node.setAttribute("aria-label", "未刷题，该知识点共 " + st.total + " 道例题，点击开始刷题");
@@ -18669,9 +18952,13 @@
     node.className = "badge qz" + (st.rate >= 80 ? " good" : (st.rate < 60 ? " bad" : " mid"));
     node.textContent = "刷题 " + st.done + "/" + st.total + " · " + st.rate + "%";
     var gn = qzGuessCountKp(SID, kid);   // [guess] 蒙对单独提示，不进正确率
+    var mt = qzMasteryOf(SID, kid);      // [mastery] 掌握等级（与设置页面板同源）
+    node.setAttribute("data-tier", mt ? mt.tier.key : "none");
     node.title = "已刷 " + st.done + " / 共 " + st.total + " 道：对 " + st.right + "、错 " + st.wrong +
       "，正确率 " + st.rate + "%（按每道题最近一次作答计）" +
-      (gn ? "；其中 " + gn + " 题你标了「蒙对」——算对但没真懂" : "") + "；点一下只刷这个知识点";
+      (gn ? "；其中 " + gn + " 题你标了「蒙对」——算对但没真懂" : "") +
+      (mt ? "；掌握等级：" + mt.tier.label + "（掌握度 " + mt.score + "%）" : "") +
+      "；点一下只刷这个知识点";
     node.setAttribute("aria-label", "刷题正确率 " + st.rate + "%，已刷 " + st.done + " / " + st.total +
       " 道，点击开始刷题");
   }
@@ -18937,10 +19224,14 @@
     }
     var rate = done ? Math.round(right / done * 100) : 0;
     var gcount = qzGuessCount(QZ.sid);   // [guess] 手动标记的蒙对数，单独列、不改正确率
+    var mlist = qzMasteryList(QZ.sid), mcnt = 0;   // [mastery] 已掌握考点数（全部答对且无蒙对）
+    for (i = 0; i < mlist.length; i++) if (mlist[i].tier.key === "master") mcnt++;
     byId("qStat").textContent = (sub ? sub.name : "") + " · 共 " + pool.length + " 题 · 已做 " +
       done + (done ? "（正确率 " + rate + "%，错 " + wrong + "）" : "") +
-      (gcount ? " · 蒙对 " + gcount + " 道" : "");
+      (gcount ? " · 蒙对 " + gcount + " 道" : "") +
+      (mlist.length ? " · 已掌握 " + mcnt + "/" + mlist.length + " 个考点" : "");
 
+    qzRenderMastery(); // [mastery] 掌握程度分组：每次进设置页都按最新记录重算
     qzRenderGuess();  // [guess] 蒙对清单：每次进设置页都按最新标记重算
     qzRenderWeak();   // [weak] 每次进设置页都按最新记录重算
   }
@@ -18963,6 +19254,18 @@
       if (QZ.cfg.order === "new" && r) continue;
       if (QZ.cfg.order === "guess" && !qzGuessOn(r)) continue;   // [guess] 只刷手动标记的蒙对题
       out.push(q);
+    }
+    /* [mastery] 先练最不熟的：直接沿用掌握程度面板的顺序（先分组等级、组内掌握度低的在前），
+       未开始的考点排在「待巩固」之后、「已掌握」之前，不会把没做过的提到最前面 */
+    if (QZ.cfg.order === "mastery") {
+      var ms = {}, ml = qzMasteryList(QZ.sid);
+      for (i = 0; i < ml.length; i++) ms[ml[i].kid] = i;
+      out.sort(function (a, b) {
+        var x = ms[a.kp.id], y = ms[b.kp.id];
+        if (x === undefined) x = 999;
+        if (y === undefined) y = 999;
+        return x - y;
+      });
     }
     if (QZ.cfg.order === "exam") {
       /* 按试卷题型顺序排：判断 → 选择 → 简述 → 计算；非考试题型（填空）垫底 */
@@ -19554,6 +19857,9 @@
     kpStat: qzKpStat, idx: qzIdx, exRec: qzExRec, practiceKp: qzPracticeKp, refreshMarks: qzRefreshMarks,
     item: qzItem, wrongCount: qzWrongCount, wrongText: qzWrongText, wrongBody: qzWrongBody, wrongLabel: qzWrongLabel,
     weakList: qzWeakList, renderWeak: qzRenderWeak,
+    /* [mastery] 掌握程度的自动化测试入口 */
+    masteryOf: qzMasteryOf, masteryList: qzMasteryList, masteryGroups: qzMasteryGroups,
+    tiers: QZ_TIERS, renderMastery: qzRenderMastery,
     /* [guess] 蒙对标记的自动化测试入口 */
     guessList: qzGuessList, guessOn: qzGuessOn, setGuess: qzSetGuess, guessCount: qzGuessCount,
     toggleGuess: qzToggleGuessCur, renderGuess: qzRenderGuess, keyAt: qzKeyAt
