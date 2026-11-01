@@ -2,9 +2,33 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.21.0
+  APP_VERSION: 3.24.0
   DATA_VERSION: 2026-10-31
-  本次变更: 薄弱知识点——把错题按知识点归类，列出错误次数与错误率，点一行只练这一组（APP_VERSION 3.21.0 / DATA_VERSION 不变，不动数据）——
+  本次变更: 手动标记「蒙对」——答对但其实是凭感觉猜的题，手动打标后单独归集，随时可取消（APP_VERSION 3.24.0，数据未动）——
+             ①存储：沿用 snap.quiz 的逐题记录，新增两个可选字段 gz（标记时刻）/ gu（取消时刻），gz > gu 即为已标记；
+               不新增存储、不升 schema；合并时 gz/gu 各取 max —— 幂等、交换、结合，跨设备「取消」不会被远端旧标记复活；
+             ②入口三处：刷题答对后反馈条的「其实是蒙的」、知识点卡片例题行的「蒙」按钮、设置页「蒙对的题」列表；
+             ③归集：设置页新增 #qGuess 卡片（按时间倒序列出题干、知识点、时间，可单练、可跳卡片、可撤销），
+               顺序下拉新增「只刷蒙对的题」，卡片统计行注明「蒙对 N 道」，徽标 title 也带一句；
+             ④口径不变：蒙对仍计为答对，不参与正确率计算，只单独提示，避免破坏既有统计；
+             ⑤保留：qzSaveRec 重建记录时带上 gz/gu（否则再答一次标记就丢）；pickQuizEntry / sameQuiz 一并纳入。
+  上次变更: 薄弱知识点每行新增「卡片」入口，可直接跳到对应知识点卡片（APP_VERSION 3.23.0，数据未动）——
+             ①界面：.qwitem 改为 flex，左侧 button.qwrow（练这组）保持不变，右侧新增 button.qwjump「卡片」（data-jump=kid、aria-label 带知识点名）；
+               两者并列而非嵌套——button 里不能套 button，否则点击会冒泡成两个动作；
+             ②逻辑：新增 qzJumpCard(kid)——先 qzExit 退出刷题（卡片在 .wrap 里，刷题模式下整块隐藏），
+               再沿父链把所有 <details> 打开（章节组默认折叠，否则布局位置算不出来），requestAnimationFrame 后复用 gotoCard；
+             ③gotoCard 增加第三个参数 opts.block="start"：卡片常比视口高，block:center 会把标题滚出屏幕，
+               改为对齐卡片顶部并让开吸顶栏（.topbar offsetHeight + 12），跳完仍走 flashCard 高亮；
+             ④兜底：卡片被当前筛选藏起时 resetFilters + renderAll 重建（并清掉筛选项），仍找不到才 toast；
+             ⑤自测 weak-test 扩到 31 条：入口与行一一对应、点击退出刷题、卡片展开且名字一致、标题露在吸顶栏下方、筛选兜底。
+  上次变更: 按老师通知的化学考试题型改造——头部加「考试题型条」，题型下拉标分值，顺序可「按考试题型」组题（APP_VERSION 3.22.0）——
+             ①题型与分值：判断正误 10 + 选择题 30 + 简述题 20 + 计算题 40（共 100 分），写在化学科目的 examFormat 里（type/label/score/hint），
+               并同步 examScope 文案；简述题在程序内记为「简答」，只有 3 道例题，故标「题少」提醒自己补；
+             ②界面：头部下方新增 .exambar（仅配了 examFormat 的科目显示），四个胶囊点一下只练该题型；右侧常驻「需带 学生证或校园卡、计算器；手机须关机并收起」；
+             ③刷题：题型下拉标「· 10 分」，非考试题型（填空 4 道）标「非考试题型」；顺序下拉新增「按考试题型（判断正误 → 选择题 → 简述题 → 计算题）」，非考试题型垫底；
+             ④数据：subjects.json 化学新增 examFormat 与 examScope；check.mjs 加 4 条断言（题型齐、分值合计 100、简述有题、须知齐全）；
+             ⑤其它科目无 examFormat → 整条隐藏、考试顺序项自动移除并回落原序。
+  上次变更: 薄弱知识点——把错题按知识点归类，列出错误次数与错误率，点一行只练这一组（APP_VERSION 3.21.0 / DATA_VERSION 不变，不动数据）——
              ①口径：错误次数＝该知识点各题 rec.w 之和（累计答错次数）；错误率＝累计错次÷累计作答次数（rec.n 之和，未刷不计分母）；
                未改正＝最近一次作答仍为错的题数；只统计至少错过一次的考点，与设置页统计同源；
              ②位置：刷题设置页「开始刷题」下方新增 .qweak 卡片，进设置页即重算；判分过程中不重绘，不打断作答；
@@ -215,7 +239,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.21.0">
+<meta name="app-version" content="3.24.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -1298,12 +1322,22 @@
   .qwsum{font-size:11.5px;color:var(--ink2);font-variant-numeric:tabular-nums}
   .qwhint{margin:6px 0 0;font-size:12px;line-height:1.75;color:var(--ink2)}
   .qwlist{list-style:none;margin:8px 0 0;padding:0}
-  .qwitem{margin:0}
+  .qwitem{display:flex;align-items:stretch;gap:6px;border-top:1px solid var(--line)}
   .qwrow{
-    display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:10px;width:100%;
-    padding:9px 6px;background:transparent;border:0;border-top:1px solid var(--line);
+    display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:10px;
+    flex:1 1 auto;min-width:0;
+    padding:9px 6px;background:transparent;border:0;
     text-align:left;font:inherit;color:var(--ink);cursor:pointer;
   }
+  /* [weak] 每行右侧的「卡片」：跳到该知识点卡片；与整行的「练这组」分工明确 */
+  .qwjump{
+    flex:0 0 auto;align-self:center;margin:0 2px 0 0;
+    padding:6px 9px;min-height:34px;
+    border:1px solid var(--line2);border-radius:4px;background:transparent;
+    font:inherit;font-size:12px;color:var(--ink2);cursor:pointer;white-space:nowrap;
+  }
+  .qwjump:hover{border-color:var(--accent);color:var(--accent);background:var(--accentBg)}
+  .qwjump:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
   .qwrow:hover{background:var(--chip)}
   .qwrow:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px}
   .qwrank{font-size:11.5px;color:var(--ink2);text-align:center;font-variant-numeric:tabular-nums}
@@ -1321,6 +1355,34 @@
   }
   .qwmore:hover{color:var(--accent);border-color:var(--accent)}
 
+  /* [exam] 考试题型条：按科目数据 examFormat 渲染，点一下只练该题型 */
+  .exambar{
+    display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;
+    padding:7px 16px;background:var(--card);border-bottom:1px solid var(--line);
+    font-size:12.5px;
+  }
+  .exambar[hidden]{display:none}
+  .examlbl{
+    font-size:10.5px;letter-spacing:.1em;color:var(--ink3);
+    border:1px solid var(--line2);border-radius:3px;padding:2px 6px;flex:0 0 auto;
+  }
+  .examsegs{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+  .examseg{
+    display:inline-flex;align-items:baseline;gap:6px;
+    padding:4px 9px;border:1px solid var(--line2);border-radius:4px;background:transparent;
+    font:inherit;font-size:12.5px;color:var(--ink);cursor:pointer;white-space:nowrap;
+  }
+  .examseg:hover{border-color:var(--accent);color:var(--accent);background:var(--accentBg)}
+  .examseg:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .examseg .sc{color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums}
+  .examseg .gap{
+    font-size:10px;line-height:1.4;color:var(--warn);border:1px solid var(--warn);
+    border-radius:2px;padding:0 3px;
+  }
+  .examsum{font-size:11.5px;color:var(--ink3);font-variant-numeric:tabular-nums}
+  .examneed{margin-left:auto;font-size:11.5px;color:var(--ink2);min-width:0}
+  .examneed[hidden]{display:none}
+
   @media (max-width:640px){
     .quiz{padding:12px 10px 80px}
     .qcard{padding:14px 12px 12px}
@@ -1332,6 +1394,63 @@
     .qweak{padding:12px 12px 10px}
     .qwrow{grid-template-columns:18px 1fr auto;gap:8px;padding:9px 4px}
     .qwname{font-size:13px}
+    .qwitem{gap:4px}
+    .qwjump{font-size:11.5px;padding:6px 7px;min-height:32px}
+    .exambar{padding:7px 10px;gap:6px 8px}
+    .examlbl{display:none}          /* 窄屏省一行：题目本身就是「考试题型」 */
+    .examseg{font-size:12px;padding:4px 7px}
+    .examneed{margin-left:0;flex:1 1 100%;line-height:1.5}
+  }
+
+  /* ---------- [guess] 手动标记「蒙对」（v3.24.0，追加在样式表末尾） ---------- */
+  .exgzbtn{
+    align-self:center;flex:0 0 auto;display:inline-flex;align-items:center;gap:3px;
+    min-height:22px;padding:0 6px;background:transparent;
+    border:1px dashed var(--line2);border-radius:3px;
+    color:var(--ink2);font:inherit;font-size:11px;line-height:1.5;cursor:pointer;
+    letter-spacing:.02em;transition:color .15s ease,background .15s ease,border-color .15s ease;
+  }
+  .exgzbtn[hidden]{display:none}
+  .exgzbtn:hover{border-color:var(--warn);color:var(--warn);background:var(--warnBg)}
+  .exgzbtn[aria-pressed="true"]{border-style:solid;border-color:var(--warn);background:var(--warnBg);color:var(--warn)}
+  .exgzbtn[aria-pressed="true"] .exgztext{font-weight:600}
+  .exgzbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .exgzico{font-size:10.5px;letter-spacing:.04em}
+
+  /* 反馈条上的「其实是蒙的」：虚线=未标，实线=已标 */
+  .qgzbtn{
+    margin-left:10px;padding:3px 10px;min-height:30px;
+    background:transparent;border:1px dashed var(--warn);border-radius:5px;
+    color:var(--warn);font:inherit;font-size:12.5px;line-height:1.5;cursor:pointer;
+    transition:background .15s ease,border-color .15s ease;
+  }
+  .qgzbtn:hover{background:var(--warnBg)}
+  .qgzbtn.on{border-style:solid;background:var(--card);font-weight:600}
+  .qgzbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* 设置页「蒙对的题」列表：一行三块并列 */
+  .qgitem{display:flex;align-items:stretch;gap:6px;border-top:1px solid var(--line)}
+  .qgrow{
+    flex:1 1 auto;min-width:0;
+    padding:9px 6px;background:transparent;border:0;text-align:left;
+    font:inherit;color:var(--ink);cursor:pointer;
+  }
+  .qgrow:hover{background:var(--chip)}
+  .qgrow:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px}
+  .qgstem{
+    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+    max-height:3.4em;overflow:hidden;
+    font-size:13.5px;line-height:1.6;overflow-wrap:anywhere;
+  }
+  .qgmeta{display:block;font-size:11.5px;color:var(--ink2);margin-top:2px;overflow-wrap:anywhere}
+  .qgall{align-self:center}
+  @media (max-width:560px){
+    .qgitem{gap:4px}
+    .qgundo,.qgitem .qwjump{font-size:11.5px;padding:6px 7px;min-height:32px}
+    .qgzbtn{margin-left:8px}
+  }
+  @media print{
+    .exgzbtn,.qgzbtn,.qgitem .qwjump{display:none !important}
   }
 </style>
 </head>
@@ -1365,6 +1484,13 @@
     </div>
   </div>
 </header>
+
+<!-- [exam] 考试题型与分值（仅配了 examFormat 的科目显示） -->
+<div class="exambar" id="examBar" hidden>
+  <span class="examlbl">考试</span>
+  <div class="examsegs" id="examSegs"></div>
+  <span class="examneed" id="examNeed" hidden></span>
+</div>
 
 <div class="updatebar" id="updatebar" role="region" aria-label="应用更新" hidden>
   <div class="ubtext">
@@ -1412,6 +1538,7 @@
           <option value="seq">原序（按知识点）</option>
           <option value="rand">随机打乱</option>
           <option value="wrong">只刷错题</option>
+          <option value="guess">只刷蒙对的题</option>
           <option value="new">只刷没做过的</option>
         </select>
       </div>
@@ -1419,10 +1546,12 @@
         <button class="btn" id="qBegin" type="button">开始刷题</button>
         <button class="btn small" id="qReset" type="button">重置本科目进度</button>
       </div>
+      <!-- [guess] 蒙对的题：手动标记、按标记时间倒序归集，可单练/跳卡片/撤销 -->
+      <div class="qweak" id="qGuess"></div>
       <!-- [weak] 薄弱知识点：由刷题记录按知识点聚合，点一行直接练这一组 -->
       <div class="qweak" id="qWeak"></div>
       <p class="qnote">选择/判断点选项即判分，填空输入后回车核对；计算、简答、编程题作答后看解析自评。<br>
-        键盘：A–D 或 1–4 选答，空格跳过，回车下一步，Esc 退出。</p>
+        键盘：A–D 或 1–4 选答，空格跳过，回车下一步，G 标记蒙对，Esc 退出。</p>
     </div>
 
     <div class="qcard" id="qCard" hidden>
@@ -1513,7 +1642,7 @@
     {
       "id": "new-university-chemistry",
       "name": "新大学化学",
-      "examScope": "第一章 化学反应基本规律 → 第三章 氧化还原反应 电化学（第五版 p1–89，共 15 节）；含本年考试题（普通化学 I 期末卷：判断 10 + 单选 20 + 计算 2，共 32 题）",
+      "examScope": "第一章 化学反应基本规律 → 第三章 氧化还原反应 电化学（第五版 p1–89，共 15 节）；本次考试：判断正误 10 + 选择题 30 + 简述题 20 + 计算题 40（共 100 分）；含本年考试题（普通化学 I 期末卷：判断 10 + 单选 20 + 计算 2，共 32 题）",
       "createdAt": "2026-10-22",
       "knowledgePoints": [
         {
@@ -4738,7 +4867,41 @@
           ]
         }
       ],
-      "updatedAt": "2026-10-31"
+      "updatedAt": "2026-10-31",
+      "examFormat": {
+        "total": 100,
+        "items": [
+          {
+            "type": "判断",
+            "label": "判断正误",
+            "score": 10,
+            "hint": "概念辨析为主：看关键词有没有被换掉（氧化数 / 电极电势 / 平衡常数）"
+          },
+          {
+            "type": "选择",
+            "label": "选择题",
+            "score": 30,
+            "hint": "单选为主，注意单位、温度条件与「下列说法错误的是」"
+          },
+          {
+            "type": "简答",
+            "label": "简述题",
+            "score": 20,
+            "hint": "程序内记为「简答」，按要点自评：结论 + 依据 + 条件"
+          },
+          {
+            "type": "计算",
+            "label": "计算题",
+            "score": 40,
+            "hint": "过程分占比高：写公式、代数据、带单位、给结果"
+          }
+        ],
+        "carry": [
+          "学生证或校园卡",
+          "计算器"
+        ],
+        "banned": "手机须关机并收起"
+      }
     },
     {
       "id": "advanced-math",
@@ -13883,7 +14046,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.21.0";
+  var APP_VERSION = "3.24.0";
   var DATA_VERSION = "2026-10-31";
 
   var LEVEL_ORDER = ["A", "B", "C"];
@@ -14209,6 +14372,96 @@
   var ovPanel = byId("ovPanel");
   var ovList = byId("ovList");
 
+  /* ---------------- 考试题型与分值 ---------------- */
+  /* 科目数据里的 examFormat：{total, items:[{type,label,score,hint}], carry:[], banned}
+     只做展示与「按题型练」，不改变题库、不参与判分；没有该字段的科目整条隐藏。 */
+  var examBar = byId("examBar");
+  var examSegs = byId("examSegs");
+  var examNeed = byId("examNeed");
+
+  function examFormatOf(sub) {
+    var f = sub && sub.examFormat;
+    return (f && f.items && f.items.length) ? f : null;
+  }
+  function examScoreOf(sub, type) {
+    var f = examFormatOf(sub);
+    if (!f) return 0;
+    for (var i = 0; i < f.items.length; i++) if (f.items[i].type === type) return f.items[i].score || 0;
+    return 0;
+  }
+  function examCountOf(sub, type) {
+    var n = 0, list = (sub && sub.knowledgePoints) || [];
+    for (var i = 0; i < list.length; i++) {
+      var ex = list[i].examples || [];
+      for (var j = 0; j < ex.length; j++) if (ex[j].type === type) n++;
+    }
+    return n;
+  }
+  /* 分值不低但题量太少：提醒「这一档要自己补」，别只靠程序里的几道 */
+  function examGapOf(sub, item, total) {
+    var n = examCountOf(sub, item.type);
+    var share = total ? (item.score || 0) / total : 0;
+    return (share >= 0.15 && n < 5) ? n : -1;
+  }
+
+  function renderExamBar() {
+    var sub = cur(), f = examFormatOf(sub);
+    if (!f) {
+      examBar.hidden = true;
+      examSegs.innerHTML = "";
+      examNeed.textContent = "";
+      examNeed.hidden = true;
+      return;
+    }
+    examBar.hidden = false;
+    examSegs.innerHTML = "";
+    var total = f.total || 0, i;
+
+    for (i = 0; i < f.items.length; i++) {
+      (function (item) {
+        var n = examCountOf(sub, item.type);
+        var share = total ? Math.round((item.score || 0) / total * 100) : 0;
+        var b = el("button", "examseg");
+        b.type = "button";
+        b.setAttribute("data-type", item.type);
+        b.setAttribute("data-score", String(item.score || 0));
+        b.appendChild(txt("span", "nm", item.label || item.type));
+        b.appendChild(txt("span", "sc", (item.score || 0) + " 分"));
+        if (examGapOf(sub, item, total) >= 0) b.appendChild(txt("span", "gap", "题少"));
+        b.title = (item.label || item.type) + " " + (item.score || 0) + " 分（占 " + share + "%）· 程序内 " +
+          n + " 道" + (item.hint ? "\n" + item.hint : "") + "\n点击只练这一题型";
+        b.addEventListener("click", function () { qzPracticeType(item.type, item.label || item.type); });
+        examSegs.appendChild(b);
+      })(f.items[i]);
+    }
+    if (total) examSegs.appendChild(txt("span", "examsum", "共 " + total + " 分"));
+
+    var need = [];
+    if (f.carry && f.carry.length) need.push("需带：" + f.carry.join("、"));
+    if (f.banned) need.push(f.banned);
+    examNeed.textContent = need.join("；");
+    examNeed.hidden = !need.length;
+  }
+
+  /* 点考试题型直接开一组：题型固定、章节清空、按原序 */
+  function qzPracticeType(type, label) {
+    if (!QZ_READY) { qzToast("题库未加载，无法按题型练习"); return; }
+    if (!QZ.on) qzEnter();
+    QZ.pool = qzPoolOf(SID);
+    QZ.cfg.sec = "全部";
+    QZ.cfg.type = type;
+    QZ.cfg.order = "seq";
+    var list = qzBuildList();
+    if (!list.length) {
+      qzRenderSetup();
+      qzShow("setup");
+      qzToast("「" + label + "」暂无可用题目");
+      return;
+    }
+    qzRenderSetup();
+    qzStartRun(list, label);
+  }
+
   function renderSubjects() {
     var s = cur();
     byId("subject").textContent = s.name || "未命名科目";
@@ -14217,6 +14470,8 @@
     var scope = byId("scope");
     if (s.examScope) { scope.textContent = s.examScope; scope.hidden = false; }
     else { scope.textContent = ""; scope.hidden = true; }
+
+    renderExamBar();   // [exam] 考试题型与分值随科目切换
 
     var many = DATA.subjects.length > 1;
     subjectsBox.innerHTML = "";
@@ -14639,6 +14894,7 @@
       var doneTag = txt("span", "exdone", "");
       doneTag.hidden = true;                          // 有刷题记录才显示
       h.appendChild(doneTag);
+      h.appendChild(buildGuessBtn(k.id, i));          // [guess] 蒙对切换（答对后才出现）
       h.appendChild(buildFavBtn(k.id, i));
       h.appendChild(buildNoteBtn(k.id, i));   // [note]
       item.appendChild(h);
@@ -14671,6 +14927,24 @@
     });
 
     return box;
+  }
+
+  /* [guess] 例题行上的「蒙」按钮：由 qzPaintEx 控制显示与状态（答对或已标记才露出来） */
+  function buildGuessBtn(kid, i) {
+    var b = el("button", "exgzbtn");
+    b.type = "button";
+    b.setAttribute("data-exgz", kid + "|" + i);
+    b.setAttribute("aria-pressed", "false");
+    b.appendChild(txt("span", "exgzico", "蒙"));
+    b.appendChild(txt("span", "exgztext", "标一下"));
+    b.hidden = true;
+    b.addEventListener("click", function () {
+      var key = qzKeyAt(SID, kid, i);
+      if (!key || !qzToggleGuessByKey(SID, key)) return;
+      qzRefreshKp(kid);      // 就地重绘这张卡（展开状态与滚动不丢）
+      qzToast(qzGuessOn(qzExRec(SID, kid, i)) ? "已标记为「蒙对」，可在设置页单独重练" : "已取消蒙对标记");
+    });
+    return b;
   }
 
   function field(label, text, variant) {
@@ -15005,7 +15279,7 @@
   }
 
   /* 定位：筛选条件挡住了卡片就先复位筛选，再展开卡片与解析并滚到中间 */
-  function gotoCard(kid, i) {
+  function gotoCard(kid, i, opts) {
     var card = byId("k-" + kid);
     if (!card) { resetFilters(); renderAll(); card = byId("k-" + kid); }
     if (!card) return;
@@ -15017,7 +15291,17 @@
       var d = target.querySelector(".exsol");
       if (d) d.open = true;
     }
-    target.scrollIntoView({ block: "center", behavior: "smooth" });
+    if (opts && opts.block === "start") {
+      /* 跳到卡片本体时对齐顶部：卡片常比视口高，居中会把标题滚出屏幕，
+         再让开吸顶栏的高度，否则标题被压在 topbar 下面 */
+      var bar = document.querySelector(".topbar");
+      var off = (bar ? bar.offsetHeight : 0) + 12;
+      var y = target.getBoundingClientRect().top +
+        (window.pageYOffset || document.documentElement.scrollTop || 0) - off;
+      window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+    } else {
+      target.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
     flashCard(card);
   }
 
@@ -15230,7 +15514,14 @@
     var w = Math.max(a ? qzNum(a.w) : 0, b ? qzNum(b.w) : 0);
     if (w > n) w = n;
     var we = pickWrong(a, b);   // [quiz] 最近一次错答的原文
-    return { r: r, n: n, w: w, t: t, wa: we.wa, wt: we.wt, wm: we.wm };
+    /* [guess] 蒙对标记：gz/gu 各取 max。取 max 保证幂等/交换/结合；
+       两个时刻一起比，所以「一边标记、一边取消」时以更晚的那次为准，旧标记不会复活。 */
+    var gz = Math.max(a ? qzNum(a.gz) : 0, b ? qzNum(b.gz) : 0);
+    var gu = Math.max(a ? qzNum(a.gu) : 0, b ? qzNum(b.gu) : 0);
+    var e = { r: r, n: n, w: w, t: t, wa: we.wa, wt: we.wt, wm: we.wm };
+    if (gz) e.gz = gz;
+    if (gu) e.gu = gu;
+    return e;
   }
 
   function mergeQuizMap(L, R) {
@@ -15268,6 +15559,9 @@
         if (normT(ea.t) !== normT(eb.t)) return false;
         if (String(ea.wa == null ? "" : ea.wa) !== String(eb.wa == null ? "" : eb.wa)) return false;
         if (normT(ea.wt) !== normT(eb.wt)) return false;
+        /* [guess] 标记变化也要能被回读校验发现，否则同步完不会标脏 */
+        if (qzNum(ea.gz) !== qzNum(eb.gz)) return false;
+        if (qzNum(ea.gu) !== qzNum(eb.gu)) return false;
       }
     }
     return true;
@@ -17518,6 +17812,9 @@
       rec.wt = qzNum(old.wt);
       rec.wm = old.wm || "opt";
     }
+    /* [guess] 蒙对标记也必须带过来：每作答一次都会重建 rec，漏了这两行标记就没了 */
+    if (old && qzNum(old.gz)) rec.gz = qzNum(old.gz);
+    if (old && qzNum(old.gu)) rec.gu = qzNum(old.gu);
     if (!right && wrong) {                        // 本次答错：覆盖为最新一次错答
       rec.wa = String(wrong.wa == null ? "" : wrong.wa).slice(0, QZ_WA_MAX);
       rec.wt = t;
@@ -17526,6 +17823,76 @@
     q[sid][key] = rec;
     commitSnap(t);         // 落盘并前移 updatedAt
     syncMarkDirty();       // 标脏：配了通道就 3s 防抖推送
+  }
+
+  /* ---------- [guess] 手动标记「蒙对」 ---------- */
+  /* 专门标「其实没懂，只是猜中了」的题：不自动识别，完全手动。
+     状态就放在逐题记录里（不另建存储、不升 schema），用两个时刻而不是一个布尔值：
+       标记写 gz、取消写 gu，gz > gu 即为已标记。
+     合并时 gz/gu 各取 max，于是「我这边取消了、另一台还留着旧标记」的结果仍是取消，
+     旧标记不会复活；max 本身幂等、交换、结合，和其它字段同一路子。 */
+  function qzGuessOn(rec) {
+    if (!rec) return false;
+    return qzNum(rec.gz) > qzNum(rec.gu);
+  }
+  /* 写标记：只有「有记录且最近一次答对」的题才允许标——蒙对的前提是先答对；
+     已标记再点标记不改时间戳，避免无意义的时间跳变。 */
+  function qzSetGuess(sid, key, on) {
+    var m = qzData()[sid];
+    var rec = m && m[key];
+    if (!rec) return false;
+    /* 同一毫秒内连续「取消 → 再标记」时 nowMs 会相同，gz===gu 就无法判先后；
+       这里保证新时刻严格大于已有的 gz/gu，合并用的仍是 max，语义不变。 */
+    var t = nowMs();
+    var lastT = Math.max(qzNum(rec.gz), qzNum(rec.gu));
+    if (t <= lastT) t = lastT + 1;
+    if (on) {
+      if (rec.r !== 1) return false;
+      if (!qzGuessOn(rec)) { rec.gz = t; }
+    } else {
+      if (!qzGuessOn(rec)) return true;
+      rec.gu = t;
+    }
+    commitSnap(t);
+    syncMarkDirty();
+    return true;
+  }
+  function qzToggleGuessByKey(sid, key) {
+    return qzSetGuess(sid, key, !qzGuessOn(qzRecOf(sid, key)));
+  }
+  /* 某知识点的蒙对数（卡片统计行、徽标 title 用，避免整科目遍历） */
+  function qzGuessCountKp(sid, kid) {
+    var m = qzIdx()[sid];
+    m = m && m[kid];
+    if (!m) return 0;
+    var n = 0;
+    for (var i in m) if (has0(m, i)) if (qzGuessOn(qzRecOf(sid, m[i]))) n++;
+    return n;
+  }
+  function qzGuessCount(sid) {
+    var idx = qzIdx()[sid], n = 0;
+    if (!idx) return 0;
+    for (var kid in idx) if (has0(idx, kid)) n += qzGuessCountKp(sid, kid);
+    return n;
+  }
+  /* 蒙对清单（设置页用）：按标记时间倒序，最近标的最先复习 */
+  function qzGuessList(sid) {
+    var idx = qzIdx()[sid], sub = qzSubject(sid), out = [];
+    if (!idx || !sub) return out;
+    for (var kid in idx) if (has0(idx, kid)) {
+      var kp = qzKpOf(sub, kid), m = idx[kid];
+      if (!kp) continue;
+      for (var i in m) if (has0(m, i)) {
+        var rec = qzRecOf(sid, m[i]);
+        if (!qzGuessOn(rec)) continue;
+        var it = qzItem(sid, kid, i);
+        var ex = kp.examples && kp.examples[parseInt(i, 10)];
+        if (!it || !ex) continue;
+        out.push({ kid: kid, i: parseInt(i, 10), key: m[i], it: it, ex: ex, kp: kp, ts: qzNum(rec.gz) });
+      }
+    }
+    out.sort(function (a, b) { return b.ts - a.ts; });
+    return out;
   }
 
   /* 旧版刷题记录（review.quiz.v1）一次性并入快照：逐条判断，快照里已有的以快照为准，
@@ -17596,12 +17963,16 @@
     m = m && m[kid];
     return (m && m[i]) ? m[i] : null;
   }
-  /* 题库里没有这道例题时返回 null（不显示标识），与「有键但从未作答」区分开 */
-  function qzExRec(sid, kid, i) {
+  /* 记录键：知识点#题干前20字；题不在题库里返回空串 */
+  function qzKeyAt(sid, kid, i) {
     var m = qzIdx()[sid];
     m = m && m[kid];
-    if (!m || m[i] === undefined) return null;
-    return qzRecOf(sid, m[i]);
+    return (m && m[i] !== undefined) ? m[i] : "";
+  }
+  /* 题库里没有这道例题时返回 null（不显示标识），与「有键但从未作答」区分开 */
+  function qzExRec(sid, kid, i) {
+    var key = qzKeyAt(sid, kid, i);
+    return key ? qzRecOf(sid, key) : null;
   }
   /* 知识点刷题统计：分母只算已刷，同一题反复刷只按最近一次计，rate 四舍五入取整 */
   function qzKpStat(sid, kid) {
@@ -17636,7 +18007,8 @@
   }
   function qzExCountText(sid, kid, total) {
     var wn = qzWrongCount(sid, kid);
-    return "共 " + total + " 道" + (wn ? " · 错过 " + wn + " 道" : "");
+    var gn = qzGuessCountKp(sid, kid);
+    return "共 " + total + " 道" + (wn ? " · 错过 " + wn + " 道" : "") + (gn ? " · 蒙对 " + gn + " 道" : "");
   }
 
   /* ---------- 薄弱知识点 ---------- */
@@ -17704,7 +18076,133 @@
     b.appendChild(st);
     b.addEventListener("click", function () { qzPracticeKp(w.kid); });
     li.appendChild(b);
+
+    /* 跳转入口：与「练这组」并列，各自独立，不嵌套在按钮里（button 里不能套 button） */
+    var jump = txt("button", "qwjump", "卡片");
+    jump.type = "button";
+    jump.setAttribute("data-jump", w.kid);
+    jump.title = "跳到「" + w.name + "」的知识点卡片（会退出刷题模式）";
+    jump.setAttribute("aria-label", "跳转到知识点卡片：" + w.name);
+    jump.addEventListener("click", function () { qzJumpCard(w.kid); });
+    li.appendChild(jump);
     return li;
+  }
+
+  /* 薄弱点 → 知识点卡片：先退出刷题（卡片在 .wrap 里，刷题模式下被隐藏），
+     再复用既有的 gotoCard（展开、渲染公式、滚动到卡片中心、闪一下）。
+     若当前筛选把这个知识点藏起来了，这里 resetFilters + renderAll 兜底。
+     两个必要的动作：
+     ①卡片可能在折叠的章节组 <details class="grp"> 里，必须先沿父链全部打开，
+       否则它的布局位置算不出来，scrollIntoView 会滚到 0（实测过）；
+     ②退出刷题后布局刚恢复，等一帧再滚，避免拿到旧的滚动范围。 */
+  function qzJumpCard(kid) {
+    if (!kid) return;
+    if (QZ.on) qzExit();
+    var card = byId("k-" + kid);
+    if (!card) {
+      resetFilters();
+      renderAll();
+      card = byId("k-" + kid);
+    }
+    if (!card) { qzToast("找不到这个知识点的卡片"); return; }
+
+    var pnt = card.parentNode;
+    while (pnt && pnt !== document.body) {
+      if (pnt.tagName === "DETAILS") pnt.open = true;
+      pnt = pnt.parentNode;
+    }
+    if (window.requestAnimationFrame) {
+      window.requestAnimationFrame(function () { gotoCard(kid, undefined, { block: "start" }); });
+    } else {
+      setTimeout(function () { gotoCard(kid, undefined, { block: "start" }); }, 0);
+    }
+  }
+
+  /* ---------- [guess] 蒙对的题 ---------- */
+  var QZ_GUESS_ALL = false;
+
+  /* 一行三块并列、互不嵌套（button 里不能套 button）：
+     左「只练这道」、右「卡片」跳知识点、「撤销」取消标记 */
+  function qzGuessItem(g) {
+    var li = el("li", "qgitem");
+
+    var b = el("button", "qgrow");
+    b.type = "button";
+    b.setAttribute("data-gkey", g.key);
+    b.title = "只重练这一道：" + g.kp.name + " 第 " + (g.i + 1) + " 题（标记于 " + qzWhen(g.ts) + "）";
+    /* 题干照原样渲染公式（这里是 \(...\) 包裹的 LaTeX，直接当纯文本会露出源码），
+       高度由 .qgstem 的两行截断控制，长题不会把清单撑开 */
+    var stem = txt("span", "qgstem", "");
+    stem.innerHTML = safeHtml(g.it.q || g.ex.q || "");
+    b.appendChild(stem);
+    b.appendChild(txt("span", "qgmeta",
+      (g.kp.section ? g.kp.section + " · " : "") + g.kp.name + " · " + g.ex.type + " · 标于 " + qzWhen(g.ts)));
+    b.addEventListener("click", function () { qzStartRun([g], "重练蒙对的题"); });
+    li.appendChild(b);
+
+    var jump = txt("button", "qwjump", "卡片");
+    jump.type = "button";
+    jump.setAttribute("data-gjump", g.kid);
+    jump.title = "跳到「" + g.kp.name + "」的知识点卡片（会退出刷题模式）";
+    jump.addEventListener("click", function () { qzJumpCard(g.kid); });
+    li.appendChild(jump);
+
+    var undo = txt("button", "qwjump qgundo", "撤销");
+    undo.type = "button";
+    undo.setAttribute("data-gundo", g.key);
+    undo.title = "取消这道题的「蒙对」标记（记录本身保留）";
+    undo.addEventListener("click", function () {
+      qzSetGuess(QZ.sid, g.key, false);
+      qzRenderSetup();          // 统计行、清单、薄弱点一并刷新
+      qzToast("已取消蒙对标记");
+    });
+    li.appendChild(undo);
+    return li;
+  }
+
+  function qzRenderGuess() {
+    var box = byId("qGuess");
+    if (!box) return;
+    if (!QZ_READY) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = "";
+    var list = qzGuessList(QZ.sid);
+
+    var head = el("div", "qwhead");
+    head.appendChild(txt("h3", "", "蒙对的题" + (list.length ? "（" + list.length + "）" : "")));
+    if (list.length) {
+      var all = txt("button", "qwjump qgall", "全部重练");
+      all.type = "button";
+      all.title = "把这 " + list.length + " 道蒙对题按原序重练一遍";
+      all.addEventListener("click", function () { qzStartRun(list.slice(), "蒙对的题"); });
+      head.appendChild(all);
+    }
+    box.appendChild(head);
+
+    if (!list.length) {
+      box.appendChild(txt("p", "qwhint",
+        "还没有标记。答对了但心里没底的时候，点答案下方「其实是蒙的」（或按 G）；" +
+        "知识点卡片里每道答对的例题也有「蒙」按钮。"));
+      return;
+    }
+    box.appendChild(txt("p", "qwhint",
+      "这些题算你答对，但答案是猜的——正确率不扣分，真实掌握要单独再过一遍。最新的标记排在最前。"));
+
+    var ul = el("ul", "qwlist");
+    var show = QZ_GUESS_ALL ? list.length : Math.min(list.length, 6);
+    for (var i = 0; i < show; i++) ul.appendChild(qzGuessItem(list[i]));
+    box.appendChild(ul);
+    renderMath(ul);   // 题干里的 \(...\) 要渲染，否则清单里会露出 LaTeX 源码
+
+    if (list.length > 6) {
+      var more = txt("button", "qwmore", QZ_GUESS_ALL ? "收起，只看前 6 道" : "展开全部 " + list.length + " 道");
+      more.type = "button";
+      more.addEventListener("click", function () {
+        QZ_GUESS_ALL = !QZ_GUESS_ALL;
+        qzRenderGuess();
+      });
+      box.appendChild(more);
+    }
   }
 
   /* 进刷题设置页时重绘；判分过程中不重绘，避免打断正在做的题 */
@@ -17731,7 +18229,7 @@
       return;
     }
     box.appendChild(txt("p", "qwhint",
-      "按「尚未改正的错题数 → 累计错次 → 错误率」排序；错误率＝累计错次 ÷ 累计作答次数。点一行只练这个知识点的题。"));
+      "按「尚未改正的错题数 → 累计错次 → 错误率」排序；错误率＝累计错次 ÷ 累计作答次数。点一行只练这个知识点的题，右侧「卡片」跳到对应知识点。"));
 
     var ul = el("ul", "qwlist");
     var show = QZ_WEAK_ALL ? list.length : Math.min(list.length, 6);
@@ -17781,8 +18279,10 @@
     }
     node.className = "badge qz" + (st.rate >= 80 ? " good" : (st.rate < 60 ? " bad" : " mid"));
     node.textContent = "刷题 " + st.done + "/" + st.total + " · " + st.rate + "%";
+    var gn = qzGuessCountKp(SID, kid);   // [guess] 蒙对单独提示，不进正确率
     node.title = "已刷 " + st.done + " / 共 " + st.total + " 道：对 " + st.right + "、错 " + st.wrong +
-      "，正确率 " + st.rate + "%（按每道题最近一次作答计）；点一下只刷这个知识点";
+      "，正确率 " + st.rate + "%（按每道题最近一次作答计）" +
+      (gn ? "；其中 " + gn + " 题你标了「蒙对」——算对但没真懂" : "") + "；点一下只刷这个知识点";
     node.setAttribute("aria-label", "刷题正确率 " + st.rate + "%，已刷 " + st.done + " / " + st.total +
       " 道，点击开始刷题");
   }
@@ -17856,11 +18356,13 @@
   function qzPaintEx(host, kid, i) {
     var tag = host.querySelector(".exdone");
     var line = host.querySelector(".exwrong");
+    var gb = host.querySelector(".exgzbtn");     // [guess] 蒙对切换按钮
     var r = qzExRec(SID, kid, i);
     if (!tag) return;
     if (!r) {
       tag.hidden = true;
       if (line) line.hidden = true;
+      if (gb) gb.hidden = true;
       return;
     }
     var ok = r.r === 1;
@@ -17869,6 +18371,19 @@
     tag.textContent = ok ? "刷过 · 对" : "刷过 · 错";
     tag.title = "刷题记录：做过 " + (r.n || 1) + " 次，错 " + (r.w || 0) + " 次，最近一次" +
       (ok ? "答对" : "答错") + " · " + fmtTime(r.t);
+
+    /* [guess] 按钮只在「最近一次答对」或「已经标过」时出现：答错的题该走错题路线，
+       标「蒙对」没有意义；已标过的即使后来答错也留着，方便就地取消。 */
+    if (gb) {
+      var gon = qzGuessOn(r);
+      gb.hidden = !(ok || gon);
+      gb.setAttribute("aria-pressed", gon ? "true" : "false");
+      var gtxt = gb.querySelector(".exgztext");
+      if (gtxt) gtxt.textContent = gon ? "已标" : "标一下";
+      gb.title = gon
+        ? "这题已标为「蒙对」：答案是猜的，点一下取消标记"
+        : "这题答对了，但其实是凭感觉猜的？点一下标为「蒙对」，之后可单独重练（快捷键 G）";
+    }
 
     if (!line) return;
     var wt = qzWrongText(r, qzItem(SID, kid, i));
@@ -17994,17 +18509,35 @@
     }
     secSel.value = QZ.cfg.sec;
 
+    var fmt = examFormatOf(sub);   // [exam] 有考试题型配置才有分值标注与考试顺序
     var typeSel = byId("qTypeSel");
     typeSel.innerHTML = "";
     typeSel.appendChild(qzOption("全部", "全部题型"));
     for (i = 0; i < types.length; i++) {
       n = 0;
       for (j = 0; j < pool.length; j++) if (pool[j].ex.type === types[i]) n++;
-      typeSel.appendChild(qzOption(types[i], types[i] + "（" + n + " 题）"));
+      var tag = "";
+      if (fmt) {
+        var exScore = examScoreOf(sub, types[i]);
+        tag = exScore ? " · " + exScore + " 分" : " · 非考试题型";
+      }
+      typeSel.appendChild(qzOption(types[i], types[i] + "（" + n + " 题" + tag + "）"));
     }
     typeSel.value = QZ.cfg.type;
 
-    byId("qOrderSel").value = QZ.cfg.order;
+    var orderSel = byId("qOrderSel");
+    var examOpt = orderSel.querySelector('option[value="exam"]');
+    if (fmt) {
+      if (!examOpt) {
+        var seqLabel = [];
+        for (i = 0; i < fmt.items.length; i++) seqLabel.push(fmt.items[i].label || fmt.items[i].type);
+        orderSel.appendChild(qzOption("exam", "按考试题型（" + seqLabel.join(" → ") + "）"));
+      }
+    } else if (examOpt) {
+      orderSel.removeChild(examOpt);
+      if (QZ.cfg.order === "exam") QZ.cfg.order = "seq";
+    }
+    orderSel.value = QZ.cfg.order;
 
     var done = 0, right = 0, wrong = 0;
     for (i = 0; i < pool.length; i++) {
@@ -18014,9 +18547,12 @@
       if (r.r === 1) right++; else wrong++;
     }
     var rate = done ? Math.round(right / done * 100) : 0;
+    var gcount = qzGuessCount(QZ.sid);   // [guess] 手动标记的蒙对数，单独列、不改正确率
     byId("qStat").textContent = (sub ? sub.name : "") + " · 共 " + pool.length + " 题 · 已做 " +
-      done + (done ? "（正确率 " + rate + "%，错 " + wrong + "）" : "");
+      done + (done ? "（正确率 " + rate + "%，错 " + wrong + "）" : "") +
+      (gcount ? " · 蒙对 " + gcount + " 道" : "");
 
+    qzRenderGuess();  // [guess] 蒙对清单：每次进设置页都按最新标记重算
     qzRenderWeak();   // [weak] 每次进设置页都按最新记录重算
   }
 
@@ -18036,7 +18572,19 @@
       r = qzRecOf(QZ.sid, q.key);
       if (QZ.cfg.order === "wrong" && !(r && r.r === 0)) continue;
       if (QZ.cfg.order === "new" && r) continue;
+      if (QZ.cfg.order === "guess" && !qzGuessOn(r)) continue;   // [guess] 只刷手动标记的蒙对题
       out.push(q);
+    }
+    if (QZ.cfg.order === "exam") {
+      /* 按试卷题型顺序排：判断 → 选择 → 简述 → 计算；非考试题型（填空）垫底 */
+      var f2 = examFormatOf(qzSubject(QZ.sid)), rank = {};
+      if (f2) for (i = 0; i < f2.items.length; i++) rank[f2.items[i].type] = i;
+      out.sort(function (a, b) {
+        var ra = rank[a.ex.type], rb = rank[b.ex.type];
+        if (ra === undefined) ra = 99;
+        if (rb === undefined) rb = 99;
+        return ra - rb;
+      });
     }
     if (QZ.cfg.order === "rand") {
       for (i = out.length - 1; i > 0; i--) {
@@ -18239,6 +18787,7 @@
       fb.className = "qfb ok";
       fb.innerHTML = "";
       fb.appendChild(txt("span", "", "已记作正确。参考答案：" + q.it.e));
+      qzGuessBar(true);   // [guess] 改判为对之后同样可以标「蒙对」
     });
     fb.appendChild(b);
   }
@@ -18268,6 +18817,37 @@
     fb.appendChild(txt("span", "qans", right ? "答对了 ✓" : "答错了 ✗"));
     if (extra) fb.appendChild(document.createTextNode("　" + extra));
     fb.appendChild(document.createTextNode(right ? "　已计入进度" : "　已记入错题"));
+    qzGuessBar(right);
+  }
+
+  /* [guess] 刚答完的那一刻最清楚自己是猜的，所以按钮就放在反馈条上。
+     只在答对时出现：答错属于错题，标「蒙对」没有意义。 */
+  function qzGuessBar(right) {
+    var fb = byId("qFb"), q = QZ.list[QZ.pos];
+    if (!fb) return;
+    /* 先摘掉旧按钮再决定要不要画新的：切换标记后是就地重画，不清会叠出两个 */
+    var olds = fb.querySelectorAll(".qgzbtn");
+    for (var i = 0; i < olds.length; i++) fb.removeChild(olds[i]);
+    if (!q || !right) return;
+    var on = qzGuessOn(qzRecOf(QZ.sid, q.key));
+    var b = el("button", "qgzbtn" + (on ? " on" : ""));
+    b.type = "button";
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    b.textContent = on ? "已标蒙对 · 点一下取消" : "其实是蒙的";
+    b.title = on ? "取消这条「蒙对」标记"
+      : "标记为「蒙对」：答案是猜的、没真懂；之后可在设置页或顺序「只刷蒙对的题」里单独重练（快捷键 G）";
+    b.addEventListener("click", qzToggleGuessCur);
+    fb.appendChild(b);
+  }
+
+  /* 当前题切换蒙对标记：反馈条按钮与 G 键共用，就地刷新卡片与反馈条 */
+  function qzToggleGuessCur() {
+    var q = QZ.list[QZ.pos], st = QZ.done[QZ.pos];
+    if (!q || !st || !st.right) return;
+    if (!qzToggleGuessByKey(QZ.sid, q.key)) return;
+    qzRefreshKp(q.kp.id);
+    qzGuessBar(true);
+    qzToast(qzGuessOn(qzRecOf(QZ.sid, q.key)) ? "已标记为「蒙对」" : "已取消蒙对标记");
   }
 
   function qzToggleExpl(force) {
@@ -18353,6 +18933,14 @@
     tb.appendChild(tr2);
     qzSum.appendChild(tb);
 
+    /* [guess] 本组里手动标过「蒙对」的题：仍算答对，但单独提一句，并给重练入口 */
+    var gsum = 0;
+    for (i = 0; i < QZ.list.length; i++) if (qzGuessOn(qzRecOf(QZ.sid, QZ.list[i].key))) gsum++;
+    if (gsum) {
+      qzSum.appendChild(txt("div", "qkpsum",
+        "其中 " + gsum + " 道标了「蒙对」——计为答对，但没真懂，建议单独再过一遍。"));
+    }
+
     if (rec.wrong.length) {
       qzSum.appendChild(txt("div", "qwrongh", "错题 " + rec.wrong.length + " 道"));
       /* 按考点聚合：同一知识点错了几道，一眼看出薄弱章节 */
@@ -18415,6 +19003,15 @@
     }
 
     var acts = el("div", "qacts");
+    if (gsum) {
+      acts.appendChild(qzBtnNode("重刷蒙对题（" + gsum + "）", function () {
+        var only = [];
+        for (var k = 0; k < QZ.list.length; k++) {
+          if (qzGuessOn(qzRecOf(QZ.sid, QZ.list[k].key))) only.push(QZ.list[k]);
+        }
+        qzStartRun(only, "重刷蒙对题");
+      }));
+    }
     if (rec.wrong.length) {
       acts.appendChild(qzBtnNode("重刷错题", function () {
         var only = [];
@@ -18471,6 +19068,14 @@
     if (!q) return;
     var mode = qzModeOf(q.it);
     var low = k.toLowerCase();
+    /* [guess] G：答对后一键标/取消「蒙对」，不用去点反馈条 */
+    if (low === "g") {
+      if (QZ.done[QZ.pos] && QZ.done[QZ.pos].right) {
+        e.preventDefault(); e.stopImmediatePropagation();
+        qzToggleGuessCur();
+      }
+      return;
+    }
     var idx = -1;
     if (low.length === 1 && QMARKS.toLowerCase().indexOf(low) >= 0) idx = QMARKS.toLowerCase().indexOf(low);
     if (low.length === 1 && "123456".indexOf(low) >= 0) idx = parseInt(low, 10) - 1;
@@ -18527,7 +19132,7 @@
     byId("qTypeSel").addEventListener("change", function () { QZ.cfg.type = this.value; });
     byId("qOrderSel").addEventListener("change", function () { QZ.cfg.order = this.value; });
     byId("qReset").addEventListener("click", function () {
-      if (!window.confirm("重置「" + (qzSubject(QZ.sid) || {}).name + "」的刷题进度与错题记录？此操作不可撤销。")) return;
+      if (!window.confirm("重置「" + (qzSubject(QZ.sid) || {}).name + "」的刷题进度、错题记录与「蒙对」标记？此操作不可撤销。")) return;
       var qzAll = qzData(), qzSnap = snap();
       qzAll[QZ.sid] = {};
       if (!qzSnap.quizReset || typeof qzSnap.quizReset !== "object") qzSnap.quizReset = {};
@@ -18559,7 +19164,10 @@
     next: qzNext, prev: qzPrev, summary: qzSummary, store: function () { return qzData(); }, LS: LS_QUIZ,
     kpStat: qzKpStat, idx: qzIdx, exRec: qzExRec, practiceKp: qzPracticeKp, refreshMarks: qzRefreshMarks,
     item: qzItem, wrongCount: qzWrongCount, wrongText: qzWrongText, wrongBody: qzWrongBody, wrongLabel: qzWrongLabel,
-    weakList: qzWeakList, renderWeak: qzRenderWeak
+    weakList: qzWeakList, renderWeak: qzRenderWeak,
+    /* [guess] 蒙对标记的自动化测试入口 */
+    guessList: qzGuessList, guessOn: qzGuessOn, setGuess: qzSetGuess, guessCount: qzGuessCount,
+    toggleGuess: qzToggleGuessCur, renderGuess: qzRenderGuess, keyAt: qzKeyAt
   };
 
   /* ---------------- 启动 ---------------- */
