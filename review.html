@@ -2,9 +2,22 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.29.0
+  APP_VERSION: 3.30.0
   DATA_VERSION: 2026-11-01
-  本次变更: 进度条与卡片掌握状态打通，并把手动勾选降权（APP_VERSION 3.29.0，数据未动）——
+  本次变更: 修好「刷题后同步偶发失败/延迟」——根因是超时阈值与请求次数，不是账号或网络本身（APP_VERSION 3.30.0，数据未动）——
+             ①超时一刀切 10 秒：写请求要把整份快照 PATCH 上去，国内访问 api.github.com 偶发 12s+ 就必然超时；
+               现在分级——读 15 秒、写 30 秒并随体积递增（每 10KB +1 秒，上限 60 秒）；错误提示写明是哪一档；
+             ②一次全量同步要 4 个往返（拉→读→写→回读），慢网下光等待就十几秒；push 现在复用刚拉到的远端快照，降到 3 个；
+             ③单飞直接丢弃：慢请求进行中再次触发同步会被「同步进行中」挡掉且不排队，那次改动就一直挂着「待推送」；
+               现在记为待办，本轮结束后自动补推（最多退让重试 8 次，不会无限挂起）；
+             ④3 秒防抖被连续改动反复重置：刷题时每题作答都重置计时器，推送被无限推迟；现在 3 秒防抖 + 6 秒硬上限；
+             ⑤刷题过程中不再逐题推送（一套卷十几二十次写请求会放大失败率），只标脏，退出刷题时统一推一次；
+               中途切后台有 visibilitychange 兜底，直接关页面也能在下次打开时按 pending 补推；
+             ⑥push 回写改为「与当前本地再合并一次」：慢网下一次推送要十几秒，期间新答的题不会被回写覆盖（原来会丢）；
+             ⑦定时同步（pull）失败也退避重试，静默模式下失败不再弹窗；pull 失败不再误标「有本地改动待推送」；
+             ⑧设置面板新增「上次同步耗时」与「超时设置」两行，便于判断是网络慢还是配置问题；
+             ⑨自测 sync-timeout-test 19 项（12s 慢读可通过、慢网 full 只 3 次请求、忙时排队补推、防抖上限、刷题期不推、静默不弹窗）。
+  上次变更: 进度条与卡片掌握状态打通，并把手动勾选降权（APP_VERSION 3.29.0，数据未动）——
              ①问题：进度条读的是「手动勾选」（snap.mastery），卡片徽标读的是「刷题判定」，两套口径，所以卡片变成「已掌握」时进度条不动；
              ②口径统一：新增 isMastered / isCountedDone——「已掌握」以卡片徽标为准（刷题判定）；
                「计入进度」= 刷题判定已掌握 **或** 手动勾选（任一），老的手动标记不会因为换成自动判定而凭空丢进度；
@@ -296,7 +309,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.29.0">
+<meta name="app-version" content="3.30.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -14195,7 +14208,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.29.0";
+  var APP_VERSION = "3.30.0";
   var DATA_VERSION = "2026-11-01";
 
   var LEVEL_ORDER = ["A", "B", "C"];
@@ -15850,7 +15863,20 @@
   // [sync] 契约：syncAdapter.pull() -> Promise<snapshot|null>，syncAdapter.push(snapshot) -> Promise<{snap,changed}>
   // [sync] 推送一律走「先读→合并→再写→回读校验」，从不盲目覆盖远端。
   var SYNC_FILE = "review-progress.json";
-  var SYNC_TIMEOUT = 10000;
+  /* [sync] 超时按请求类型分级：读（GET）15s，写（PATCH/PUT）按体积给 30–60s。
+     原来一刀切 10s——写请求要把整份快照传上去，国内访问 api.github.com 偶发 12s+ 就必然超时，
+     于是弹出「同步失败：请求超时（10 秒）」，得等退避重试才自己恢复。 */
+  var SYNC_TIMEOUT = 10000;          // 保留原名：仍作为兜底默认值
+  var SYNC_TIMEOUT_READ = 15000;
+  var SYNC_TIMEOUT_WRITE = 30000;
+  var SYNC_TIMEOUT_MAX = 60000;
+  var SYNC_REQ_RETRY = 1;            // 读请求超时/网络错误时原地补一次（抖动多为瞬时）
+  var SYNC_RETRY_GAP = 600;
+
+  function syncWriteTimeout(bytes) {
+    var extra = Math.ceil((bytes || 0) / 10240) * 1000;   // 每 10KB 再给 1s，留足上行时间
+    return Math.min(SYNC_TIMEOUT_MAX, SYNC_TIMEOUT_WRITE + extra);
+  }
 
   function sErr(code, message, status) {
     var e = new Error(message || code);
@@ -15888,42 +15914,62 @@
     catch (e) { return "Basic " + btoa(raw); }
   }
 
-  // [sync] 统一网络层：AbortController 10s 超时、状态码归一、JSON 安全解析
+  // [sync] 统一网络层：分级超时、状态码归一、JSON 安全解析；读请求失败原地补一次
   function httpReq(url, opt) {
     return new Promise(function (resolve, reject) {
       if (typeof fetch !== "function") { reject(sErr("unsupported", "当前浏览器不支持 fetch，无法同步")); return; }
-      var o = opt || {}, timer = null, finished = false, ctrl = null;
-      try { ctrl = new AbortController(); } catch (e) { ctrl = null; }
-      var init = { method: o.method || "GET", headers: o.headers || {}, cache: "no-store" };
-      if (o.body !== undefined) init.body = o.body;
-      if (ctrl) init.signal = ctrl.signal;
-      timer = setTimeout(function () {
-        if (finished) return;
-        finished = true;
-        try { if (ctrl) ctrl.abort(); } catch (e) {}
-        reject(sErr("timeout", "请求超时（" + (SYNC_TIMEOUT / 1000) + " 秒）"));
-      }, SYNC_TIMEOUT);
-      function end(ok, val) {
-        if (finished) return;
-        finished = true;
-        if (timer) clearTimeout(timer);
-        if (ok) resolve(val); else reject(val);
-      }
-      fetch(url, init).then(function (res) {
-        return res.text().then(function (txt) { return { res: res, txt: txt }; });
-      }).then(function (r) {
-        var body = null, kind = "none";
-        if (r.txt) {
-          try { body = JSON.parse(r.txt); kind = "json"; }
-          catch (e) { body = null; kind = "text"; }
+      var o = opt || {};
+      var isWrite = (o.method || "GET") !== "GET";
+      var budget = (o.timeout > 0 ? o.timeout : 0) ||
+        (isWrite ? syncWriteTimeout(String(o.body || "").length) : SYNC_TIMEOUT_READ);
+      var left = (isWrite || o.noRetry === true) ? 0 : SYNC_REQ_RETRY;
+
+      function fail(e) {
+        if (left > 0) {
+          left--;
+          setTimeout(attempt, SYNC_RETRY_GAP);   // 空一次再试：超时与 DNS 抖动多数是瞬时的
+          return;
         }
-        end(true, { status: r.res.status, ok: r.res.ok, body: body, text: r.txt, kind: kind });
-      }).catch(function (err) {
-        if (finished) return;
-        var code = (err && err.name === "AbortError") ? "timeout" : "network";
-        var msg = "网络错误：" + ((err && err.message) || "无法连接（跨域请求可能被浏览器阻止）");
-        end(false, sErr(code, msg));
-      });
+        reject(e);
+      }
+
+      function attempt() {
+        var timer = null, finished = false, ctrl = null;
+        try { ctrl = new AbortController(); } catch (e) { ctrl = null; }
+        var init = { method: o.method || "GET", headers: o.headers || {}, cache: "no-store" };
+        if (o.body !== undefined) init.body = o.body;
+        if (ctrl) init.signal = ctrl.signal;
+        timer = setTimeout(function () {
+          if (finished) return;
+          finished = true;
+          try { if (ctrl) ctrl.abort(); } catch (e) {}
+          fail(sErr("timeout", "请求超时（" + Math.round(budget / 1000) + " 秒，网络较慢）"));
+        }, budget);
+        function end(ok, val) {
+          if (finished) return;
+          finished = true;
+          if (timer) clearTimeout(timer);
+          if (ok) resolve(val); else fail(val);
+        }
+        fetch(url, init).then(function (res) {
+          return res.text().then(function (txt) { return { res: res, txt: txt }; });
+        }).then(function (r) {
+          var body = null, kind = "none";
+          if (r.txt) {
+            try { body = JSON.parse(r.txt); kind = "json"; }
+            catch (e) { body = null; kind = "text"; }
+          }
+          end(true, { status: r.res.status, ok: r.res.ok, body: body, text: r.txt, kind: kind });
+        }).catch(function (err) {
+          if (finished) return;
+          var code = (err && err.name === "AbortError") ? "timeout" : "network";
+          var msg = (code === "timeout") ? ("请求超时（" + Math.round(budget / 1000) + " 秒，网络较慢）")
+            : ("网络错误：" + ((err && err.message) || "无法连接（跨域请求可能被浏览器阻止）"));
+          end(false, sErr(code, msg));
+        });
+      }
+
+      attempt();
     });
   }
 
@@ -15937,11 +15983,14 @@
   }
 
   // [sync] 通用驱动：先读→合并→再写→回读校验，最多 3 轮（自愈，避免与他端并发互相覆盖）
-  function adapterDriver(ad, local) {
+  // [sync] known：调用方刚拉到的远端快照。传了就直接用，省掉一次重复 GET
+  //        （一次全量同步原本是 4 个往返，慢网下光等待就十几秒）。
+  function adapterDriver(ad, local, known) {
     var rounds = 0;
-    function round(cur) {
+    function round(cur, remoteIn) {
       rounds++;
-      return ad.get().then(function (remote) {
+      var reader = (remoteIn === undefined) ? ad.get() : Promise.resolve(remoteIn);
+      return reader.then(function (remote) {
         var merged = remote ? mergeSnapshot(cur, remote) : cloneSnap(cur);
         if (!merged.deviceId) merged.deviceId = deviceInfo().id;
         var changed = !remote || !sameProgress(merged, remote) || normT(merged.updatedAt) > normT(remote.updatedAt);
@@ -15955,7 +16004,7 @@
         });
       });
     }
-    return round(cloneSnap(local));
+    return round(cloneSnap(local), known);
   }
 
   function gistFileOf(body) {
@@ -15995,7 +16044,10 @@
       put: function (snapObj) {
         var payload = { files: {} };
         payload.files[SYNC_FILE] = { content: JSON.stringify(snapObj, null, 2) };
-        return httpReq(api, { method: "PATCH", headers: hdr(), body: JSON.stringify(payload) }).then(function (r) {
+        var body = JSON.stringify(payload);
+        return httpReq(api, {
+          method: "PATCH", headers: hdr(), body: body, timeout: syncWriteTimeout(body.length)
+        }).then(function (r) {
           classify(r, "Gist ");
           return r;
         });
@@ -16023,7 +16075,10 @@
         });
       },
       put: function (snapObj) {
-        return httpReq(url, { method: "PUT", headers: hdr(), body: JSON.stringify(snapObj, null, 2) }).then(function (r) {
+        var body = JSON.stringify(snapObj, null, 2);
+        return httpReq(url, {
+          method: "PUT", headers: hdr(), body: body, timeout: syncWriteTimeout(body.length)
+        }).then(function (r) {
           classify(r, "WebDAV 文件");
           return r;
         });
@@ -16054,7 +16109,10 @@
         });
       },
       put: function (snapObj) {
-        return httpReq(url, { method: "PUT", headers: hdr(), body: JSON.stringify(snapObj, null, 2) }).then(function (r) {
+        var body = JSON.stringify(snapObj, null, 2);
+        return httpReq(url, {
+          method: "PUT", headers: hdr(), body: body, timeout: syncWriteTimeout(body.length)
+        }).then(function (r) {
           classify(r, "自定义端点");
           return r;
         });
@@ -16077,7 +16135,7 @@
     return {
       name: ad.name,
       pull: function () { return ad.get(); },
-      push: function (local) { return adapterDriver(ad, local); }
+      push: function (local, known) { return adapterDriver(ad, local, known); }
     };
   }
 
@@ -16571,12 +16629,14 @@
         : (syncOffline() ? "离线（改动留在本机）"
         : (meta.pending ? "有本地改动待推送" : (meta.lastError ? "上次失败" : "空闲"))))],
       ["自动同步", autoMin ? ("每 " + autoMin + " 分钟" + (ad ? "" : "（配好通道后生效）")) : "关闭（只靠改动触发）"],
-      ["上次同步", fmtTime(meta.lastSyncAt)],
+      ["上次同步", fmtTime(meta.lastSyncAt) + (meta.lastCost ? "（耗时 " + (meta.lastCost / 1000).toFixed(1) + " 秒）" : "")],
       ["本地条目", countEntries(s.mastery) + " 掌握 / " + countEntries(s.favs) + " 收藏 / " +
         countNotesAll(s.notes) + " 笔记 / " + countEntries(s.quiz) + " 刷题"],
       ["远端条目", (rc === undefined || rc === null) ? "—"
         : (rc.mastery + " 掌握 / " + rc.favs + " 收藏 / " + (rc.quiz === undefined ? "—" : rc.quiz) + " 刷题")],
-      ["上次错误", meta.lastError ? meta.lastError : "无"]
+      ["上次错误", meta.lastError ? meta.lastError : "无"],
+      ["超时设置", "读取 " + (SYNC_TIMEOUT_READ / 1000) + " 秒 / 写入 " +
+        (SYNC_TIMEOUT_WRITE / 1000) + "–" + (SYNC_TIMEOUT_MAX / 1000) + " 秒（按快照大小）"]
     ];
     rows.forEach(function (r) {
       var p = el("div", "sline");
@@ -17123,7 +17183,10 @@
 
   /* [sync] ---------------- 同步引擎：触发、合并落地、退避重试 ---------------- */
   var SYNC_BUSY = false;                    // [sync] in-flight 标志：同时只允许一个同步任务
+  var SYNC_QUEUE = null;                    // [sync] 忙时被挡下的请求：结束后自动补一次（"push"/"full"）
   var SYNC_DEBOUNCE = null;                 // [sync] 改动后 3s 防抖推送
+  var SYNC_DIRTY_AT = 0;                    // [sync] 连续改动的最早时间，用于给防抖加硬上限
+  var SYNC_MAX_WAIT = 6000;                 // [sync] 再怎么连续改，6s 内必推一次
   var SYNC_RETRY_TIMER = null;
   var SYNC_RETRY_WAITS = [3000, 10000, 30000];  // [sync] 失败退避：3s / 10s / 30s，最多 3 次
 
@@ -17166,6 +17229,7 @@
       return {
         changed: changed,
         needPush: needPush,
+        remote: remote,        // [sync] 交给随后的 push 复用，省一次 GET
         remoteCount: {
           mastery: countEntries((remote && remote.mastery) || {}),
           favs: countEntries((remote && remote.favs) || {}),
@@ -17175,14 +17239,19 @@
     });
   }
 
-  function doPush(ad) {
+  function doPush(ad, known) {
     var before = snap();
-    return ad.push(before).then(function (r) {
+    return ad.push(before, known).then(function (r) {
       if (r && r.snap) {
-        SNAP = r.snap;
-        commitSnap(r.snap.updatedAt);
+        /* [sync] 不能直接 SNAP = r.snap：慢网下一次推送要十几秒，这期间用户可能又答了两题，
+           直接替换会把新改动覆盖掉（下一次 push 才会发现，表现就是「刚刷的题没同步」）。
+           这里用「当前本地」再合并一次，两边的改动都保住。 */
+        var nowSnap = snap();
+        var keep = mergeSnapshot(nowSnap, r.snap);
+        SNAP = keep;
+        commitSnap(keep.updatedAt);
         // 推送内部是「先读→合并→再写」，他端新增的条目可能被一并带回来，界面要跟上
-        if (!sameProgress(r.snap, before)) afterRemoteApply();
+        if (!sameProgress(keep, before)) afterRemoteApply();
       }
       return {
         remoteCount: {
@@ -17203,8 +17272,17 @@
       if (!silent) { setSyncState("", "未配置"); refreshSyncDot(); toastSync("还没配置同步通道"); }
       return Promise.resolve(false);
     }
-    if (SYNC_BUSY) { if (!silent) toastSync("同步进行中，请稍候"); return Promise.resolve(false); }
+    if (SYNC_BUSY) {
+      /* [sync] 不丢改动：把这次请求记下来，等当前任务结束后自动补一次。
+         以前这里只提示「同步进行中」就直接 return，慢请求期间的作答会被整段吞掉，
+         面板上就一直挂着「有本地改动待推送」直到下次定时同步（最长 15 分钟）。 */
+      if (mode === "full") SYNC_QUEUE = "full";
+      else if (SYNC_QUEUE !== "full") SYNC_QUEUE = "push";
+      if (!silent) toastSync("正在同步，这次改动会在本轮结束后自动补推");
+      return Promise.resolve(false);
+    }
     SYNC_BUSY = true;
+    var startedAt = nowMs();
     if (SYNC_RETRY_TIMER) { clearTimeout(SYNC_RETRY_TIMER); SYNC_RETRY_TIMER = null; }
     if (SYNC_DEBOUNCE) { clearTimeout(SYNC_DEBOUNCE); SYNC_DEBOUNCE = null; }
     setSyncState("busy", "同步中");
@@ -17214,56 +17292,88 @@
     if (mode === "pull") chain = doPull(ad);
     else if (mode === "push") chain = doPush(ad);
     else chain = doPull(ad).then(function (r) {
-      if (r.changed || r.needPush) return doPush(ad);
+      /* [sync] 拉完发现本地没有新东西、远端也已经是最新，就不必再写一次 */
+      if (r.changed || r.needPush) return doPush(ad, r.remote);
       return r;
     });
 
     return chain.then(function (res) {
       SYNC_BUSY = false;
-      var patch = { lastSyncAt: nowMs(), lastError: "", lastErrorCode: "", pending: false, offline: false };
+      SYNC_DIRTY_AT = 0;
+      var patch = {
+        lastSyncAt: nowMs(), lastCost: Math.max(1, nowMs() - startedAt),
+        lastError: "", lastErrorCode: "", pending: false, offline: false
+      };
       if (res && res.remoteCount) patch.remoteCount = res.remoteCount;
       syncSetMeta(patch);
       syncTouched();
       refreshSyncDot();
       renderSyncStat();
+      syncDrainQueue();
       return true;
     }).catch(function (err) {
       SYNC_BUSY = false;
       var msg = (err && err.message) || "同步失败";
       var code = (err && err.code) || "error";
-      syncSetMeta({ lastError: msg, lastErrorCode: code, pending: true });
+      var patch2 = { lastError: msg, lastErrorCode: code, lastCost: Math.max(1, nowMs() - startedAt) };
+      /* [sync] 只有「写」失败才说明本地有改动没上去；pull 失败不代表有待推送，
+         否则面板会一直显示「有本地改动待推送」，误导读了好几遍。 */
+      if (mode !== "pull") patch2.pending = true;
+      syncSetMeta(patch2);
       refreshSyncDot();
       renderSyncStat();
       /* 错误分两类：配置类（令牌失效、ID 写错、远端 JSON 坏了）重试一万次也没用，
          直接说清楚去哪儿改；网络类才退避重试，避免无意义的 3 次请求和三次弹窗。 */
       var fatal = (code === "auth" || code === "notfound" || code === "parse" || code === "unsupported");
       if (fatal) {
+        SYNC_QUEUE = null;
         setSyncState("err", "配置有误");
-        toastSync("同步失败：" + msg + "　这类错误重试无效，请到「同步」里检查配置", 6400);
+        if (!silent) toastSync("同步失败：" + msg + "　这类错误重试无效，请到「同步」里检查配置", 6400);
         return false;
       }
       if (syncOffline()) {
+        SYNC_QUEUE = null;
         setSyncState("dirty", "离线待同步");
-        toastSync("当前离线：改动已存在本机，联网后会自动同步", 4600);
+        if (!silent) toastSync("当前离线：改动已存在本机，联网后会自动同步", 4600);
         return false;
       }
       var wait = SYNC_RETRY_WAITS[attempt || 0];
-      if (mode !== "pull" && wait !== undefined) {
+      if (wait !== undefined) {
         var nth = (attempt || 0) + 1;
-        toastSync("同步失败：" + msg + "（" + Math.round(wait / 1000) + " 秒后第 " + nth + "/" +
+        /* [sync] 自动同步（silent）失败不弹窗：隔几分钟弹一次很吵，状态点与面板已经写明 */
+        if (!silent) toastSync("同步失败：" + msg + "（" + Math.round(wait / 1000) + " 秒后第 " + nth + "/" +
           SYNC_RETRY_WAITS.length + " 次重试）", 5200);
         if (SYNC_RETRY_TIMER) clearTimeout(SYNC_RETRY_TIMER);
         SYNC_RETRY_TIMER = setTimeout(function () {
           SYNC_RETRY_TIMER = null;
           if (!syncAdapter()) return;
           if (syncOffline()) { syncSetMeta({ pending: true }); refreshSyncDot(); return; }
-          syncNow("push", (attempt || 0) + 1);
+          /* [sync] 定时同步（pull）失败也重试：否则要等满一个间隔（最长 60 分钟）才可能恢复 */
+          syncNow(mode === "pull" ? "pull" : "push", (attempt || 0) + 1, silent === true);
         }, wait);
       } else {
-        toastSync("同步失败：" + msg);
+        if (!silent) toastSync("同步失败：" + msg);
+        else { syncSetMeta({ pending: mode !== "pull" ? true : syncMeta().pending }); refreshSyncDot(); renderSyncStat(); }
       }
       return false;
     });
+  }
+
+  /* [sync] 忙时被挡下的请求在这里补做：当前任务结束后 400ms 再跑一次，
+     成功后 pending 会自然清零，不会出现「改动一直挂着」的状态。
+     如果补做时仍然在忙（前一轮刚结束又起了新的），退让一会儿再试，最多 8 次。 */
+  function syncDrainQueue(tries) {
+    if (!SYNC_QUEUE) return;
+    if (SYNC_BUSY) {
+      if ((tries || 0) < 8) setTimeout(function () { syncDrainQueue((tries || 0) + 1); }, 800);
+      return;
+    }
+    var m = SYNC_QUEUE;
+    SYNC_QUEUE = null;
+    setTimeout(function () {
+      if (!syncAdapter()) return;
+      syncNow(m, 0, m === "full");
+    }, 400);
   }
 
   /* [sync] ---------------- 定时同步：补上「别人改了，而我这台没动过」的场景 ----------------
@@ -17292,7 +17402,8 @@
     syncAutoArm();                                  // 先排下一次，中途任何 return 都不会断链
     if (!syncAdapter()) return;
     if (document.visibilityState !== "visible") return;
-    if (SYNC_BUSY || syncOffline()) return;
+    if (syncOffline()) return;
+    if (SYNC_BUSY) { SYNC_QUEUE = SYNC_QUEUE || "full"; return; }   // 正在同步就排到本轮之后，别直接丢掉
     syncNow("full", 0, true);                       // silent：自动同步不弹「同步进行中」
   }
 
@@ -17302,12 +17413,20 @@
     if (!syncAdapter()) { refreshSyncDot(); return; }
     syncSetMeta({ pending: true });
     refreshSyncDot();
+    var now = nowMs();
+    if (!SYNC_DIRTY_AT) SYNC_DIRTY_AT = now;
     if (SYNC_DEBOUNCE) clearTimeout(SYNC_DEBOUNCE);
+    /* [sync] 3s 防抖，但给一个 6s 的硬上限：连续刷题（每题间隔一两秒）时，
+       原来每作答一次都把计时器重置，推送被无限推迟，看起来就是「同步有延迟」。
+       注意是 min(3000, 剩余到上限的时间)，不是 min(3000, 已用时间)，否则永远算成 3s。 */
+    var left = Math.max(0, SYNC_DIRTY_AT + SYNC_MAX_WAIT - now);
+    var wait = Math.min(3000, left);
     SYNC_DEBOUNCE = setTimeout(function () {
       SYNC_DEBOUNCE = null;
+      SYNC_DIRTY_AT = 0;
       if (!syncAdapter()) return;
       syncNow("push");
-    }, 3000);
+    }, wait);
   }
 
   // [sync] 3.6 导入导出兜底
@@ -17355,6 +17474,8 @@
   function clearSyncCfg() {
     lsDel(LS_SYNCCFG);
     lsDel(LS_SYNCMETA);
+    SYNC_QUEUE = null;
+    SYNC_DIRTY_AT = 0;
     if (SYNC_RETRY_TIMER) { clearTimeout(SYNC_RETRY_TIMER); SYNC_RETRY_TIMER = null; }
     if (SYNC_DEBOUNCE) { clearTimeout(SYNC_DEBOUNCE); SYNC_DEBOUNCE = null; }
     if (SYNC_AUTO_TIMER) { clearTimeout(SYNC_AUTO_TIMER); SYNC_AUTO_TIMER = null; }
@@ -18344,7 +18465,15 @@
     }
     q[sid][key] = rec;
     commitSnap(t);         // 落盘并前移 updatedAt
-    syncMarkDirty();       // 标脏：配了通道就 3s 防抖推送
+    /* [sync] 刷题过程中不每次作答都推：一整套卷子会有十几二十次写请求，
+       慢网下每次都可能超时，失败率被放大。这里只标脏，退出刷题时统一推一次；
+       中途切后台/锁屏有 visibilitychange 兜底，关掉页面也不会丢（下次开页按 pending 补推）。 */
+    if (QZ.on) {
+      QZ.dirty = true;
+      if (syncAdapter()) { syncSetMeta({ pending: true }); refreshSyncDot(); }
+    } else {
+      syncMarkDirty();
+    }
   }
 
   /* ---------- [guess] 手动标记「蒙对」 ---------- */
@@ -19265,6 +19394,8 @@
     QZ.state = "setup";
     qzRefreshMarks();   // [quiz] 回到卡片模式前把整科目的标识与正确率重算一遍
     if (typeof refreshInlineProg === "function") refreshInlineProg();
+    /* [sync] 刷题期间攒下的改动在这里统一推一次（详见 qzSaveRec 的说明） */
+    if (QZ.dirty) { QZ.dirty = false; syncMarkDirty(); }
   }
 
   /* ---------- 设置页 ---------- */
