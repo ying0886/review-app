@@ -2,9 +2,17 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.30.1
+  APP_VERSION: 3.31.0
   DATA_VERSION: 2026-11-01
-  本次变更: （3.30.1 补充）同步设置页说明文案改为与实际行为一致：3 秒防抖 + 连续改动 6 秒内必推、刷题中攒着退出再推。
+  本次变更: （3.31.0）填空题「参考答案」改用手打形态显示，判分也认这些写法（数据未动）——
+             ①原来反馈条直接吐 LaTeX 源码（参考答案：\(\frac{3}{4t}\)），看着是代码、照着也打不出来；
+               现在统一转成能直接敲的一行：\frac{3}{4t} → 3/4t、e^{-2} → e^-2、+\dfrac{8}{3} → +8/3、
+               5.6\times10^{-10} → 5.6×10^-10；√、×、≤、≈ 一并换掉；
+             ②判分同步放宽一层（qzSquash：去括号、统一乘号、去前导 +）——3/4t、3/(4t)、(3)/(4t)、e^-2、e^(-2)、
+               5.6*10^-10 都算对，不用再手点「我答的其实等价」；错误写法（3/2、e^2、1/2 漏负号）照旧判错；
+             ③只动「参考答案」的显示与填空比对；题干、题型、解析里的公式排版一律没动（那边照旧 KaTeX 渲染）；
+             ④全量自测 57 条填空答案：手打形态里无残留反斜杠/花括号，且「照显示的答案原样输入」必定判对。
+  上次变更: （3.30.1 补充）同步设置页说明文案改为与实际行为一致：3 秒防抖 + 连续改动 6 秒内必推、刷题中攒着退出再推。
   上次变更: 修好「刷题后同步偶发失败/延迟」——根因是超时阈值与请求次数，不是账号或网络本身（APP_VERSION 3.30.0，数据未动）——
              ①超时一刀切 10 秒：写请求要把整份快照 PATCH 上去，国内访问 api.github.com 偶发 12s+ 就必然超时；
                现在分级——读 15 秒、写 30 秒并随体积递增（每 10KB +1 秒，上限 60 秒）；错误提示写明是哪一档；
@@ -310,7 +318,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.30.1">
+<meta name="app-version" content="3.31.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -14209,7 +14217,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.30.1";
+  var APP_VERSION = "3.31.0";
   var DATA_VERSION = "2026-11-01";
 
   var LEVEL_ORDER = ["A", "B", "C"];
@@ -19249,7 +19257,7 @@
     if (kind === "self") return "没做对";
     if (kind === "fill") {
       var f = qzClip(wa, 24) || "（空）";
-      if (it && it.e !== undefined && String(it.e)) f += "　参考答案 " + qzClip(it.e, 24);
+      if (it && it.e !== undefined && String(it.e)) f += "　参考答案 " + qzClip(qzPlain(it.e), 24);
       return f;
     }
     var pick = String(wa).toUpperCase(), ai = QMARKS.indexOf(pick);
@@ -19679,7 +19687,7 @@
     qzCount(right, q, right ? null : { wa: String(val), wm: "fill" });
     byId("qFill").disabled = true;
     byId("qFillCheck").disabled = true;
-    qzFeedback(right, "参考答案：" + it.e);
+    qzFeedback(right, "参考答案：" + qzPlain(it.e));
     if (!right) qzAddOverride();
     qzToggleExpl(true);
     byId("qShow").textContent = "收起解析";
@@ -19696,10 +19704,95 @@
       .replace(/[。.]/g, "")
       .toLowerCase();
   }
+  /* [fill] 参考答案 → 手打形态：\(\frac{3}{4t}\) 显示成 3/4t、\(e^{-2}\) 显示成 e^-2。
+     只用来看和比对，题干、题型、解析里的公式一律不动（那边照旧渲染）。 */
+  function qzGroup(s, i) {
+    var d = 0, k, c;
+    for (k = i; k < s.length; k++) {
+      c = s.charAt(k);
+      if (c === "{") d++;
+      else if (c === "}") { d--; if (d === 0) return [s.substring(i + 1, k), k + 1]; }
+    }
+    return [s.substring(i + 1), s.length];
+  }
+  function qzPlain(s) {
+    var t = String(s == null ? "" : s)
+      .replace(/\\\(|\\\)|\\\[|\\\]/g, "")
+      .replace(/\\[,;:! ]/g, "");
+    var out = "", i = 0, n = t.length, c, j, cmd, g, num, den, inner;
+    while (i < n) {
+      c = t.charAt(i);
+      if (c === "^" || c === "_") {
+        out += c;
+        i++;
+        if (t.charAt(i) === "{") {
+          g = qzGroup(t, i);
+          i = g[1];
+          inner = qzPlain(g[0]);
+          /* 单个负号、单个字母这类保持 10^-10、e^-2 的形状；真是复合式才补括号 */
+          out += (/^-?[0-9A-Za-z.]+$/.test(inner) || inner.length <= 2) ? inner : "(" + inner + ")";
+        }
+        continue;
+      }
+      if (c !== "\\") { out += c; i++; continue; }
+      j = i + 1;
+      while (j < n && /[A-Za-z]/.test(t.charAt(j))) j++;
+      cmd = t.substring(i + 1, j);
+      if (!cmd) { i = j + 1; continue; }
+      i = j;
+      if (cmd === "frac" || cmd === "dfrac" || cmd === "tfrac") {
+        while (i < n && /\s/.test(t.charAt(i))) i++;
+        if (t.charAt(i) === "{") { g = qzGroup(t, i); num = g[0]; i = g[1]; }
+        else { num = t.charAt(i); i++; }
+        while (i < n && /\s/.test(t.charAt(i))) i++;
+        if (t.charAt(i) === "{") { g = qzGroup(t, i); den = g[0]; i = g[1]; }
+        else { den = t.charAt(i); i++; }
+        num = qzPlain(num);
+        den = qzPlain(den);
+        /* 分母自带括号（(n-1)!）就不再套一层，免得出现 ((n-1)!) */
+        if (!/^[0-9A-Za-z.^!()]+$/.test(den) && !/^\(.*\)[!^0-9]*$/.test(den)) den = "(" + den + ")";
+        out += num + "/" + den;
+        continue;
+      }
+      if (cmd === "sqrt") {
+        while (i < n && /\s/.test(t.charAt(i))) i++;
+        if (t.charAt(i) === "{") { g = qzGroup(t, i); out += "√(" + qzPlain(g[0]) + ")"; i = g[1]; }
+        else { out += "√" + t.charAt(i); i++; }
+        continue;
+      }
+      if (cmd === "times") { out += "×"; continue; }
+      if (cmd === "cdot") { out += "·"; continue; }
+      if (cmd === "cdots" || cmd === "ldots" || cmd === "dots") { out += "..."; continue; }
+      if (cmd === "approx") { out += "≈"; continue; }
+      if (cmd === "le" || cmd === "leq") { out += "≤"; continue; }
+      if (cmd === "ge" || cmd === "geq") { out += "≥"; continue; }
+      if (cmd === "ne" || cmd === "neq") { out += "≠"; continue; }
+      if (cmd === "pi") { out += "π"; continue; }
+      if (cmd === "infty") { out += "∞"; continue; }
+      if (cmd === "left" || cmd === "right" || cmd === "mathrm" || cmd === "text" ||
+          cmd === "displaystyle" || cmd === "limits" || cmd === "quad" || cmd === "qquad") continue;
+      if (cmd === "ln" || cmd === "log" || cmd === "lg" || cmd === "sin" || cmd === "cos" ||
+          cmd === "tan" || cmd === "cot" || cmd === "sec" || cmd === "csc" || cmd === "exp" ||
+          cmd === "lim" || cmd === "max" || cmd === "min" || cmd === "arcsin" ||
+          cmd === "arccos" || cmd === "arctan") { out += cmd; continue; }
+      /* 其余命令连名字一起丢掉，别把反斜杠留在答案里 */
+    }
+    return out.replace(/[{}]/g, "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+  }
+  /* 再松一层：乘号统一、括号全去、前导 + 去头，(3)/(4t) 与 3/4t、3/(4t) 视为同一串 */
+  function qzSquash(s) {
+    return qzNorm(qzPlain(s))
+      .replace(/[−–—‑]/g, "-")          /* Unicode 减号/破折号统一成键盘上那个 - */
+      .replace(/[×·⋅*]/g, "*")
+      .replace(/[()\[\]{}]/g, "")
+      .replace(/^\+/, "");
+  }
   function qzFillMatch(input, ans) {
     var a = qzNorm(ans), b = qzNorm(input);
     if (a === b) return true;
     if (!a || !b) return false;
+    /* 手打形态再比一次：e^-2 / e^(-2) 都认 e^{-2}，3/4t / 3/(4t) 都认 \frac{3}{4t} */
+    if (qzSquash(ans) === qzSquash(input)) return true;
     var parts = a.split(";");
     if (parts.length < 2) return false;
     var okAll = true;
@@ -19728,7 +19821,7 @@
       qzRefreshKp(q.kp.id);   // [quiz] 改判为对，徽标同步
       fb.className = "qfb ok";
       fb.innerHTML = "";
-      fb.appendChild(txt("span", "", "已记作正确。参考答案：" + q.it.e));
+      fb.appendChild(txt("span", "", "已记作正确。参考答案：" + qzPlain(q.it.e)));
       qzGuessBar(true);   // [guess] 改判为对之后同样可以标「蒙对」
     });
     fb.appendChild(b);
@@ -19825,7 +19918,7 @@
       byId("qFill").disabled = true;
       byId("qFillCheck").disabled = true;
     }
-    qzFeedback(st.right, st.mode === "opt" && it.a >= 0 ? "正确答案 " + QMARKS.charAt(it.a) : "参考答案：" + it.e);
+    qzFeedback(st.right, st.mode === "opt" && it.a >= 0 ? "正确答案 " + QMARKS.charAt(it.a) : "参考答案：" + qzPlain(it.e));
     qzToggleExpl(true);
     byId("qShow").textContent = "收起解析";
   }
@@ -20112,7 +20205,9 @@
     tiers: QZ_TIERS, renderMastery: qzRenderMastery,
     /* [guess] 蒙对标记的自动化测试入口 */
     guessList: qzGuessList, guessOn: qzGuessOn, setGuess: qzSetGuess, guessCount: qzGuessCount,
-    toggleGuess: qzToggleGuessCur, renderGuess: qzRenderGuess, keyAt: qzKeyAt
+    toggleGuess: qzToggleGuessCur, renderGuess: qzRenderGuess, keyAt: qzKeyAt,
+    /* [fill] 参考答案手打形态的自测入口 */
+    plain: qzPlain, fillMatch: qzFillMatch
   };
 
   /* ---------------- 启动 ---------------- */
