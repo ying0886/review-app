@@ -2,9 +2,21 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.28.0
+  APP_VERSION: 3.29.0
   DATA_VERSION: 2026-11-01
-  本次变更: 卡片上的掌握情况改为「状态徽标」，一眼看出这张卡当前是未掌握还是已掌握（APP_VERSION 3.28.0，数据未动）——
+  本次变更: 进度条与卡片掌握状态打通，并把手动勾选降权（APP_VERSION 3.29.0，数据未动）——
+             ①问题：进度条读的是「手动勾选」（snap.mastery），卡片徽标读的是「刷题判定」，两套口径，所以卡片变成「已掌握」时进度条不动；
+             ②口径统一：新增 isMastered / isCountedDone——「已掌握」以卡片徽标为准（刷题判定）；
+               「计入进度」= 刷题判定已掌握 **或** 手动勾选（任一），老的手动标记不会因为换成自动判定而凭空丢进度；
+               题库缺失、或该知识点在题库里没有题时，回落到手动勾选，没有题库的科目仍能记进度；
+             ③联动范围：顶部「已完成 x / N」、筛选栏旁文字、进度条宽度、分组标题「x / 16」与微进度条、卡片 done 底纹、
+               打印页眉页脚、「只看未掌握」筛选——全部同一口径；作答/改判/标记蒙对/退出刷题/重置/同步合并后都即时刷新
+               （qzRefreshKp、qzRefreshMarks 末尾调 qzSyncProgress → renderProgress + paintGroupProgress，只改 DOM 不重渲染）；
+             ④手动勾选降权：默认 50% 透明、字号 13→11px、方框 18→13px、选中态由墨绿实底加粗改为灰色勾线，
+               hover/键盘聚焦恢复不透明；窄屏再缩到 12px；刷题已判「已掌握」的卡片直接隐藏该勾选（徽标已说明，不必重复）；
+             ⑤功能不变：勾选照旧写入 snap.mastery、照旧参与筛选与进度，焦点环与 aria 标签保留；
+             ⑥自测 progress-sync-test 26 项（作答后进度 +1、蒙对后立即回退、取消后回补、手动勾选计入、分组计数同步、390px、手动可点）。
+  上次变更: 卡片上的掌握情况改为「状态徽标」，一眼看出这张卡当前是未掌握还是已掌握（APP_VERSION 3.28.0，数据未动）——
              ①原徽标显示「刷题 3/3 · 67%」，要自己换算；现在直接显示当前状态：
                「未开始」/「未掌握 · 正确率」/「薄弱 · 正确率」/「学习中 · 已刷进度」/「待复核 · 蒙对数」/「已掌握」；
              ②判定与设置页「掌握程度」面板同一份口径（qzMasteryOf），不新增存储、不升 schema；
@@ -284,7 +296,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.28.0">
+<meta name="app-version" content="3.29.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -577,25 +589,29 @@
   .bodytagrow .form{font-size:11.5px}
 
   /* 勾选 */
-  .mwrap{flex:0 0 auto;margin-left:auto;display:flex;align-items:center}
-  @keyframes tickPop{0%{transform:scale(1)}35%{transform:scale(1.18)}100%{transform:scale(1)}}
-  .mwrap.tick{animation:tickPop .28s ease}
+  /* 手动标记（个人书签）：视觉降权——缩小、变灰、默认半透明；
+     仍保留可点区域与焦点环，功能不变，只是不再和「掌握状态」徽标抢眼 */
+  .mwrap{flex:0 0 auto;margin-left:auto;display:flex;align-items:center;opacity:.5;transition:opacity .15s ease}
+  .mwrap:hover,.mwrap:focus-within{opacity:1}
+  .mwrap[hidden]{display:none}
+  @keyframes tickPop{0%{transform:scale(1)}35%{transform:scale(1.08)}100%{transform:scale(1)}}
+  .mwrap.tick{animation:tickPop .24s ease}
   .mwrap label{
-    display:flex;align-items:center;gap:7px;
-    min-height:44px;padding:0 2px;
-    font-size:13px;color:var(--ink2);cursor:pointer;user-select:none;
+    display:flex;align-items:center;gap:5px;
+    min-height:36px;padding:0 2px;
+    font-size:11px;color:var(--ink3);cursor:pointer;user-select:none;
   }
   .mwrap input{position:absolute;opacity:0;width:1px;height:1px}
   .mbox{
-    width:18px;height:18px;border:1.5px solid var(--line2);border-radius:3px;
+    width:13px;height:13px;border:1px solid var(--line2);border-radius:2px;
     display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
     background:transparent;
   }
-  .mbox::after{content:"";width:9px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px);opacity:0}
-  .mwrap input:checked+.mbox{background:var(--accent);border-color:var(--accent)}
+  .mbox::after{content:"";width:6px;height:3px;border-left:1.5px solid var(--ink2);border-bottom:1.5px solid var(--ink2);transform:rotate(-45deg) translateY(-1px);opacity:0}
+  .mwrap input:checked+.mbox{background:transparent;border-color:var(--ink2)}
   .mwrap input:checked+.mbox::after{opacity:1}
   .mwrap input:focus-visible+.mbox{outline:2px solid var(--accent);outline-offset:2px}
-  .mwrap input:checked~.mtext{color:var(--accent);font-weight:600}
+  .mwrap input:checked~.mtext{color:var(--ink2);font-weight:400}
 
   /* 已掌握样式（不隐藏，只降噪） */
   .card.done .nm{color:var(--ink2);font-weight:500}
@@ -904,6 +920,8 @@
     .nm{flex:1 1 100%}
     .tags{order:3;min-width:0}
     .mwrap{order:2}
+    .mwrap label{min-height:32px;font-size:10.5px;gap:4px}
+    .mbox{width:12px;height:12px}
     .scope{display:none}
     .subjects{max-width:calc(100% - 165px);flex:1 1 0;min-width:0}
     .tab{font-size:12.5px;padding:6px 6px}   /* v3.12.0：三科目（含「计算机与人工智能」长名）在 390px 下不再撑出横向滚动 */
@@ -952,8 +970,8 @@
     .tags{flex:0 1 auto;flex-wrap:nowrap;min-width:0;overflow:hidden;gap:4px}
     .badge{font-size:10.5px;padding:1px 4px}
     .form{font-size:10.5px;padding:1px 4px}
-    .mwrap label{min-height:36px;font-size:12px;gap:5px}
-    .mbox{width:16px;height:16px}
+    .mwrap label{min-height:30px;font-size:10.5px;gap:4px}
+    .mbox{width:12px;height:12px}
 
     /* 展开内容：单列流式布局（P4.1 废除两列网格，避免信号/内容左右错位） */
     .card .body>.field{min-width:0;width:100%}
@@ -14177,7 +14195,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.28.0";
+  var APP_VERSION = "3.29.0";
   var DATA_VERSION = "2026-11-01";
 
   var LEVEL_ORDER = ["A", "B", "C"];
@@ -14277,12 +14295,29 @@
     if (on) lsPut(mkeyOf(SID, kid), "1"); else lsDel(mkeyOf(SID, kid));
     syncMarkDirty();
   }
-  function countDone(sub) {
-    var m = snap().mastery[sub.id] || {}, c = 0, list = sub.knowledgePoints || [];
-    for (var i = 0; i < list.length; i++) {
-      var e = m[list[i].id];
-      if (e && e.on === 1) c++;
+  /* [mastery] 「已掌握」的唯一口径＝卡片徽标的状态（刷题判定）。
+     题库缺失、或该知识点在题库里没有题时，回落到手动勾选，保证没有题库的科目仍能记进度。 */
+  function isMasteredOf(sid, kid) {
+    if (QZ_READY) {
+      var mt = qzMasteryOf(sid, kid);
+      if (mt && mt.total) return mt.tier.key === "master";
     }
+    var e = entryOf(snap().mastery, sid, kid);
+    return !!(e && e.on === 1);
+  }
+  function isMastered(kid) { return isMasteredOf(SID, kid); }
+  /* 计入「已完成」的口径：刷题判定已掌握，或者你手动标了已掌握——两者任一都算，
+     这样老的手动勾选不会因为改成自动判定而凭空丢进度。 */
+  function isCountedDoneOf(sid, kid) {
+    if (isMasteredOf(sid, kid)) return true;
+    var e = entryOf(snap().mastery, sid, kid);
+    return !!(e && e.on === 1);
+  }
+  function isCountedDone(kid) { return isCountedDoneOf(SID, kid); }
+
+  function countDone(sub) {
+    var list = sub.knowledgePoints || [], c = 0;
+    for (var i = 0; i < list.length; i++) if (isCountedDoneOf(sub.id, list[i].id)) c++;
     return c;
   }
 
@@ -14703,7 +14738,7 @@
     var ip = byId("inlineProg");
     if (!ip) return;
     var list = pts();
-    var done = list.filter(function (k) { return isDone(k.id); }).length;
+    var done = list.filter(function (k) { return isCountedDone(k.id); }).length;
     ip.textContent = "已完成 " + done + " / " + list.length;
   }
 
@@ -14826,7 +14861,7 @@
     d.setAttribute("data-level", k.level);
     d.setAttribute("data-forms", (k.forms || []).join(","));
     d.setAttribute("data-source", k.source || "");
-    if (isDone(k.id)) d.classList.add("done");
+    if (isCountedDone(k.id)) d.classList.add("done");
 
     var sum = el("summary");
 
@@ -14871,6 +14906,7 @@
       if (!ovPanel.hidden) renderOverview();
     });
     mw.appendChild(lab);
+    if (isMastered(k.id)) mw.hidden = true;   // [mastery] 刷题已判「已掌握」时，手动勾选是多余的
     sum.appendChild(mw);
 
     d.appendChild(sum);
@@ -15093,8 +15129,8 @@
 
   /* ---------------- 渲染 ---------------- */
   function matches(k) {
-    if (filters.mastery === "未掌握" && isDone(k.id)) return false;
-    if (filters.mastery === "已掌握" && !isDone(k.id)) return false;
+    if (filters.mastery === "未掌握" && isCountedDone(k.id)) return false;
+    if (filters.mastery === "已掌握" && !isCountedDone(k.id)) return false;
     if (filters.level !== "全部" && k.level !== filters.level) return false;
     if (filters.form !== "全部" && (k.forms || []).indexOf(filters.form) === -1) return false;
     if (filters.source !== "全部" && k.source !== filters.source) return false;
@@ -15121,7 +15157,7 @@
       if (!inLevel.length) return;
 
       var total = pts().filter(function (k) { return k.level === lv; }).length;
-      var done = pts().filter(function (k) { return k.level === lv && isDone(k.id); }).length;
+      var done = pts().filter(function (k) { return k.level === lv && isCountedDone(k.id); }).length;
 
       var g = el("details", "grp");
       g.setAttribute("data-level", lv);
@@ -15154,9 +15190,29 @@
     noteAutosizeAll(box);   // [note]
   }
 
+  /* 分组标题的「A 级 x / 16」与微进度条：与顶部进度同一口径，卡片状态一变就跟着走 */
+  function paintGroupProgress() {
+    var box = byId("groups");
+    if (!box || !box.querySelectorAll) return;
+    var all = pts(), grps = box.querySelectorAll(".grp"), g, i, lv, total, done, cnt, bar;
+    for (g = 0; g < grps.length; g++) {
+      lv = grps[g].getAttribute("data-level");
+      total = 0; done = 0;
+      for (i = 0; i < all.length; i++) {
+        if (all[i].level !== lv) continue;
+        total++;
+        if (isCountedDone(all[i].id)) done++;
+      }
+      cnt = grps[g].querySelector(".gcount");
+      if (cnt) cnt.textContent = done + " / " + total;
+      bar = grps[g].querySelector(".gprog i");
+      if (bar) bar.style.width = total ? (done / total * 100).toFixed(1) + "%" : "0%";
+    }
+  }
+
   function renderProgress() {
     var list = pts();
-    var done = list.filter(function (k) { return isDone(k.id); }).length;
+    var done = list.filter(function (k) { return isCountedDone(k.id); }).length;
     var pt = byId("progText");
     pt.textContent = "已完成 " + done + " / " + list.length;
     pt.classList.remove("bump"); void pt.offsetWidth; pt.classList.add("bump");
@@ -15165,6 +15221,7 @@
 
     var ip = byId("inlineProg");
     if (ip) ip.textContent = "已完成 " + done + " / " + list.length;
+    paintGroupProgress();
 
     var pf = byId("printFooter");
     if (pf) {
@@ -15191,7 +15248,7 @@
     LEVEL_ORDER.forEach(function (lv) {
       var inLevel = list.filter(function (k) { return k.level === lv; });
       if (!inLevel.length) return;
-      var d = inLevel.filter(function (k) { return isDone(k.id); }).length;
+      var d = inLevel.filter(function (k) { return isCountedDone(k.id); }).length;
       total += inLevel.length;
       doneAll += d;
       var wrap = el("span");
@@ -19003,6 +19060,7 @@
     if (!card || !mt) return;
     var mw = card.querySelector(".mwrap");
     if (!mw) return;
+    mw.hidden = isMastered(kid);               // 已掌握 → 收起手动勾选，减少重复信息
     if (isDone(kid) && mt.tier.key !== "master") {
       mw.setAttribute("data-conflict", "1");
       mw.title = "你手动勾了「已掌握」，但刷题记录判定为「" + mt.tier.label +
@@ -19131,6 +19189,14 @@
     for (var i = 0; i < exs.length; i++) {
       qzPaintEx(exs[i], kid, parseInt(exs[i].getAttribute("data-exi"), 10));
     }
+    qzSyncProgress();
+  }
+
+  /* [mastery] 卡片状态变了就同步进度：顶部「已完成 x / N」、筛选栏、分组计数一起刷新。
+     刷题模式下卡片与进度都隐藏，等退出时 qzRefreshMarks 统一算一次。 */
+  function qzSyncProgress() {
+    if (QZ.on) return;
+    renderProgress();
   }
   /* 整科目重绘：退出刷题、重置进度、切科目后用 */
   function qzRefreshMarks() {
@@ -19146,6 +19212,7 @@
         qzPaintEx(exs[e], kid, parseInt(exs[e].getAttribute("data-exi"), 10));
       }
     }
+    qzSyncProgress();
   }
 
   /* 从卡片徽标直接开这一组的题：进刷题模式后只放该知识点的题，不改动既有筛选配置 */
