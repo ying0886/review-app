@@ -1,6 +1,6 @@
 {
-  "version": "3.33.0",
-  "url": "https://ying0886.github.io/review-app/review.html",
-  "notes": "改名「学习软件」；主界面新增「成长路径」（小白→入门→打底→上手→熟练→大佬，显示还差几个知识点与下一步）；更多菜单 →「资料」可导入 JSON / 写大纲建新科目、导出当前科目当模板；自建科目只存本机，不影响内置四科",
+  "version": "3.34.0",
+  "url": "https://ying0886.github.io/review-app/study.html",
+  "notes": "文件更名为 study.html（学习软件）；旧地址 review.html 自动跳转到新地址，书签与「立即更新」都不受影响",
   "date": "2026-11-02"
 }
