@@ -2,9 +2,23 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.31.0
+  APP_VERSION: 3.32.0
   DATA_VERSION: 2026-11-01
-  本次变更: （3.31.0）填空题「参考答案」改用手打形态显示，判分也认这些写法（数据未动）——
+  本次变更: （3.32.0）把「专家 vs 普通高手」的心理学机制接进刷题；六项全部按科目独立，新增数据都随快照同步（数据未动）——
+             ①元认知校准：刷题前选预估档（<60% / 60–80% / >80%，可不选），小结当场对比「预估 vs 实际」并判「落在区间内 / 高估 / 低估」；
+               满 5 题的组写入校准历史（每科各一份、随快照同步），设置页显示最近 5 次偏差与平均（＋为高估、−为低估）；
+             ②遗忘曲线顺序：「顺序」新增「按遗忘曲线（该复习的在前）」——错题 5 ＞ 不踏实 4 ＞ 久未碰（按天数升到 3.45）＞ 没做过 1.2 ＞ 刚做过 0.05；
+             ③不踏实题闭环：答完点「这题想了很久」（快捷键 H）标/取消，只手动标、不按耗时提醒；
+               新增顺序「只刷不踏实的题」、卡片统计加「慢 N 道」、小结给「重刷不踏实题」；
+               记录字段 hz/hu 与蒙对 gz/gu 完全同构（合并各取 max），两端一边标记一边取消也不会复活旧标记；
+             ④错题反思：小结每条错题加「写反思」，一句话写进这道例题的笔记（前缀 [反思]），重复写原地替换、不叠加；
+             ⑤期末估算：按题型分值加权给出估算分——化学用期末卷 10/30/20/40，其余科目按题量摊到 100 分并标明是估算；
+               同时指出「丢分主要在哪个题型」。口径只做期末（化学 2026 年只有期末一套卷）；
+             ⑥先回忆再看（可选）：更多菜单里按科目开关，卡片正文默认折叠、点开才显示；
+               纯显示行为，不写任何记录——回忆失败不计错、不进正确率、不影响掌握度；
+             ⑦自测 t-next-332 共 40 项（5 组校准历史与偏差、遗忘曲线顺序与紧迫度、hz/hu 标记与合并语义、反思写入与替换、
+               期末估算四类合计 100、回忆模式零记录、四科目隔离、旧快照缺 calib 仍判合法）；同步/卡片/超时三项回归全过。
+  上次变更: （3.31.0）填空题「参考答案」改用手打形态显示，判分也认这些写法（数据未动）——
              ①原来反馈条直接吐 LaTeX 源码（参考答案：\(\frac{3}{4t}\)），看着是代码、照着也打不出来；
                现在统一转成能直接敲的一行：\frac{3}{4t} → 3/4t、e^{-2} → e^-2、+\dfrac{8}{3} → +8/3、
                5.6\times10^{-10} → 5.6×10^-10；√、×、≤、≈ 一并换掉；
@@ -318,7 +332,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.31.0">
+<meta name="app-version" content="3.32.0">
 <title>知识点复习</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
@@ -1400,6 +1414,46 @@
   .qwl-act{display:flex;gap:8px;margin-top:7px}
   .qempty{padding:40px 0;text-align:center;color:var(--ink2);font-size:14px}
 
+  /* [calib] 元认知校准：开始前选预估档（胶囊），小结给出预估与实际 */
+  .qest{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 0}
+  .qestbtn{
+    padding:7px 14px;min-height:36px;border:1px solid var(--line2);border-radius:999px;
+    background:transparent;color:var(--ink);font:inherit;font-size:13px;cursor:pointer;
+  }
+  .qestbtn:hover{border-color:var(--accent);color:var(--accent)}
+  .qestbtn[aria-pressed="true"]{border-color:var(--accent);background:var(--accentBg);color:var(--accent);font-weight:600}
+  .qestbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* [pred] 期末分数估算：按题型分值加权，与掌握程度同源 */
+  .qpredbig{font-size:24px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.2}
+  .qpredrow{
+    display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:baseline;
+    padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink);
+  }
+  .qpredrow em{font-style:normal;font-size:11.5px;color:var(--ink2)}
+  .qpredrow b{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+  .qpredrow i{font-style:normal;color:var(--ink2);font-size:12px;font-variant-numeric:tabular-nums;text-align:right}
+
+  /* [reflect] 小结里的「写一句反思」 */
+  .qrfwrap{display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;margin:6px 0 0}
+  .qrfwrap[hidden]{display:none}
+  .qrfin{
+    flex:1 1 260px;min-height:38px;padding:7px 9px;background:var(--bg);color:var(--ink);
+    border:1px solid var(--line2);border-radius:6px;font:inherit;font-size:13px;line-height:1.6;resize:vertical;
+  }
+  .qrfin:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .qrfdone{color:var(--accent);font-size:12px;line-height:1.6}
+
+  /* [recall] 卡片「先回忆再看」：正文默认折叠，点开才显示；不计入任何统计 */
+  .field.rlocked p{display:none}
+  .rgate{
+    display:block;width:100%;margin:6px 0 0;padding:10px 12px;text-align:left;
+    background:var(--chip);color:var(--ink2);border:1px dashed var(--line2);border-radius:6px;
+    font:inherit;font-size:12.5px;line-height:1.6;cursor:pointer;
+  }
+  .rgate:hover{border-color:var(--accent);color:var(--accent)}
+  .rgate:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
   /* [weak] 薄弱知识点：按知识点聚合错次与错误率，点一行只练这一组 */
   .qweak{margin:22px 0 0;padding:14px 16px 12px;background:var(--card);border:1px solid var(--line);border-radius:8px}
   .qwhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
@@ -1647,6 +1701,7 @@
     <button class="btn morebtn" id="moreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="moreMenu" title="更多">⋯<span class="dot" id="moreDot"></span></button>
     <div class="moremenu" id="moreMenu" role="menu" hidden>
       <button class="btn" id="themeBtn" type="button" role="menuitem">深色</button>
+      <button class="btn" id="recallBtn" type="button" role="menuitem" aria-pressed="false">回忆模式</button>
       <button class="btn" id="printBtn" type="button" role="menuitem">打印</button>
       <button class="btn" id="syncBtn" type="button" role="menuitem" aria-haspopup="dialog" aria-expanded="false" aria-controls="syncDrawer"><span class="dot" id="syncDot"></span>同步</button>
     </div>
@@ -1705,8 +1760,10 @@
         <select class="qsel" id="qOrderSel">
           <option value="seq">原序（按知识点）</option>
           <option value="mastery">先练最不熟的（按掌握度）</option>
+          <option value="spaced">按遗忘曲线（该复习的在前）</option>
           <option value="rand">随机打乱</option>
           <option value="wrong">只刷错题</option>
+          <option value="hesitate">只刷不踏实的题</option>
           <option value="guess">只刷蒙对的题</option>
           <option value="new">只刷没做过的</option>
         </select>
@@ -1715,6 +1772,10 @@
         <button class="btn" id="qBegin" type="button">开始刷题</button>
         <button class="btn small" id="qReset" type="button">重置本科目进度</button>
       </div>
+      <!-- [calib] 元认知校准：开始前选预估档，小结对比预估与实际，历史按科目独立存快照 -->
+      <div class="qweak" id="qCalib"></div>
+      <!-- [pred] 期末分数估算：按题型分值加权，与掌握程度同源、按科目独立计算 -->
+      <div class="qweak" id="qPred"></div>
       <!-- [mastery] 掌握程度：由刷题记录推导，按等级分组、组内最差在前 -->
       <div class="qweak" id="qMastery"></div>
       <!-- [guess] 蒙对的题：手动标记、按标记时间倒序归集，可单练/跳卡片/撤销 -->
@@ -1722,7 +1783,8 @@
       <!-- [weak] 薄弱知识点：由刷题记录按知识点聚合，点一行直接练这一组 -->
       <div class="qweak" id="qWeak"></div>
       <p class="qnote">选择/判断点选项即判分，填空输入后回车核对；计算、简答、编程题作答后看解析自评。<br>
-        键盘：A–D 或 1–4 选答，空格跳过，回车下一步，G 标记蒙对，Esc 退出。</p>
+        键盘：A–D 或 1–4 选答，空格跳过，回车下一步，G 标记蒙对，H 标记「想了很久」，Esc 退出。<br>
+        「蒙对」「想了很久」都是手动标记：不计入正确率，只影响复习顺序与提示。</p>
     </div>
 
     <div class="qcard" id="qCard" hidden>
@@ -14217,7 +14279,7 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.31.0";
+  var APP_VERSION = "3.32.0";
   var DATA_VERSION = "2026-11-01";
 
   var LEVEL_ORDER = ["A", "B", "C"];
@@ -14531,6 +14593,29 @@
     syncMarkDirty();
   });
 
+  /* ---------------- [recall] 回忆模式开关（按科目独立、可随时关） ---------------- */
+  var recallBtn = byId("recallBtn");
+  function applyRecallBtn() {
+    if (!recallBtn) return;
+    var on = recallOn(SID);
+    recallBtn.textContent = on ? "回忆模式 · 开" : "回忆模式";
+    recallBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    recallBtn.title = on ? "当前科目已开：点一下关闭" : "先自己回忆，点开才看内容；不记录、不计入统计";
+  }
+  recallBtn.addEventListener("click", function () {
+    var s = snap(), on;
+    if (!s.prefs || typeof s.prefs !== "object") s.prefs = {};
+    if (!s.prefs.rcl || typeof s.prefs.rcl !== "object") s.prefs.rcl = {};
+    on = !recallOn(SID);
+    s.prefs.rcl[SID] = on ? 1 : 0;
+    commitSnap();
+    syncMarkDirty();
+    applyRecallBtn();
+    renderGroups();          // 只重画卡片：内容区按新开关折叠/展开
+    renderProgress();
+    qzToast(on ? "回忆模式已开：先自己想，再点开核对（不计入统计）" : "回忆模式已关");
+  });
+
   /* ---------------- 更多菜单（顶栏收拢：深色/打印/同步） ---------------- */
   var moreBtn = byId("moreBtn");
   var moreMenu = byId("moreMenu");
@@ -14550,7 +14635,7 @@
     if (e.key === "Escape" && !moreMenu.hidden) closeMore();
   });
   // 菜单项点击后先收起菜单，再执行原按钮行为（原监听会照常触发）
-  ["themeBtn", "printBtn", "syncBtn"].forEach(function (id) {
+  ["themeBtn", "printBtn", "syncBtn", "recallBtn"].forEach(function (id) {
     byId(id).addEventListener("click", closeMore);
   });
 
@@ -14877,6 +14962,28 @@
   }
 
   /* ---------------- 卡片 ---------------- */
+  /* [recall] 「先回忆再看」：正文默认折叠，点一下才展开。
+     纯显示行为、可随时关掉，按科目各自开关（prefs.rcl[sid]）。
+     刻意不写任何记录：回忆失败不记错、不进正确率、不影响掌握度与薄弱统计。 */
+  function recallOn(sid) {
+    var p = snap().prefs || {};
+    var m = p.rcl;
+    return !!(m && typeof m === "object" && m[sid] === 1);
+  }
+  function recallGate(f, label) {
+    f.classList.add("rlocked");
+    var b = el("button", "rgate");
+    b.type = "button";
+    b.textContent = "先回忆：" + label + "——说得出来再点开核对";
+    b.title = "回忆模式只影响显示：不记录对错，也不计入任何统计";
+    b.addEventListener("click", function () {
+      f.classList.remove("rlocked");
+      if (b.parentNode) b.parentNode.removeChild(b);
+    });
+    f.appendChild(b);
+    return f;
+  }
+
   function buildCard(k) {
     var d = el("details", "card");
     d.id = "k-" + k.id;
@@ -14948,9 +15055,10 @@
     }
     if (sigRow.childNodes.length) body.appendChild(sigRow);
 
-    if (k.content) body.appendChild(field("内容", k.content));
-    if (k.trap) body.appendChild(field("易错点", k.trap, "warn"));
-    if (k.action) body.appendChild(field("最低拿分动作", k.action, "action"));
+    var rcl = recallOn(SID);
+    if (k.content) body.appendChild(rcl ? recallGate(field("内容", k.content), "内容") : field("内容", k.content));
+    if (k.trap) body.appendChild(rcl ? recallGate(field("易错点", k.trap, "warn"), "易错点") : field("易错点", k.trap, "warn"));
+    if (k.action) body.appendChild(rcl ? recallGate(field("最低拿分动作", k.action, "action"), "动作") : field("最低拿分动作", k.action, "action"));
     if (k.methods && k.methods.length) body.appendChild(buildMethods(k));
     if (k.links && k.links.length) {
       var f = field("关联", "");
@@ -15307,6 +15415,7 @@
     renderStats();
     renderOverview();
     renderFavBadge();
+    applyRecallBtn();   // [recall] 切科目后按钮状态跟着变（按科目独立）
     if (!favDrawer.hidden) renderFavDrawer();
     if (navDrawer && !navDrawer.hidden) renderNav();
   }
@@ -15599,7 +15708,7 @@
   function cloneSnap(o) { return JSON.parse(JSON.stringify(o)); }
 
   function emptySnap() {
-    return { schema: 2, deviceId: deviceInfo().id, updatedAt: nowMs(), mastery: {}, favs: {}, prefs: {}, notes: {}, quiz: {}, quizReset: {} };
+    return { schema: 2, deviceId: deviceInfo().id, updatedAt: nowMs(), mastery: {}, favs: {}, prefs: {}, notes: {}, quiz: {}, quizReset: {}, calib: {} };
   }
 
   /* [sync] 快照可选字段 quiz（刷题记录）：缺省补 {}，不升 schema——
@@ -15607,6 +15716,13 @@
   function snapFillQuiz(o) {
     if (!o || typeof o !== "object") return o;
     if (!o.quiz || typeof o.quiz !== "object" || Object.prototype.toString.call(o.quiz) === "[object Array]") o.quiz = {};
+    return o;
+  }
+  /* [calib] 可选字段 calib（元认知校准历史，按科目分组）：同样缺省补 {}、不升 schema。
+     结构 {sid: [{e, a, n, t}]} —— e 预估档下标（0 <60、1 60–80、2 >80），a 实际正确率，n 本组作答数，t 记录时刻。 */
+  function snapFillCalib(o) {
+    if (!o || typeof o !== "object") return o;
+    if (!o.calib || typeof o.calib !== "object" || Object.prototype.toString.call(o.calib) === "[object Array]") o.calib = {};
     return o;
   }
   function entryOf(map, sid, kid) { var m = map && map[sid]; return m && m[kid] ? m[kid] : null; }
@@ -15640,9 +15756,11 @@
     if (validSnap(o)) {
       // 补齐可选字段后就落盘一次：导出的 JSON 结构完整，也避免每次启动重复补
       var needFill = !(o.notes && typeof o.notes === "object") ||
-        !(o.quiz && typeof o.quiz === "object") || !o.deviceId;
+        !(o.quiz && typeof o.quiz === "object") || !o.deviceId ||
+        !(o.calib && typeof o.calib === "object");
       o = snapFillNotes(o);   // [note] 旧档没有 notes 就补 {}，不报错
       o = snapFillQuiz(o);    // [sync] 旧档没有 quiz 就补 {}，旧数据结构不变
+      o = snapFillCalib(o);   // [calib] 旧档没有 calib 就补 {}
       if (!o.deviceId) o.deviceId = deviceInfo().id;
       if (needFill) lsSet(LS_SNAP, o);
       return o;
@@ -15732,9 +15850,14 @@
        两个时刻一起比，所以「一边标记、一边取消」时以更晚的那次为准，旧标记不会复活。 */
     var gz = Math.max(a ? qzNum(a.gz) : 0, b ? qzNum(b.gz) : 0);
     var gu = Math.max(a ? qzNum(a.gu) : 0, b ? qzNum(b.gu) : 0);
+    /* [hesitate] 迟疑标记 hz/hu 与 gz/gu 完全同构：各取 max，合并逻辑不新增任何规则 */
+    var hz = Math.max(a ? qzNum(a.hz) : 0, b ? qzNum(b.hz) : 0);
+    var hu = Math.max(a ? qzNum(a.hu) : 0, b ? qzNum(b.hu) : 0);
     var e = { r: r, n: n, w: w, t: t, wa: we.wa, wt: we.wt, wm: we.wm };
     if (gz) e.gz = gz;
     if (gu) e.gu = gu;
+    if (hz) e.hz = hz;
+    if (hu) e.hu = hu;
     return e;
   }
 
@@ -15776,6 +15899,9 @@
         /* [guess] 标记变化也要能被回读校验发现，否则同步完不会标脏 */
         if (qzNum(ea.gz) !== qzNum(eb.gz)) return false;
         if (qzNum(ea.gu) !== qzNum(eb.gu)) return false;
+        /* [hesitate] 迟疑标记同理 */
+        if (qzNum(ea.hz) !== qzNum(eb.hz)) return false;
+        if (qzNum(ea.hu) !== qzNum(eb.hu)) return false;
       }
     }
     return true;
@@ -15817,10 +15943,70 @@
     return out;
   }
 
+  /* [calib] 校准历史：{sid: [{e, a, n, t}]}，按科目各自一份。
+     合并＝按 t 取并集（同一毫秒视为同一条），每科只留最近 CAL_MAX 条。
+     并集天然幂等/交换/结合，不需要墓碑：校准记录只增不减，没有「取消」这种状态。 */
+  var CAL_MAX = 20;
+  function calibCmp(a, b) {
+    var x = normT(a && a.t), y = normT(b && b.t);
+    if (x !== y) return x - y;
+    return Number(a && a.e) - Number(b && b.e);
+  }
+  function calibNorm(e) {
+    return {
+      e: Math.max(0, Math.min(2, Math.floor(Number(e.e) || 0))),
+      a: Math.max(0, Math.min(100, Math.round(Number(e.a) || 0))),
+      n: qzNum(e.n),
+      t: normT(e.t)
+    };
+  }
+  function mergeCalibList(L, R) {
+    var out = [], seen = {}, i, e, k, n;
+    L = L || []; R = R || [];
+    n = L.length + R.length;
+    for (i = 0; i < n; i++) {
+      e = i < L.length ? L[i] : R[i - L.length];
+      if (!e || typeof e !== "object") continue;
+      k = "$" + normT(e.t);
+      if (has0(seen, k)) continue;          // 同一时刻只留一条，两端不会各存一份
+      seen[k] = 1;
+      out.push(calibNorm(e));
+    }
+    out.sort(calibCmp);
+    if (out.length > CAL_MAX) out = out.slice(out.length - CAL_MAX);
+    return out;
+  }
+  function mergeCalibMap(L, R) {
+    var out = {}, sids = {}, sid, arr;
+    L = L || {}; R = R || {};
+    for (sid in L) if (has0(L, sid)) sids[sid] = 1;
+    for (sid in R) if (has0(R, sid)) sids[sid] = 1;
+    for (sid in sids) if (has0(sids, sid)) {
+      arr = mergeCalibList(L[sid], R[sid]);
+      if (arr.length) out[sid] = arr;
+    }
+    return out;
+  }
+  function sameCalib(A, B) {
+    A = A || {}; B = B || {};
+    var sid, i, x, y;
+    for (sid in A) if (has0(A, sid)) {
+      x = A[sid] || []; y = (B && B[sid]) || [];
+      if (x.length !== y.length) return false;
+      for (i = 0; i < x.length; i++) {
+        if (normT(x[i].t) !== normT(y[i].t)) return false;
+        if (Number(x[i].e) !== Number(y[i].e)) return false;
+        if (Number(x[i].a) !== Number(y[i].a)) return false;
+      }
+    }
+    for (sid in B) if (has0(B, sid)) if (!has0(A, sid)) return false;
+    return true;
+  }
+
   function mergeSnapshot(local, remote) {
     if (!local && !remote) return null;
-    if (!local) return snapFillQuiz(snapFillNotes(cloneSnap(remote)));
-    if (!remote) return snapFillQuiz(snapFillNotes(cloneSnap(local)));
+    if (!local) return snapFillCalib(snapFillQuiz(snapFillNotes(cloneSnap(remote))));
+    if (!remote) return snapFillCalib(snapFillQuiz(snapFillNotes(cloneSnap(local))));
     var lt = normT(local.updatedAt), rt = normT(remote.updatedAt);
     var newer = lt >= rt ? local : remote;
     var qr = mergeResetMap(local.quizReset, remote.quizReset);   // [sync] 先合并重置时刻，再据此过滤
@@ -15833,6 +16019,7 @@
       notes: mergeTextMap(local.notes, remote.notes),   // [note] 逐条按 t 取大；空文本墓碑参与比较
       quiz: mergeQuizMap(dropReset(local.quiz, qr), dropReset(remote.quiz, qr)),   // [sync] 逐题合并
       quizReset: qr,
+      calib: mergeCalibMap(local.calib, remote.calib),   // [calib] 校准历史按科目取并集
       prefs: {}
     };
     var p = newer.prefs || {};
@@ -15865,6 +16052,7 @@
     if (JSON.stringify(a.prefs || {}) !== JSON.stringify(b.prefs || {})) return false;
     if (!sameResetMap(a.quizReset, b.quizReset)) return false;   // [sync]
     if (!sameQuiz(a.quiz, b.quiz)) return false;   // [sync] 刷题记录也参与一致性判定
+    if (!sameCalib(a.calib, b.calib)) return false;   // [calib] 校准历史变化也要能触发回推
     return sameNotes(a.notes, b.notes);   // [note]
   }
 
@@ -18410,6 +18598,7 @@
   var QZ = {
     on: false, sid: null, pool: [], list: [], pos: 0,
     state: "setup", done: {}, rec: null, startTs: 0,
+    est: -1,     // [calib] 本次预估档（-1 未选）：只在本轮有效，不落盘
     cfg: { sec: "全部", type: "全部", order: "seq" }
   };
   /* [sync] 旧的 review.quiz.v1 不再直接读写：内容由 migrateQuizToSnap() 并入快照，之后统一走 snap.quiz。 */
@@ -18468,6 +18657,9 @@
     /* [guess] 蒙对标记也必须带过来：每作答一次都会重建 rec，漏了这两行标记就没了 */
     if (old && qzNum(old.gz)) rec.gz = qzNum(old.gz);
     if (old && qzNum(old.gu)) rec.gu = qzNum(old.gu);
+    /* [hesitate] 迟疑标记同理，重建 rec 时一并带过来 */
+    if (old && qzNum(old.hz)) rec.hz = qzNum(old.hz);
+    if (old && qzNum(old.hu)) rec.hu = qzNum(old.hu);
     if (!right && wrong) {                        // 本次答错：覆盖为最新一次错答
       rec.wa = String(wrong.wa == null ? "" : wrong.wa).slice(0, QZ_WA_MAX);
       rec.wt = t;
@@ -18554,6 +18746,203 @@
     }
     out.sort(function (a, b) { return b.ts - a.ts; });
     return out;
+  }
+
+  /* ---------- [hesitate] 手动标记「想了很久」 ---------- */
+  /* 与「蒙对」同构：不自动识别、不按耗时提醒，只有用户自己点按钮（或按 H）才标。
+     状态仍是逐题记录里的两个时刻：标记写 hz、取消写 hu，hz > hu 即为已标记；
+     合并时 hz/hu 各取 max，于是取消不会被另一端的旧标记复活。 */
+  function qzHesOn(rec) {
+    if (!rec) return false;
+    return qzNum(rec.hz) > qzNum(rec.hu);
+  }
+  function qzSetHes(sid, key, on) {
+    var m = qzData()[sid];
+    var rec = m && m[key];
+    if (!rec) return false;                 // 还没作答的题谈不上「想了很久」
+    var t = nowMs();
+    var lastT = Math.max(qzNum(rec.hz), qzNum(rec.hu));
+    if (t <= lastT) t = lastT + 1;
+    if (on) {
+      if (!qzHesOn(rec)) rec.hz = t;
+    } else {
+      if (!qzHesOn(rec)) return true;
+      rec.hu = t;
+    }
+    commitSnap(t);
+    syncMarkDirty();
+    return true;
+  }
+  function qzToggleHesByKey(sid, key) {
+    return qzSetHes(sid, key, !qzHesOn(qzRecOf(sid, key)));
+  }
+  function qzHesCountKp(sid, kid) {
+    var m = qzIdx()[sid];
+    m = m && m[kid];
+    if (!m) return 0;
+    var n = 0;
+    for (var i in m) if (has0(m, i)) if (qzHesOn(qzRecOf(sid, m[i]))) n++;
+    return n;
+  }
+  function qzHesCount(sid) {
+    var idx = qzIdx()[sid], n = 0;
+    if (!idx) return 0;
+    for (var kid in idx) if (has0(idx, kid)) n += qzHesCountKp(sid, kid);
+    return n;
+  }
+
+  /* ---------- [calib] 元认知校准：预估 vs 实际 ---------- */
+  /* 数据存快照的 calib[sid]（按科目独立、跨设备同步），不另建本地存储：
+     一条 = {e 预估档下标, a 本组实际正确率, n 本组作答数, t 记录时刻}。
+     预估档：0 <60%、1 60–80%、2 >80%；算偏差时用档位中点 50/70/90 作预估点，
+     偏差 dev = 预估中点 − 实际（正数＝高估），与「+12 / +8 / −3」的说法一致。 */
+  var QZ_EST = [
+    { e: 0, label: "<60%", mid: 50 },
+    { e: 1, label: "60–80%", mid: 70 },
+    { e: 2, label: ">80%", mid: 90 }
+  ];
+  function qzEstOf(e) {
+    for (var i = 0; i < QZ_EST.length; i++) if (QZ_EST[i].e === e) return QZ_EST[i];
+    return QZ_EST[1];
+  }
+  function qzCalibOf(sid) {
+    var s = snap();
+    if (!s.calib) s.calib = {};
+    var a = s.calib[sid];
+    return (a && typeof a === "object" && a.length !== undefined) ? a : [];
+  }
+  function qzCalibAdd(sid, e, act, ans) {
+    var s = snap();
+    if (!s.calib) s.calib = {};
+    var arr = qzCalibOf(sid).slice(0);
+    var t = nowMs();
+    var last = arr.length ? normT(arr[arr.length - 1].t) : 0;
+    if (t <= last) t = last + 1;
+    arr.push({ e: e, a: Math.max(0, Math.min(100, Math.round(act))), n: qzNum(ans), t: t });
+    if (arr.length > CAL_MAX) arr = arr.slice(arr.length - CAL_MAX);
+    s.calib[sid] = arr;
+    commitSnap(t);
+    syncMarkDirty();
+    return arr;
+  }
+  /* 单条判定：落在区间内＝准确；否则按偏差方向给「高估 / 低估」 */
+  function qzCalibVerdict(e, act) {
+    if (e === 0) return act < 60 ? "落在区间内" : "低估";
+    if (e === 2) return act > 80 ? "落在区间内" : "高估";
+    return (act >= 60 && act <= 80) ? "落在区间内" : (act > 80 ? "低估" : "高估");
+  }
+  function qzCalibDev(ent) {
+    return qzEstOf(Number(ent.e)).mid - Number(ent.a);
+  }
+  /* 最近 n 条的平均偏差与措辞：|avg| ≤ 5 基本准确，≤ 10 轻度，再大为明显 */
+  function qzCalibAvg(list, n) {
+    if (!list || !list.length) return null;
+    var from = Math.max(0, list.length - n), sum = 0, cnt = 0, i;
+    for (i = from; i < list.length; i++) { sum += qzCalibDev(list[i]); cnt++; }
+    if (!cnt) return null;
+    var avg = Math.round(sum / cnt * 10) / 10;
+    var ab = Math.abs(avg);
+    var tone = ab <= 5 ? "基本准确" : ((ab <= 10 ? "轻度" : "明显") + (avg > 0 ? "高估" : "低估"));
+    return { avg: avg, cnt: cnt, tone: tone };
+  }
+  function qzCalibDevText(v) {
+    var x = Math.round(v * 10) / 10;
+    return (x > 0 ? "+" : (x < 0 ? "−" : "±")) + Math.abs(x);
+  }
+
+  /* ---------- [pred] 期末分数估算 ---------- */
+  /* 只做「期末」一种口径（化学 2026 年也只有期末一套卷）：
+     有 examFormat 的科目按官方题型分值加权；没有的科目按题量占比加权，并明确标注是估算。
+     每个题型只用该题型自己的正确率，样本不足时回落到全科目正确率，且不把没做过的题算成会做。 */
+  var PRED_MIN = 5;          // 全科目至少作答 5 题才出分，样本太少没有参考价值
+  function qzTypeStat(sid, type) {
+    var pool = qzPoolOf(sid), n = 0, right = 0, i, r;
+    for (i = 0; i < pool.length; i++) {
+      if (type && pool[i].ex.type !== type) continue;
+      n++;
+      r = qzRecOf(sid, pool[i].key);
+      if (r && r.r === 1) right++;
+    }
+    return { total: n, right: right, rate: n ? right / n : 0 };
+  }
+  function qzPredictScore(sid) {
+    var sub = qzSubject(sid);
+    if (!sub) return null;
+    var all = qzTypeStat(sid, ""), answered = 0, ai, r, pool = qzPoolOf(sid);
+    for (ai = 0; ai < pool.length; ai++) {
+      r = qzRecOf(sid, pool[ai].key);
+      if (r) answered++;
+    }
+    if (answered < PRED_MIN) {
+      return { enough: false, answered: answered, need: PRED_MIN };
+    }
+    /* 全局正确率：按「已做过的题里答对的比例」，没做过的题不计入分子也不计入分母，
+       避免「只做了 5 题全对就估 100 分」这种自欺。 */
+    var doneN = 0, doneRight = 0, i;
+    for (i = 0; i < pool.length; i++) {
+      r = qzRecOf(sid, pool[i].key);
+      if (!r) continue;
+      doneN++;
+      if (r.r === 1) doneRight++;
+    }
+    var base = doneN ? doneRight / doneN : 0;
+    var fmt = examFormatOf(sub), items = [], total = 0, est = 0, j, st, w, acc, t;
+    if (fmt) {
+      total = fmt.total || 0;
+      for (j = 0; j < fmt.items.length; j++) {
+        t = fmt.items[j];
+        st = qzTypeStat(sid, t.type);
+        w = t.score || 0;
+        if (!w) continue;
+        acc = st.total ? Math.min(1, st.right / st.total) : base;   // 该题型一道题都没有 → 用全局正确率
+        items.push({ type: t.type, label: t.label || t.type, score: w, total: st.total, right: st.right,
+                     rate: Math.round(acc * 100), est: w * acc, guess: !st.total });
+        est += w * acc;
+      }
+    } else {
+      /* 无官方分值：按题型题量占比摊到 100 分，仅作横向参考。
+         整数化用「最大余数法」，保证各题型题量分合计正好 100（不会出现 101 分）。 */
+      var by = {}, order = [];
+      for (i = 0; i < pool.length; i++) {
+        t = pool[i].ex.type;
+        if (!by[t]) { by[t] = { n: 0, done: 0, right: 0 }; order.push(t); }
+        by[t].n++;
+        r = qzRecOf(sid, pool[i].key);
+        if (r) { by[t].done++; if (r.r === 1) by[t].right++; }
+      }
+      total = 100;
+      var raw = [], used = 0, k2;
+      for (j = 0; j < order.length; j++) {
+        raw.push(all.total ? (by[order[j]].n / all.total * 100) : 0);
+        used += Math.floor(raw[j]);
+      }
+      var order2 = [], bonus = {}, rest = 100 - used;
+      for (j = 0; j < raw.length; j++) order2.push(j);
+      order2.sort(function (x, y) {
+        var fx = raw[x] - Math.floor(raw[x]), fy = raw[y] - Math.floor(raw[y]);
+        if (fy !== fx) return fy - fx;
+        return x - y;
+      });
+      for (j = 0; j < rest && j < order2.length; j++) bonus[order2[j]] = 1;
+      for (j = 0; j < order.length; j++) {
+        t = order[j]; var d = by[t];
+        w = Math.floor(raw[j]) + (bonus[j] ? 1 : 0);
+        if (!w) continue;
+        acc = d.done ? Math.min(1, d.right / d.done) : base;
+        items.push({ type: t, label: t, score: w, total: d.n, right: d.right,
+                     rate: Math.round(acc * 100), est: w * acc, guess: !d.done });
+        est += w * acc;
+      }
+    }
+    est = Math.round(Math.max(0, Math.min(total, est)));
+    /* 丢分最多的题型：用来回答「差距主要在哪」 */
+    var worst = null;
+    for (j = 0; j < items.length; j++) {
+      var lost = items[j].score - items[j].est;
+      if (!worst || lost > worst.lost) worst = { label: items[j].label, lost: lost, rate: items[j].rate };
+    }
+    return { enough: true, sid: sid, name: sub.name, total: total, est: est, rate: Math.round(est / (total || 100) * 100),
+             items: items, worst: worst, official: !!fmt, answered: answered, base: Math.round(base * 100) };
   }
 
   /* 旧版刷题记录（review.quiz.v1）一次性并入快照：逐条判断，快照里已有的以快照为准，
@@ -18669,7 +19058,9 @@
   function qzExCountText(sid, kid, total) {
     var wn = qzWrongCount(sid, kid);
     var gn = qzGuessCountKp(sid, kid);
-    return "共 " + total + " 道" + (wn ? " · 错过 " + wn + " 道" : "") + (gn ? " · 蒙对 " + gn + " 道" : "");
+    var hn = qzHesCountKp(sid, kid);      // [hesitate] 手动标了「想了很久」的题
+    return "共 " + total + " 道" + (wn ? " · 错过 " + wn + " 道" : "") +
+      (gn ? " · 蒙对 " + gn + " 道" : "") + (hn ? " · 慢 " + hn + " 道" : "");
   }
 
   /* ---------- 掌握程度（由刷题记录推导，不新增存储、不升 schema） ---------- */
@@ -19077,6 +19468,104 @@
     return li;
   }
 
+  /* ---------- [calib] 元认知校准面板（设置页顶部） ---------- */
+  /* 预估是可选项：不选也能直接开始，只是不记这次校准。历史按科目各一份，随快照同步。 */
+  function qzRenderCalib() {
+    var box = byId("qCalib");
+    if (!box) return;
+    if (!QZ_READY) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = "";
+    var list = qzCalibOf(QZ.sid);
+    var av = qzCalibAvg(list, 5);
+
+    var head = el("div", "qwhead");
+    head.appendChild(txt("h3", "", "元认知校准"));
+    head.appendChild(txt("span", "qwsum", (list.length && av)
+      ? "近 " + av.cnt + " 次平均偏差 " + qzCalibDevText(av.avg) + "（" + av.tone + "）"
+      : "还没有记录"));
+    box.appendChild(head);
+
+    box.appendChild(txt("p", "qwhint",
+      "开始前先估一下这组能对多少，刷完把「你以为的」和「实际的」摆在一起。只做参考，不改变任何判分与掌握度。"));
+
+    var row = el("div", "qest");
+    for (var i = 0; i < QZ_EST.length; i++) {
+      (function (o) {
+        var b = el("button", "qestbtn");
+        b.type = "button";
+        b.setAttribute("data-est", String(o.e));
+        b.setAttribute("aria-pressed", QZ.est === o.e ? "true" : "false");
+        b.textContent = o.label;
+        b.title = "这一组我预计能答对 " + o.label;
+        b.addEventListener("click", function () {
+          QZ.est = (QZ.est === o.e) ? -1 : o.e;   // 再点一次取消
+          qzRenderCalib();
+        });
+        row.appendChild(b);
+      })(QZ_EST[i]);
+    }
+    box.appendChild(row);
+
+    if (list.length) {
+      var parts = [], from = Math.max(0, list.length - 5);
+      for (i = from; i < list.length; i++) parts.push(qzCalibDevText(qzCalibDev(list[i])));
+      box.appendChild(txt("p", "qkpsum",
+        "最近 " + parts.length + " 次校准：" + parts.join(" / ") + "（＋ 为高估、− 为低估，合计 " + list.length + " 次）"));
+    }
+  }
+
+  /* ---------- [pred] 期末估算面板 ---------- */
+  /* 口径只做期末：化学 2026 年只有期末一套卷，其余科目没有官方分值，按题量占比摊到 100 分并标明是估算。 */
+  function qzRenderPred() {
+    var box = byId("qPred");
+    if (!box) return;
+    if (!QZ_READY) { box.hidden = true; return; }
+    var p = qzPredictScore(QZ.sid);
+    if (!p) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = "";
+
+    var head = el("div", "qwhead");
+    head.appendChild(txt("h3", "", "期末估算"));
+    head.appendChild(txt("span", "qwsum", p.enough
+      ? "约 " + p.est + " / " + p.total + " 分 · 已做 " + p.answered + " 题"
+      : "已做 " + p.answered + " / " + p.need + " 题"));
+    box.appendChild(head);
+
+    if (!p.enough) {
+      box.appendChild(txt("p", "qwhint", "作答满 " + p.need + " 道后再给估算——样本太少，估出来只会误导自己。"));
+      return;
+    }
+
+    box.appendChild(txt("div", "qpredbig", p.est + " 分"));
+    var tb = el("div", "qpredtb");
+    for (var i = 0; i < p.items.length; i++) {
+      var it = p.items[i];
+      var row = el("div", "qpredrow");
+      var lab = txt("span", "", it.label);
+      lab.appendChild(txt("em", "", it.guess ? "（本题型还没做过，按整体正确率 " + p.base + "% 计）"
+        : "（" + it.right + "/" + it.total + " 题，正确率 " + it.rate + "%）"));
+      row.appendChild(lab);
+      row.appendChild(txt("b", "", Math.round(it.est) + " 分"));
+      row.appendChild(txt("i", "", "/ " + it.score));
+      tb.appendChild(row);
+    }
+    box.appendChild(tb);
+
+    var hint = p.official
+      ? "题型与分值取自科目数据（如化学＝期末：判断 10 ＋ 选择 30 ＋ 简答 20 ＋ 计算 40）。"
+      : "该科目没有官方题型分值，这里按题量占比摊到 100 分，只作横向参考。";
+    if (p.worst && p.worst.lost >= 5) {
+      hint += " 目前丢分主要在「" + p.worst.label + "」，正确率 " + p.worst.rate + "%。";
+    }
+    box.appendChild(txt("p", "qwhint", hint));
+    box.appendChild(txt("p", "qkpsum",
+      "按「该题型已答对数 ÷ 该题型题量 × 分值」推算：没做过的题按拿不到分算，所以刷得越全这个数才越接近真实水平。"));
+    box.appendChild(txt("p", "qkpsum",
+      "已做 " + p.answered + " 题，正确率 " + p.base + "%（只作横向参考，不与上面的分数相加）。"));
+  }
+
   function qzRenderMastery() {
     var box = byId("qMastery");
     if (!box) return;
@@ -19482,13 +19971,17 @@
     }
     var rate = done ? Math.round(right / done * 100) : 0;
     var gcount = qzGuessCount(QZ.sid);   // [guess] 手动标记的蒙对数，单独列、不改正确率
+    var hcount = qzHesCount(QZ.sid);     // [hesitate] 手动标记的「想了很久」题数
     var mlist = qzMasteryList(QZ.sid), mcnt = 0;   // [mastery] 已掌握考点数（全部答对且无蒙对）
     for (i = 0; i < mlist.length; i++) if (mlist[i].tier.key === "master") mcnt++;
     byId("qStat").textContent = (sub ? sub.name : "") + " · 共 " + pool.length + " 题 · 已做 " +
       done + (done ? "（正确率 " + rate + "%，错 " + wrong + "）" : "") +
       (gcount ? " · 蒙对 " + gcount + " 道" : "") +
+      (hcount ? " · 不踏实 " + hcount + " 道" : "") +
       (mlist.length ? " · 已掌握 " + mcnt + "/" + mlist.length + " 个考点" : "");
 
+    qzRenderCalib();  // [calib] 预估档与校准历史：按科目独立
+    qzRenderPred();   // [pred] 期末分数估算：按科目独立
     qzRenderMastery(); // [mastery] 掌握程度分组：每次进设置页都按最新记录重算
     qzRenderGuess();  // [guess] 蒙对清单：每次进设置页都按最新标记重算
     qzRenderWeak();   // [weak] 每次进设置页都按最新记录重算
@@ -19501,6 +19994,21 @@
     return o;
   }
 
+  /* [spaced] 遗忘曲线排序的紧迫度（越大越该先练）：
+       错题 5 ＞ 不踏实（手动标了「想了很久」）4 ＞ 久未碰 3.5 ＞ 没做过 1.2 ＞ 刚做过 0.05。
+     「久未碰」按天数线性增长、封顶 3.45 —— 上限压在「不踏实」之下，
+     于是排序永远优先处理「不会的」，而不是「很久没看的」。 */
+  var SPACED_CAP = 3.45, SPACED_DAY = 0.17;
+  function qzUrgency(q) {
+    var r = qzRecOf(QZ.sid, q.key);
+    if (!r) return 1.2;
+    if (r.r === 0) return 5;
+    if (qzHesOn(r)) return 4;
+    var days = (nowMs() - normT(r.t)) / 86400000;
+    if (!(days > 0)) days = 0;
+    return 0.05 + Math.min(SPACED_CAP, days * SPACED_DAY);
+  }
+
   function qzBuildList() {
     var pool = QZ.pool, out = [], i, r;
     for (i = 0; i < pool.length; i++) {
@@ -19511,7 +20019,18 @@
       if (QZ.cfg.order === "wrong" && !(r && r.r === 0)) continue;
       if (QZ.cfg.order === "new" && r) continue;
       if (QZ.cfg.order === "guess" && !qzGuessOn(r)) continue;   // [guess] 只刷手动标记的蒙对题
+      if (QZ.cfg.order === "hesitate" && !qzHesOn(r)) continue;  // [hesitate] 只刷手动标了「想了很久」的题
       out.push(q);
+    }
+    if (QZ.cfg.order === "spaced") {
+      /* [spaced] 按紧迫度从大到小；同分用记录键定序，保证每次跑出来的顺序一致（可测试） */
+      var urg = {};
+      for (i = 0; i < out.length; i++) urg[out[i].key] = qzUrgency(out[i]);
+      out.sort(function (a, b) {
+        var d = urg[b.key] - urg[a.key];
+        if (d) return d;
+        return String(a.key) < String(b.key) ? -1 : (String(a.key) > String(b.key) ? 1 : 0);
+      });
     }
     /* [mastery] 先练最不熟的：直接沿用掌握程度面板的顺序（先分组等级、组内掌握度低的在前），
        未开始的考点排在「待巩固」之后、「已掌握」之前，不会把没做过的提到最前面 */
@@ -19556,6 +20075,7 @@
     QZ.done = {};
     QZ.rec = { total: list.length, answered: 0, right: 0, wrong: [], byType: {} };
     QZ.startTs = nowMs();
+    QZ.calibDone = false;   // [calib] 每一组只写一条校准记录
     QZ.title = title || "";
     qzShow("run");
     qzRenderQ();
@@ -19853,6 +20373,7 @@
     if (extra) fb.appendChild(document.createTextNode("　" + extra));
     fb.appendChild(document.createTextNode(right ? "　已计入进度" : "　已记入错题"));
     qzGuessBar(right);
+    qzHesBar();
   }
 
   /* [guess] 刚答完的那一刻最清楚自己是猜的，所以按钮就放在反馈条上。
@@ -19883,6 +20404,54 @@
     qzRefreshKp(q.kp.id);
     qzGuessBar(true);
     qzToast(qzGuessOn(qzRecOf(QZ.sid, q.key)) ? "已标记为「蒙对」" : "已取消蒙对标记");
+  }
+
+  /* [hesitate] 「想了很久」按钮：只在用户自己点的时候标，不按耗时自动提醒、不自动标记。
+     答对答错都能标——「想了很久还答错」正是最该回头看的题。 */
+  function qzHesBar() {
+    var fb = byId("qFb"), q = QZ.list[QZ.pos];
+    if (!fb || !q) return;
+    var olds = fb.querySelectorAll(".qhzbtn");
+    for (var i = 0; i < olds.length; i++) fb.removeChild(olds[i]);
+    if (!QZ.done[QZ.pos]) return;                 // 没作答就没什么可标的
+    var on = qzHesOn(qzRecOf(QZ.sid, q.key));
+    var b = el("button", "qgzbtn qhzbtn" + (on ? " on" : ""));
+    b.type = "button";
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    b.textContent = on ? "已标「想了很久」· 点一下取消" : "这题想了很久";
+    b.title = on ? "取消「想了很久」标记"
+      : "标记为「想了很久」：答案是自己硬推出来的、不是一眼看出来的。不计入正确率，只在「只刷不踏实的题」和遗忘曲线排序里排优先级（快捷键 H）";
+    b.addEventListener("click", qzToggleHesCur);
+    fb.appendChild(b);
+  }
+
+  function qzToggleHesCur() {
+    var q = QZ.list[QZ.pos];
+    if (!q || !QZ.done[QZ.pos]) return;
+    if (!qzToggleHesByKey(QZ.sid, q.key)) return;
+    qzRefreshKp(q.kp.id);
+    qzHesBar();
+    qzToast(qzHesOn(qzRecOf(QZ.sid, q.key)) ? "已标记「想了很久」" : "已取消「想了很久」标记");
+  }
+
+  /* [hesitate] 顺序「只刷不踏实的题」：手动标过的题优先重练 */
+  function qzHesList(sid) {
+    var idx = qzIdx()[sid], sub = qzSubject(sid), out = [];
+    if (!idx || !sub) return out;
+    for (var kid in idx) if (has0(idx, kid)) {
+      var kp = qzKpOf(sub, kid), m = idx[kid];
+      if (!kp) continue;
+      for (var i in m) if (has0(m, i)) {
+        var rec = qzRecOf(sid, m[i]);
+        if (!qzHesOn(rec)) continue;
+        var it = qzItem(sid, kid, i);
+        var ex = kp.examples && kp.examples[parseInt(i, 10)];
+        if (!it || !ex) continue;
+        out.push({ kid: kid, i: parseInt(i, 10), key: m[i], it: it, ex: ex, kp: kp, ts: qzNum(rec.hz) });
+      }
+    }
+    out.sort(function (a, b) { return b.ts - a.ts; });
+    return out;
   }
 
   function qzToggleExpl(force) {
@@ -19968,12 +20537,35 @@
     tb.appendChild(tr2);
     qzSum.appendChild(tb);
 
+    /* [calib] 元认知校准：把「你以为的」和「实际的」当场摆在一起；够 5 题才写入校准历史 */
+    if (QZ.est >= 0 && QZ.est < QZ_EST.length) {
+      var estO = qzEstOf(QZ.est);
+      var act = rec.answered ? Math.round(rec.right / rec.answered * 100) : 0;
+      var vd = qzCalibVerdict(estO.e, act);
+      var cline = "预估 " + estO.label + " ／ 实际 " + act + "%（" + vd + "）";
+      if (rec.answered < 5) {
+        cline += " · 本组不足 5 题，不计入校准历史";
+      } else {
+        if (!QZ.calibDone) { qzCalibAdd(QZ.sid, QZ.est, act, rec.answered); QZ.calibDone = true; }
+        var av0 = qzCalibAvg(qzCalibOf(QZ.sid), 5);
+        if (av0) cline += " · 近 " + av0.cnt + " 次平均偏差 " + qzCalibDevText(av0.avg) + "（" + av0.tone + "）";
+      }
+      qzSum.appendChild(txt("div", "qkpsum", cline));
+    }
+
     /* [guess] 本组里手动标过「蒙对」的题：仍算答对，但单独提一句，并给重练入口 */
     var gsum = 0;
     for (i = 0; i < QZ.list.length; i++) if (qzGuessOn(qzRecOf(QZ.sid, QZ.list[i].key))) gsum++;
     if (gsum) {
       qzSum.appendChild(txt("div", "qkpsum",
         "其中 " + gsum + " 道标了「蒙对」——计为答对，但没真懂，建议单独再过一遍。"));
+    }
+    /* [hesitate] 本组里标了「想了很久」的题：算答对，但下次未必稳 */
+    var hsum = 0;
+    for (i = 0; i < QZ.list.length; i++) if (qzHesOn(qzRecOf(QZ.sid, QZ.list[i].key))) hsum++;
+    if (hsum) {
+      qzSum.appendChild(txt("div", "qkpsum",
+        "其中 " + hsum + " 道标了「想了很久」——答案是硬推出来的，换个问法不一定还稳。"));
     }
 
     if (rec.wrong.length) {
@@ -20030,6 +20622,24 @@
             gotoCard(w.kid, w.ei);
           });
           acts.appendChild(card);
+          /* [reflect] 写一句反思：落到这道例题的笔记里、前缀 [反思]，随笔记一起同步 */
+          var rfKey = noteKeyEx(w.kid, w.ei);
+          var rfBtn = txt("button", "btn small", /^\s*\[反思\]/m.test(noteText(QZ.sid, rfKey)) ? "改反思" : "写反思");
+          rfBtn.type = "button";
+          rfBtn.title = "一句话记下这道题错在哪；存进该例题的笔记（前缀 [反思]），之后能搜到";
+          (function (btn, kid, ei, key, host) {
+            var box = null;
+            btn.addEventListener("click", function () {
+              if (box) {
+                if (box.parentNode) box.parentNode.removeChild(box);
+                box = null;
+                return;
+              }
+              box = qzReflectBox(kid, ei, key, btn);
+              host.appendChild(box);
+            });
+          })(rfBtn, w.kid, w.ei, rfKey, li);
+          acts.appendChild(rfBtn);
           li.appendChild(acts);
           ul.appendChild(li);
         })(rec.wrong[i]);
@@ -20045,6 +20655,16 @@
           if (qzGuessOn(qzRecOf(QZ.sid, QZ.list[k].key))) only.push(QZ.list[k]);
         }
         qzStartRun(only, "重刷蒙对题");
+      }));
+    }
+    /* [hesitate] 只练本组里标了「想了很久」的题 */
+    if (hsum) {
+      acts.appendChild(qzBtnNode("重刷不踏实题（" + hsum + "）", function () {
+        var only = [];
+        for (var k = 0; k < QZ.list.length; k++) {
+          if (qzHesOn(qzRecOf(QZ.sid, QZ.list[k].key))) only.push(QZ.list[k]);
+        }
+        qzStartRun(only, "重刷不踏实题");
       }));
     }
     if (rec.wrong.length) {
@@ -20072,6 +20692,61 @@
 
     qzShow("sum");
     window.scrollTo(0, 0);
+  }
+
+  /* [reflect] 小结里的「写一句反思」：只写一句，落到该例题的笔记里，前缀 [反思]。
+     三问是提示不是模板——留空不写，重复保存会替换掉上一次那条 [反思]，不会越写越长。 */
+  var QZ_RF_Q = "① 错在哪一步（审题／想公式／算错）② 这属于哪个题型 ③ 换个问法还认得出吗";
+  function qzReflectSave(sid, kid, ei, text) {
+    var key = noteKeyEx(kid, ei);
+    var old = noteText(sid, key);
+    var body = String(text == null ? "" : text).replace(/\s+/g, " ").replace(/^ +| +$/g, "");
+    if (!body) return false;
+    var line = "[反思] " + body;
+    var lines = old ? String(old).split("\n") : [], out = [], i, put = false;
+    for (i = 0; i < lines.length; i++) {
+      if (/^\s*\[反思\]/.test(lines[i])) {
+        if (!put) { out.push(line); put = true; }   // 已有反思就地替换
+        continue;
+      }
+      if (lines[i].replace(/\s+/g, "")) out.push(lines[i]);
+    }
+    if (!put) out.push(line);
+    return setNote(sid, key, out.join("\n"));
+  }
+  function qzReflectBox(kid, ei, key, btn) {
+    var wrap = el("div", "qrfwrap");
+    var ta = el("textarea", "qrfin");
+    ta.rows = 2;
+    ta.placeholder = "一句话就行 —— " + QZ_RF_Q;
+    ta.setAttribute("aria-label", "这道题的反思");
+    var old = noteText(QZ.sid, key), m = old.match(/\[反思\][^\n]*/);
+    if (m) ta.value = m[0].replace(/^\[反思\]\s*/, "");
+    wrap.appendChild(ta);
+
+    var save = txt("button", "btn small primary", "保存");
+    save.type = "button";
+    var shut = txt("button", "btn small", "收起");
+    shut.type = "button";
+    wrap.appendChild(save);
+    wrap.appendChild(shut);
+
+    save.addEventListener("click", function () {
+      if (!qzReflectSave(QZ.sid, kid, ei, ta.value)) {
+        qzToast("先写一句再保存");
+        ta.focus();
+        return;
+      }
+      btn.textContent = "改反思";
+      wrap.innerHTML = "";
+      wrap.appendChild(txt("span", "qrfdone", "已记进这道例题的笔记（卡片里能看到）"));
+      qzToast("反思已保存");
+    });
+    shut.addEventListener("click", function () {
+      if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+    });
+    ta.focus();
+    return wrap;
   }
 
   function qzBtnNode(label, fn) {
@@ -20108,6 +20783,14 @@
       if (QZ.done[QZ.pos] && QZ.done[QZ.pos].right) {
         e.preventDefault(); e.stopImmediatePropagation();
         qzToggleGuessCur();
+      }
+      return;
+    }
+    /* [hesitate] H：一键标/取消「想了很久」 */
+    if (low === "h") {
+      if (QZ.done[QZ.pos]) {
+        e.preventDefault(); e.stopImmediatePropagation();
+        qzToggleHesCur();
       }
       return;
     }
@@ -20195,6 +20878,8 @@
   // 调试出口：仅供自动化测试读取刷题状态，不参与业务逻辑
   window.__reviewQuiz = {
     QZ: QZ, items: QQUIZ, pool: qzPoolOf, enter: function () { qzEnter(); }, exit: qzExit,
+    /* 当前科目 id（SID 是闭包内变量，测试要用它确认科目隔离是否生效） */
+    cur: function () { return SID; },
     buildList: qzBuildList, startRun: qzStartRun, answer: qzAnswer, checkFill: qzCheckFill,
     next: qzNext, prev: qzPrev, summary: qzSummary, store: function () { return qzData(); }, LS: LS_QUIZ,
     kpStat: qzKpStat, idx: qzIdx, exRec: qzExRec, practiceKp: qzPracticeKp, refreshMarks: qzRefreshMarks,
@@ -20207,7 +20892,21 @@
     guessList: qzGuessList, guessOn: qzGuessOn, setGuess: qzSetGuess, guessCount: qzGuessCount,
     toggleGuess: qzToggleGuessCur, renderGuess: qzRenderGuess, keyAt: qzKeyAt,
     /* [fill] 参考答案手打形态的自测入口 */
-    plain: qzPlain, fillMatch: qzFillMatch
+    plain: qzPlain, fillMatch: qzFillMatch,
+    /* [hesitate] 迟疑标记的自测入口 */
+    hesOn: qzHesOn, setHes: qzSetHes, hesCount: qzHesCount, hesList: qzHesList,
+    toggleHes: qzToggleHesCur,
+    /* [calib] 元认知校准的自测入口 */
+    calibOf: qzCalibOf, calibAdd: qzCalibAdd, calibAvg: qzCalibAvg, calibVerdict: qzCalibVerdict,
+    calibDev: qzCalibDev, ests: QZ_EST,
+    /* [spaced] 遗忘曲线排序的自测入口 */
+    urgency: qzUrgency,
+    /* [pred] 期末估算的自测入口 */
+    pred: qzPredictScore,
+    /* [reflect] 反思写入 */
+    reflectSave: qzReflectSave,
+    /* [recall] 回忆模式 */
+    recallOn: recallOn
   };
 
   /* ---------------- 启动 ---------------- */
