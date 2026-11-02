@@ -2,9 +2,23 @@
 <!--
   review.html — 知识点复习（单文件，file:// 可直接打开，离线可用）
   文件名: 2026-10-23 起由「复习界面.html」更名为「review.html」，后续版本沿用该命名（内容与逻辑不变）
-  APP_VERSION: 3.32.0
+  APP_VERSION: 3.33.0
   DATA_VERSION: 2026-11-01
-  本次变更: （3.32.0）把「专家 vs 普通高手」的心理学机制接进刷题；六项全部按科目独立，新增数据都随快照同步（数据未动）——
+  本次变更: （3.33.0）改名「学习软件」，并从「四科复习器」扩成能持续加料的个人学习库（内置数据未动）——
+             ①改名：<title> / 顶栏产品名 / 打印页眉页脚 / 导出文件名 / 运行时标签页标题统一走 APP_NAME 常量，以后改名只改一处；
+             ②成长路径：主界面每日一句下方新增一块——按「计入完成的知识点数 ÷ 总数」（与顶部进度条同口径）判
+               小白 → 入门 → 打底 → 上手 → 熟练 → 大佬 六档，显示距下一档还差几个知识点，并列出笔记/刷题两项证据；
+               点一下展开六档说明与「下一步做什么」，窄屏只留一行摘要；
+             ③资料导入：更多菜单 →「资料」抽屉：可导出当前科目 JSON（改完能再导回、也能当模板）、
+               导入 JSON（单科目 / 科目数组 / 导出的文件都认）、或直接写大纲建科目
+               （# 科目名 / ## 章节 / ### 知识点，行首「易错：」「动作：」自动归到易错点与最低拿分动作）；
+             ④科目扩展：导入的科目只存本机（review.user.subjects.v1），启动时并进 DATA——不碰内嵌数据，
+               build/check 管线零改动；自建科目用中性话术（「B 级 · 主干」「学会」勾选、不再显示「试卷未出现」），
+               没有题库时成长路径改看勾选与笔记，刷题入口照常打开并明确提示「本科目暂无题」；
+             ⑤顺手修两处：成长面板的点击监听器随每次重绘累积（点一下折叠状态乱跳）、进刷题时资料抽屉遮罩挡住顶栏点击；
+             ⑥自测 t-333 共 22 项（改名 5 项、成长路径与阶段阶梯、大纲建科目、JSON 文件导入、刷新后持久、删除回落、内置四科未被污染）；
+               回归 t-next-332（42 项）、card-state、sync-timeout、sync-e2e、check.mjs 全过。
+  上次变更: （3.32.0）把「专家 vs 普通高手」的心理学机制接进刷题；六项全部按科目独立，新增数据都随快照同步（数据未动）——
              ①元认知校准：刷题前选预估档（<60% / 60–80% / >80%，可不选），小结当场对比「预估 vs 实际」并判「落在区间内 / 高估 / 低估」；
                满 5 题的组写入校准历史（每科各一份、随快照同步），设置页显示最近 5 次偏差与平均（＋为高估、−为低估）；
              ②遗忘曲线顺序：「顺序」新增「按遗忘曲线（该复习的在前）」——错题 5 ＞ 不踏实 4 ＞ 久未碰（按天数升到 3.45）＞ 没做过 1.2 ＞ 刚做过 0.05；
@@ -332,8 +346,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="app-version" content="3.32.0">
-<title>知识点复习</title>
+<meta name="app-version" content="3.33.0">
+<title>学习软件</title>
 <!-- katex-bundle:css:start -->
 <!-- KaTeX 0.19.0 · 公式样式与字体（base64 内嵌，共 20 个 woff2） -->
 <style id="katex-css">
@@ -432,6 +446,12 @@
     color:var(--ink);
   }
   .brand{display:flex;align-items:center;gap:10px;min-width:0;position:relative}
+  /* [name] 产品名：跟科目名并排，弱化处理；窄屏让位给科目名 */
+  .appmark{
+    flex:0 0 auto;font-size:11px;letter-spacing:.06em;color:var(--ink2);
+    border:1px solid var(--line);border-radius:999px;padding:2px 8px;white-space:nowrap;
+  }
+  @media (max-width:720px){ .appmark{display:none} }
   .scope{
     font-size:11.5px;color:var(--ink2);letter-spacing:.02em;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:34vw;
@@ -1454,6 +1474,48 @@
   .rgate:hover{border-color:var(--accent);color:var(--accent)}
   .rgate:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
+  /* ---------- [growth] 成长路径 ---------- */
+  .growth{margin:0 0 14px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:8px}
+  .gwhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .gwhead h2{margin:0;font-size:13px;font-weight:600;color:var(--ink);letter-spacing:.02em}
+  .gwstage{font-size:12px;font-weight:600;color:var(--accent);background:var(--accentBg);border-radius:999px;padding:2px 10px;white-space:nowrap}
+  .gwnext{margin-left:auto;font-size:11.5px;color:var(--ink2)}
+  .gwbar{position:relative;height:6px;margin:10px 0 7px;background:var(--barBg);border-radius:3px}
+  .gwbar>i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .3s ease}
+  .gwticks{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none}
+  .gwticks span{position:absolute;top:0;bottom:0;width:1px;background:var(--bg)}
+  .gwmeta{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2)}
+  .gwmeta b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+  .gwfold{margin:10px 0 0;padding-top:10px;border-top:1px dashed var(--line);font-size:12px;line-height:1.8;color:var(--ink2)}
+  .gwfold[hidden]{display:none}
+  .gwsteps{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:5px}
+  .gwsteps li{display:flex;gap:9px;align-items:baseline;font-size:12px;color:var(--ink2)}
+  .gwsteps li.on{color:var(--ink)}
+  .gwsteps li em{font-style:normal;flex:0 0 46px;color:var(--ink2);font-variant-numeric:tabular-nums}
+  .gwtip{margin:10px 0 0;font-size:12px;line-height:1.75;color:var(--ink2)}
+  .gwtip b{color:var(--ink);font-weight:600}
+  @media print{ .growth{display:none !important} }
+
+  /* ---------- [data] 资料库抽屉 ---------- */
+  .dnote{margin:0 0 12px;font-size:12px;line-height:1.8;color:var(--ink2)}
+  .dnote b{color:var(--ink);font-weight:600}
+  .dfield{margin:0 0 14px}
+  .dfield>label{display:block;font-size:12px;color:var(--ink2);margin:0 0 6px}
+  .dfile{display:block;width:100%;font-size:12.5px;color:var(--ink)}
+  .dta{
+    width:100%;box-sizing:border-box;min-height:132px;padding:9px 10px;
+    background:var(--bg);color:var(--ink);border:1px solid var(--line2);border-radius:6px;
+    font:inherit;font-size:12.5px;line-height:1.75;resize:vertical;
+  }
+  .dta:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .dacts{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 0}
+  .derr{margin:8px 0 0;font-size:12px;line-height:1.7;color:var(--warn)}
+  .dlist{list-style:none;margin:8px 0 0;padding:0}
+  .dlist li{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding:9px 0;font-size:12.5px}
+  .dlist .dname{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+  .dlist .dmeta{font-size:11.5px;color:var(--ink2);white-space:nowrap}
+  .dok{margin:8px 0 0;font-size:12px;color:var(--accent)}
+
   /* [weak] 薄弱知识点：按知识点聚合错次与错误率，点一行只练这一组 */
   .qweak{margin:22px 0 0;padding:14px 16px 12px;background:var(--card);border:1px solid var(--line);border-radius:8px}
   .qwhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
@@ -1680,12 +1742,13 @@
 
 <header class="topbar">
   <div class="brand">
-    <h1 id="subject">知识点复习</h1>
+    <span class="appmark" id="appMark">学习软件</span>
+    <h1 id="subject">学习软件</h1>
     <span class="scope" id="scope" hidden></span>
     <nav class="subjects" id="subjects" aria-label="科目切换" hidden></nav>
     <button class="btn small" id="ovBtn" type="button" aria-expanded="false" aria-controls="ovPanel" hidden>全部科目概览</button>
     <div class="ovpanel" id="ovPanel" hidden>
-      <p>已掌握 / 总数</p>
+      <p>学习软件 · 全部科目（已掌握 / 总数）</p>
       <div id="ovList"></div>
     </div>
   </div>
@@ -1694,7 +1757,7 @@
     <span class="bar"><i id="progBar"></i></span>
   </div>
   <div class="acts">
-    <button class="btn" id="quizBtn" type="button" aria-pressed="false" title="切换刷题模式">刷题</button>
+    <button class="btn" id="quizBtn" type="button" aria-pressed="false" title="切换刷题模式（按知识点练题）">刷题</button>
     <button class="btn" id="tocBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="navDrawer" title="知识点目录">目录</button>
     <button class="btn" id="searchBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="navDrawer" title="搜索知识点">搜索</button>
     <button class="btn" id="favBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="favDrawer" title="我的收藏 · 当前科目">我的收藏<span class="favcount" id="favCount" hidden>0</span></button>
@@ -1703,6 +1766,7 @@
       <button class="btn" id="themeBtn" type="button" role="menuitem">深色</button>
       <button class="btn" id="recallBtn" type="button" role="menuitem" aria-pressed="false">回忆模式</button>
       <button class="btn" id="printBtn" type="button" role="menuitem">打印</button>
+      <button class="btn" id="dataBtn" type="button" role="menuitem" aria-haspopup="dialog" aria-expanded="false" aria-controls="dataDrawer">资料</button>
       <button class="btn" id="syncBtn" type="button" role="menuitem" aria-haspopup="dialog" aria-expanded="false" aria-controls="syncDrawer"><span class="dot" id="syncDot"></span>同步</button>
     </div>
   </div>
@@ -1735,6 +1799,8 @@
     <p class="dqtext" id="dqText">雄关漫道真如铁，而今迈步从头越。</p>
     <p class="dqmeta"><span class="dqdate" id="dqDate"></span><cite id="dqFrom"></cite></p>
   </section>
+  <!-- [growth] 成长路径：当前科目所处阶段、还差多少、下一步做什么，随进度实时更新 -->
+  <section class="growth" id="growth" aria-label="成长路径" hidden></section>
   <div class="filters" id="filters"></div>
   <main id="groups"></main>
   <footer class="stats" id="stats"></footer>
@@ -1825,6 +1891,17 @@
     <button class="btn small" id="favClose" type="button">关闭</button>
   </div>
   <div class="drawerBody" id="favBody"></div>
+</aside>
+
+<!-- [data] 资料库：导入科目/资料、导出当前科目、管理自建科目 -->
+<div class="drawerScrim" id="dataScrim" hidden></div>
+<aside class="drawer" id="dataDrawer" role="dialog" aria-modal="true" aria-labelledby="dataTitle" tabindex="-1" hidden>
+  <div class="drawerHead">
+    <h2 id="dataTitle">资料库</h2>
+    <span class="drawerHint" id="dataHint"></span>
+    <button class="btn small" id="dataClose" type="button">关闭</button>
+  </div>
+  <div class="drawerBody" id="dataBody"></div>
 </aside>
 
 <div class="drawerScrim" id="syncScrim" hidden></div>
@@ -14279,15 +14356,22 @@
 (function () {
   "use strict";
 
-  var APP_VERSION = "3.32.0";
+  var APP_VERSION = "3.33.0";
   var DATA_VERSION = "2026-11-01";
+  /* 产品名：只在「产品名出现的地方」用它——科目名仍是科目名。
+     页面标题、打印页眉页脚、导出文件名、空状态文案都读这一个常量，改名只改这里。 */
+  var APP_NAME = "学习软件";
 
   var LEVEL_ORDER = ["A", "B", "C"];
   var LEVEL_NAME = { A: "A 级 · 基础必守", B: "B 级 · 常考主力", C: "C 级 · 拔高覆盖" };
+  /* [user] 自建科目没有「考点/常考」这套话术，用中性说法 */
+  var LEVEL_NAME_USER = { A: "A 级 · 基础", B: "B 级 · 主干", C: "C 级 · 拓展" };
   var FORM_ORDER = ["选择", "判断", "填空", "简答", "计算", "论述"];
   var SOURCE_ORDER = ["已确认", "高频推断", "补充覆盖", "通用框架"];
 
   var LS_THEME = "review.theme.v1";
+  /* [user] 自建科目的存储键：必须早于 applyUserSubjects() 赋值，否则 var 提升拿到 undefined */
+  var LS_USER = "review.user.subjects.v1";
   var LS_HINT = "review.hint.v1";
   var LS_ACTIVE = "review-active-subject.v1";
   var LS_SEEN = "review-seen-subjects.v1";
@@ -14347,6 +14431,10 @@
     if (seenIds[s.id]) { console.warn("重复的科目 id：" + s.id); }
     seenIds[s.id] = true;
   });
+
+  /* [user] 把本地保存的自建科目并进 DATA：内置科目一个字节都不动，build/check 管线也不受影响。
+     必须在 pickSubject() 之前调用，否则上次停留的自建科目会被判为「不存在」。 */
+  applyUserSubjects();
 
   var SID = null;
   var filters = { level: "全部", form: "全部", source: "全部", notes: "全部", mastery: "全部" };
@@ -14737,8 +14825,8 @@
 
   function renderSubjects() {
     var s = cur();
-    byId("subject").textContent = s.name || "未命名科目";
-    document.title = (s.name || "知识点复习") + " · 知识点复习";
+    byId("subject").textContent = s.name || APP_NAME;
+    document.title = APP_NAME + (s.name ? " · " + s.name : "");
 
     var scope = byId("scope");
     if (s.examScope) { scope.textContent = s.examScope; scope.hidden = false; }
@@ -15006,7 +15094,8 @@
     if (qzRate) tags.appendChild(qzRate);
     if (k.section) tags.appendChild(txt("span", "badge sec", k.section));
     if (k.source) tags.appendChild(txt("span", "badge src", k.source));
-    tags.appendChild(txt("span", k.refs ? "badge refs" : "badge none", k.refs ? k.refs : "试卷未出现"));
+    /* 自建科目没有「试卷」，不加这条标签，免得满屏「试卷未出现」 */
+    if (!cur().user) tags.appendChild(txt("span", k.refs ? "badge refs" : "badge none", k.refs ? k.refs : "试卷未出现"));
     sum.appendChild(tags);
     sum.appendChild(buildNoteBtn(k.id));   // [note] .mwrap 之前的笔记按钮
 
@@ -15021,8 +15110,11 @@
     lab.appendChild(el("span", "mbox"));
     /* 文案不再叫「已掌握」：卡片徽标已经用「已掌握」表示刷题判定结果，
        这里的勾选是手动标记，两者可能不一致（不一致时勾选区标警示色） */
-    lab.appendChild(txt("span", "mtext", "手动"));
-    lab.title = "手动标记为已掌握（只影响「只看未掌握」筛选与复习进度，不改变徽标的自动判定）";
+    /* 自建科目没有刷题判定，勾选就是唯一口径，叫「学会」比「手动」更像人话 */
+    var usr = !!cur().user;
+    lab.appendChild(txt("span", "mtext", usr ? "学会" : "手动"));
+    lab.title = usr ? "学完就勾上：这是本科目唯一的完成口径"
+      : "手动标记为已掌握（只影响「只看未掌握」筛选与复习进度，不改变徽标的自动判定）";
     cb.addEventListener("change", function () {
       markDone(k.id, cb.checked);
       d.classList.toggle("done", cb.checked);
@@ -15282,6 +15374,12 @@
       return;
     }
 
+    var isUser = !!cur().user;
+    var gnames = isUser ? LEVEL_NAME_USER : LEVEL_NAME;
+    var hasA = false, ai;
+    for (ai = 0; ai < list.length; ai++) if (list[ai].level === "A") { hasA = true; break; }
+    var openedOne = false;
+
     LEVEL_ORDER.forEach(function (lv) {
       var inLevel = list.filter(function (k) { return k.level === lv; });
       if (!inLevel.length) return;
@@ -15291,11 +15389,14 @@
 
       var g = el("details", "grp");
       g.setAttribute("data-level", lv);
-      g.open = lv === "A";
+      /* 默认展开 A 级；整个科目没有 A 级时展开第一个有内容的分组，
+         免得自建科目（通常只有 B/C）一进来看到的是空页面 */
+      g.open = (lv === "A") || (!hasA && !openedOne);
+      if (g.open) openedOne = true;
 
       var s = el("summary");
       s.appendChild(el("span", "gbar"));
-      s.appendChild(txt("span", "gtitle", LEVEL_NAME[lv]));
+      s.appendChild(txt("span", "gtitle", gnames[lv]));
       s.appendChild(txt("span", "gcount", done + " / " + total));
       var gprog = el("span", "gprog");
       var gi = el("i");
@@ -15352,17 +15453,18 @@
     var ip = byId("inlineProg");
     if (ip) ip.textContent = "已完成 " + done + " / " + list.length;
     paintGroupProgress();
+    renderGrowth();   // [growth] 成长路径与进度同源，进度变了它就要跟着变
 
     var pf = byId("printFooter");
     if (pf) {
-      pf.textContent = "知识点复习 · v" + APP_VERSION + " · 数据 " + DATA_VERSION +
+      pf.textContent = APP_NAME + " · v" + APP_VERSION + " · 数据 " + DATA_VERSION +
         " · 已掌握 " + done + " / " + list.length;
     }
 
     var ph = byId("printHead");
     var s = cur();
     ph.innerHTML = "";
-    ph.appendChild(txt("b", "", s.name || ""));
+    ph.appendChild(txt("b", "", APP_NAME + (s.name ? " · " + s.name : "")));
     var extra = [];
     if (s.examScope) extra.push(s.examScope);
     extra.push("已掌握 " + done + " / " + list.length);
@@ -19879,6 +19981,7 @@
     closeNav(true);
     closeFav(true);
     closeOverview();
+    if (dataDrawer && !dataDrawer.hidden) dataShut(true);   // [data] 抽屉的遮罩会挡住刷题页的点击
     qzHideToast();
     qzRenderSetup();
     qzShow("setup");
@@ -20834,6 +20937,512 @@
     t.classList.add("show");
     setTimeout(function () { t.classList.remove("show"); t.classList.add("out"); }, 2400);
   }
+
+  /* ================= [user] 自建科目：本地资料层 ================= */
+  /* 设计取舍：内置四科来自内嵌数据（build 管线生成、check.mjs 校验），
+     用户自己的资料只存 localStorage 的独立键，启动时并进 DATA。
+     这样「加科目」不需要重新构建、不会污染内嵌数据，删掉也只影响这一层。 */
+
+  function userSubjectList() {
+    var a = lsGet(LS_USER, null);
+    return Array.isArray(a) ? a : [];
+  }
+  function saveUserSubjectList(arr) { lsPut(LS_USER, JSON.stringify(arr)); }
+  function isBuiltinId(id) {
+    for (var i = 0; i < userSubjectList().length; i++) if (userSubjectList()[i].id === id) return false;
+    return true;
+  }
+
+  /* 并进 DATA：内置科目一个字节都不动，id 撞了直接跳过（不覆盖内置） */
+  function applyUserSubjects() {
+    var arr = userSubjectList(), i, j, s, hit;
+    for (i = 0; i < arr.length; i++) {
+      s = arr[i];
+      if (!s || typeof s.id !== "string" || !s.id || !Array.isArray(s.knowledgePoints)) continue;
+      if (!s.knowledgePoints.length) continue;
+      hit = false;
+      for (j = 0; j < DATA.subjects.length; j++) if (DATA.subjects[j].id === s.id) { hit = true; break; }
+      if (hit) continue;
+      s.user = true;
+      DATA.subjects.push(s);
+    }
+  }
+  /* 存储变了以后重建 DATA.subjects：先摘掉所有自建，再按存储重放（删除才能生效） */
+  function syncUserToData() {
+    var keep = [], i;
+    for (i = 0; i < DATA.subjects.length; i++) if (!DATA.subjects[i].user) keep.push(DATA.subjects[i]);
+    DATA.subjects = keep;
+    applyUserSubjects();
+    var ok = false;
+    for (i = 0; i < DATA.subjects.length; i++) if (DATA.subjects[i].id === SID) { ok = true; break; }
+    if (!ok) SID = DATA.subjects[0].id;
+    QZ.sid = null;        // 题库索引按科目重建，切过科目后必须失效
+    QZIDX = null;
+    QZITEM = null;
+  }
+  function subjectById(sid) {
+    for (var i = 0; i < DATA.subjects.length; i++) if (DATA.subjects[i].id === sid) return DATA.subjects[i];
+    return null;
+  }
+  function isUserSubject(sid) { var s = subjectById(sid); return !!(s && s.user); }
+
+  /* 规整一个科目：只补默认值，不认识的字段原样保留（methods/network/examFormat 等以后能带过来）。
+     返回 {ok, sub, warn} / {ok:false, err}。 */
+  function normSubject(raw, idx) {
+    if (!raw || typeof raw !== "object" || raw.length !== undefined) return { ok: false, err: "不是一个科目对象" };
+    var name = String(raw.name == null ? "" : raw.name).replace(/\s+/g, " ").replace(/^ | $/g, "");
+    if (!name) return { ok: false, err: "缺少 name（科目名）" };
+    var pts = raw.knowledgePoints;
+    if (Array.isArray(pts) === false || !pts.length) return { ok: false, err: "knowledgePoints 必须是非空数组" };
+
+    var out = [], warn = [], used = {}, i, p, pid, pname, k, one;
+    for (i = 0; i < pts.length; i++) {
+      p = pts[i];
+      if (!p || typeof p !== "object") { warn.push("第 " + (i + 1) + " 条不是对象，已跳过"); continue; }
+      pname = String(p.name == null ? "" : p.name).replace(/\s+/g, " ").replace(/^ | $/g, "");
+      if (!pname) { warn.push("第 " + (i + 1) + " 条缺 name，已跳过"); continue; }
+      one = {};
+      for (k in p) if (has0(p, k)) one[k] = p[k];      // 先原样搬，再规整必填项
+      pid = String(p.id == null ? "" : p.id).replace(/[^\w\-]/g, "");
+      if (!pid || used[pid]) pid = "p" + (i + 1);
+      while (used[pid]) pid = pid + "x";
+      used[pid] = 1;
+      one.id = pid;
+      one.name = pname;
+      one.section = String(p.section == null ? "" : p.section) || "未分章";
+      one.level = /^[ABC]$/.test(String(p.level)) ? String(p.level) : "B";
+      one.source = String(p.source == null ? "" : p.source) || "自建资料";
+      one.content = String(p.content == null ? "" : p.content);
+      one.trap = String(p.trap == null ? "" : p.trap);
+      one.action = String(p.action == null ? "" : p.action);
+      out.push(one);
+    }
+    if (!out.length) return { ok: false, err: "没有一条可用的知识点（每条至少要有 name）" };
+
+    var sub = {}, sid = String(raw.id == null ? "" : raw.id).replace(/[^\w\-]/g, "");
+    for (k in raw) if (has0(raw, k) && k !== "knowledgePoints") sub[k] = raw[k];
+    sub.id = sid || ("u" + (Date.now() % 100000) + String(idx || 0));
+    sub.name = name;
+    sub.user = true;
+    sub.createdAt = raw.createdAt || new Date().toISOString().slice(0, 10);
+    sub.knowledgePoints = out;
+    return { ok: true, sub: sub, warn: warn };
+  }
+
+  /* 导入文件：接受三种形态——单个科目 / 科目数组 / 导出的 {subjects:[...]} */
+  function parseImport(text) {
+    var o;
+    try { o = JSON.parse(String(text == null ? "" : text)); }
+    catch (e) { return { ok: false, err: "JSON 解析失败：" + e.message }; }
+    var arr = Array.isArray(o) ? o : (o && Array.isArray(o.subjects) ? o.subjects : [o]);
+    if (!arr.length) return { ok: false, err: "文件里没有科目" };
+    var subs = [], warn = [], i, r;
+    for (i = 0; i < arr.length && i < 20; i++) {
+      r = normSubject(arr[i], i);
+      if (!r.ok) return { ok: false, err: "第 " + (i + 1) + " 个科目：" + r.err };
+      if (r.warn && r.warn.length) warn = warn.concat(r.warn);
+      subs.push(r.sub);
+    }
+    return { ok: true, subs: subs, warn: warn };
+  }
+
+  /* 大纲文本：# 科目名 / ## 章节 / ### 知识点 / 其余行进正文
+     行首「易错：」「动作：」分别进易错点与最低拿分动作，省得再手改 JSON。 */
+  function parseOutline(text) {
+    var lines = String(text == null ? "" : text).split(/\r?\n/);
+    var name = "", sec = "未分章", pts = [], cur = null, i, ln, m, body;
+    for (i = 0; i < lines.length; i++) {
+      ln = lines[i];
+      if (/^\s*$/.test(ln)) continue;
+      m = ln.match(/^\s{0,3}#\s+(.+?)\s*#*\s*$/) || ln.match(/^\s{0,3}科目[：:]\s*(.+?)\s*$/);
+      if (m && !name) { name = m[1]; continue; }
+      m = ln.match(/^\s{0,3}##\s+(.+?)\s*#*\s*$/) || ln.match(/^\s{0,3}章节[：:]\s*(.+?)\s*$/);
+      if (m) { sec = m[1]; cur = null; continue; }
+      m = ln.match(/^\s{0,3}###\s+(.+?)\s*#*\s*$/) || ln.match(/^\s{0,3}知识点[：:]\s*(.+?)\s*$/);
+      if (m) {
+        cur = { id: "p" + (pts.length + 1), name: m[1], section: sec, level: "B",
+                source: "自建资料", content: "", trap: "", action: "" };
+        pts.push(cur);
+        continue;
+      }
+      if (!cur) continue;                      // 第一个知识点之前的说明文字忽略
+      body = ln.replace(/^\s*(?:[-*·]|\d+[.)])\s+/, "").replace(/\s+$/, "");
+      if (!body) continue;
+      if (/^易错[：:]/.test(body)) { cur.trap += (cur.trap ? "<br>" : "") + body.replace(/^易错[：:]\s*/, ""); continue; }
+      if (/^(?:最低拿分动作|动作)[：:]/.test(body)) { cur.action += (cur.action ? "<br>" : "") + body.replace(/^(?:最低拿分动作|动作)[：:]\s*/, ""); continue; }
+      cur.content += (cur.content ? "<br>" : "") + body;
+    }
+    if (!name) return { ok: false, err: "第一行请写「# 科目名」" };
+    if (!pts.length) return { ok: false, err: "至少写一个「### 知识点名」小节" };
+    return {
+      ok: true,
+      subs: [{ id: "u" + (Date.now() % 100000), name: name, user: true,
+               createdAt: new Date().toISOString().slice(0, 10), knowledgePoints: pts }],
+      warn: []
+    };
+  }
+
+  /* 落盘：同 id 覆盖、内置同 id 自动改名，避免把内置科目挤掉 */
+  function commitImport(subs) {
+    var list = userSubjectList(), i, j, s, at, added = 0, rep = 0;
+    for (i = 0; i < subs.length; i++) {
+      s = subs[i];
+      if (isBuiltinId(s.id)) {
+        var taken = {}, base = s.id, n = 2;
+        for (j = 0; j < DATA.subjects.length; j++) taken[DATA.subjects[j].id] = 1;
+        while (taken[s.id]) { s.id = base + "-" + n; n++; }
+      }
+      at = -1;
+      for (j = 0; j < list.length; j++) if (list[j].id === s.id) { at = j; break; }
+      if (at >= 0) { list[at] = s; rep++; } else { list.push(s); added++; }
+    }
+    saveUserSubjectList(list);
+    syncUserToData();
+    if (subs.length) SID = subs[0].id;
+    lsSet(LS_ACTIVE, SID);
+    resetFilters();
+    renderAll();
+    return { added: added, replaced: rep, first: subs.length ? subs[0].name : "" };
+  }
+
+  function deleteUserSubject(sid) {
+    var list = userSubjectList(), out = [], i, hit = false;
+    for (i = 0; i < list.length; i++) { if (list[i].id === sid) { hit = true; continue; } out.push(list[i]); }
+    if (!hit) return false;
+    saveUserSubjectList(out);
+    syncUserToData();
+    lsSet(LS_ACTIVE, SID);
+    resetFilters();
+    renderAll();
+    return true;
+  }
+
+  function downloadText(fname, text) {
+    try {
+      var blob = new Blob([text], { type: "application/json;charset=utf-8" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = fname;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /* ================= [growth] 成长路径 ================= */
+  /* 阶段只按「计入完成的知识点数 ÷ 总数」判，口径与顶部进度条完全一致（不另立标准）。
+     刷题、笔记、迟疑这些只作为「证据」显示，不参与阶段判定，避免同一个数字两套算法。 */
+  var GW_STAGES = [
+    { k: 0, name: "小白",   min: 0,  tip: "先把目录翻一遍，挑三个最眼熟的知识点开始，别从第一章硬啃。" },
+    { k: 1, name: "入门",   min: 15, tip: "有点概念了：保持每天一两个知识点，宁可少、不要断。" },
+    { k: 2, name: "打底",   min: 35, tip: "框架在成形：开始把易错点和错题写进笔记，后面复习全靠它。" },
+    { k: 3, name: "上手",   min: 55, tip: "过半了：刷题优先挑「薄弱」「危险」的考点，别平均用力。" },
+    { k: 4, name: "熟练",   min: 75, tip: "只差收尾：把「待复核」（蒙对 / 想了很久）的题清干净。" },
+    { k: 5, name: "大佬",   min: 92, tip: "本科目基本拿下：换成「按遗忘曲线」维持手感，别再从头刷。" }
+  ];
+  function gwStageOf(pct) {
+    var st = GW_STAGES[0], i;
+    for (i = 0; i < GW_STAGES.length; i++) if (pct >= GW_STAGES[i].min) st = GW_STAGES[i];
+    return st;
+  }
+  function growthOf(sid) {
+    var sub = subjectById(sid);
+    if (!sub) return null;
+    var list = sub.knowledgePoints || [], total = list.length, done = 0, i;
+    if (!total) return null;
+    for (i = 0; i < total; i++) if (isCountedDoneOf(sid, list[i].id)) done++;
+    var pct = done / total * 100;
+    var st = gwStageOf(pct);
+    var next = st.k < 5 ? GW_STAGES[st.k + 1] : null;
+    var need = next ? Math.max(0, Math.ceil(next.min / 100 * total) - done) : 0;
+    var pool = QZ_READY ? qzPoolOf(sid) : [], ans = 0, j, r;
+    for (j = 0; j < pool.length; j++) { r = qzRecOf(sid, pool[j].key); if (r) ans++; }
+    var notes = 0;
+    try { notes = noteCount(sid); } catch (e) { notes = 0; }
+    return {
+      sid: sid, name: sub.name, total: total, done: done, pct: pct, stage: st, next: next, need: need,
+      notes: notes, answers: ans, hasPool: pool.length > 0, user: !!sub.user
+    };
+  }
+  var GW_OPEN = false;
+
+  function renderGrowth() {
+    var box = byId("growth");
+    if (!box) return;
+    var g = growthOf(SID);
+    if (!g) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = "";
+
+    var head = el("div", "gwhead");
+    head.appendChild(txt("h2", "", "成长路径"));
+    head.appendChild(txt("span", "gwstage", g.stage.name));
+    head.appendChild(txt("span", "gwnext", g.next
+      ? ("再完成 " + g.need + " 个知识点 → " + g.next.name)
+      : "已是最高阶段"));
+    box.appendChild(head);
+
+    var bar = el("div", "gwbar");
+    bar.setAttribute("role", "progressbar");
+    bar.setAttribute("aria-label", g.name + " 成长进度");
+    bar.setAttribute("aria-valuemin", "0");
+    bar.setAttribute("aria-valuemax", "100");
+    bar.setAttribute("aria-valuenow", String(Math.round(g.pct)));
+    var fill = el("i");
+    fill.style.width = Math.max(0, Math.min(100, g.pct)).toFixed(1) + "%";
+    bar.appendChild(fill);
+    var ticks = el("div", "gwticks");
+    for (var i = 1; i < GW_STAGES.length; i++) {
+      var tk = el("span");
+      tk.style.left = GW_STAGES[i].min + "%";
+      ticks.appendChild(tk);
+    }
+    bar.appendChild(ticks);
+    box.appendChild(bar);
+
+    var meta = el("div", "gwmeta");
+    meta.appendChild(txt("span", "", "完成度 "));
+    var b1 = txt("b", "", Math.round(g.pct) + "%");
+    meta.appendChild(b1);
+    meta.appendChild(txt("span", "", "（" + g.done + " / " + g.total + "）"));
+    meta.appendChild(txt("span", "", "笔记 "));
+    meta.appendChild(txt("b", "", String(g.notes)));
+    meta.appendChild(txt("span", "", " 条"));
+    meta.appendChild(txt("span", "", g.hasPool ? "刷题 " : "题库 "));
+    meta.appendChild(txt("b", "", g.hasPool ? String(g.answers) : "—"));
+    if (g.hasPool) meta.appendChild(txt("span", "", " 题"));
+    box.appendChild(meta);
+
+    box.appendChild(txt("p", "gwtip", "下一步：" + g.stage.tip + (g.user ? "（自建科目暂无题库，靠勾选与笔记推进）" : "")));
+
+    var fold = el("div", "gwfold");
+    fold.hidden = !GW_OPEN;
+    var ul = el("ul", "gwsteps");
+    for (i = 0; i < GW_STAGES.length; i++) {
+      var st = GW_STAGES[i];
+      var li = el("li", st.k === g.stage.k ? "on" : "");
+      li.appendChild(txt("em", "", st.min + "%"));
+      li.appendChild(txt("span", "", st.name + "　" + st.tip));
+      ul.appendChild(li);
+    }
+    fold.appendChild(ul);
+    fold.appendChild(txt("p", "gwtip",
+      "阶段只看「计入完成的知识点数 ÷ 总数」（与顶部进度条同一口径）；刷题与笔记只作参考，不参与判定。"));
+    box.appendChild(fold);
+
+    box.setAttribute("data-open", GW_OPEN ? "1" : "0");
+    box.style.cursor = "pointer";
+    box.title = (GW_OPEN ? "点一下收起" : "点一下展开") + "阶段说明";
+  }
+  /* 点击只绑一次：绑在渲染函数里会随每次重绘累积监听器，点一下被触发多次、
+     折叠状态来回翻转（实测就是这个坑），所以放到模块级一次绑好。 */
+  (function () {
+    var box = byId("growth");
+    if (!box) return;
+    box.addEventListener("click", function () {
+      GW_OPEN = !GW_OPEN;
+      renderGrowth();
+    });
+  })();
+
+  /* ================= [data] 资料库抽屉 ================= */
+  var dataBtn = byId("dataBtn"), dataDrawer = byId("dataDrawer"), dataScrim = byId("dataScrim");
+  var dataBody = byId("dataBody"), dataHint = byId("dataHint"), dataClose = byId("dataClose");
+  var DATA_PEND = null;      // 解析通过但还没确认的导入
+  var DATA_MSG = "";         // 上一次操作的结果提示
+
+  function dataOpen() {
+    dataDrawer.hidden = false;
+    dataScrim.hidden = false;
+    dataBtn.setAttribute("aria-expanded", "true");
+    renderData();
+    closeMore();
+    dataDrawer.focus();
+  }
+  function dataShut(keepFocus) {
+    dataDrawer.hidden = true;
+    dataScrim.hidden = true;
+    dataBtn.setAttribute("aria-expanded", "false");
+    if (!keepFocus && dataBtn.focus) dataBtn.focus();
+  }
+
+  function renderData() {
+    if (!dataBody) return;
+    dataBody.innerHTML = "";
+    var sub = subjectById(SID);
+
+    dataBody.appendChild(txt("p", "dnote",
+      "这里是" + APP_NAME + "的「资料入口」：新科目、新章节、新知识点都从这儿进来。" +
+      "内置四科随程序走；你导入的资料只存在本机（要换设备就用下面的导出 / 导入搬一次），删掉也只删这一份。"));
+
+    /* —— 当前科目：导出 —— */
+    var f1 = el("div", "dfield");
+    f1.appendChild(txt("label", "", "当前科目"));
+    var cur1 = el("div", "dnote");
+    cur1.innerHTML = "";
+    cur1.appendChild(txt("b", "", sub ? sub.name : "（无）"));
+    cur1.appendChild(document.createTextNode(
+      "　" + ((sub && sub.knowledgePoints) ? sub.knowledgePoints.length : 0) + " 个知识点" +
+      (isUserSubject(SID) ? "　·　自建科目" : "　·　内置科目")));
+    f1.appendChild(cur1);
+    var acts1 = el("div", "dacts");
+    var ex = txt("button", "btn small", "导出本科目 JSON");
+    ex.type = "button";
+    ex.title = "导出的文件可以改内容后再导入，也可以直接当模板";
+    ex.addEventListener("click", function () {
+      var s = subjectById(SID);
+      if (!s) return;
+      var obj = { id: s.id, name: s.name, knowledgePoints: s.knowledgePoints };
+      var ok2 = downloadText(APP_NAME + "-" + s.name + "-知识点.json", JSON.stringify(obj, null, 2));
+      DATA_MSG = ok2 ? ("已导出「" + s.name + "」的知识点 JSON") : "导出失败：浏览器不允许下载";
+      renderData();
+    });
+    acts1.appendChild(ex);
+    f1.appendChild(acts1);
+    dataBody.appendChild(f1);
+
+    /* —— 导入 JSON —— */
+    var f2 = el("div", "dfield");
+    f2.appendChild(txt("label", "", "导入 JSON（科目 / 科目数组 / 导出的文件都可以）"));
+    var file = el("input", "dfile");
+    file.type = "file";
+    file.accept = ".json,application/json";
+    file.addEventListener("change", function () {
+      var f = file.files && file.files[0];
+      if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        var r = parseImport(rd.result);
+        DATA_PEND = r.ok ? { subs: r.subs, warn: r.warn, from: "文件「" + f.name + "」" } : null;
+        DATA_MSG = r.ok ? "" : r.err;
+        renderData();
+      };
+      rd.onerror = function () { DATA_MSG = "读文件失败"; renderData(); };
+      rd.readAsText(f, "utf-8");
+    });
+    f2.appendChild(file);
+    var tpl = txt("button", "btn small", "下载空白模板");
+    tpl.type = "button";
+    tpl.title = "照着这个格式填，字段缺了也能导入（section/level 会给默认值）";
+    tpl.addEventListener("click", function () {
+      var t = {
+        id: "", name: "科目名（例：摄影入门）",
+        knowledgePoints: [{
+          id: "p1", name: "知识点名", section: "第一章",
+          level: "B", content: "这一条要记住的核心内容（可写 <br> 换行）",
+          trap: "常见错误 / 易混点", action: "考试或实操时最少要做到什么"
+        }]
+      };
+      downloadText(APP_NAME + "-导入模板.json", JSON.stringify(t, null, 2));
+      DATA_MSG = "模板已下载：照着填完再选文件导入";
+      renderData();
+    });
+    f2.appendChild(tpl);
+    dataBody.appendChild(f2);
+
+    /* —— 大纲快速建科目 —— */
+    var f3 = el("div", "dfield");
+    f3.appendChild(txt("label", "", "或者直接写大纲（# 科目名 / ## 章节 / ### 知识点）"));
+    var ta = el("textarea", "dta");
+    ta.rows = 6;
+    ta.placeholder = "# 摄影入门\n## 第一章 曝光\n### 光圈与景深\n光圈越小景深越大\n易错：把 f 值大小记反\n动作：先记住 f/1.8 虚化、f/11 全清";
+    f3.appendChild(ta);
+    var acts3 = el("div", "dacts");
+    var pa = txt("button", "btn small primary", "解析预览");
+    pa.type = "button";
+    pa.addEventListener("click", function () {
+      var r = parseOutline(ta.value);
+      DATA_PEND = r.ok ? { subs: r.subs, warn: r.warn, from: "大纲" } : null;
+      DATA_MSG = r.ok ? "" : r.err;
+      renderData();
+    });
+    acts3.appendChild(pa);
+    f3.appendChild(acts3);
+    dataBody.appendChild(f3);
+
+    /* —— 待确认的导入 —— */
+    if (DATA_PEND) {
+      var f4 = el("div", "dfield");
+      var pv = el("div", "dnote");
+      var lines = [];
+      for (var i = 0; i < DATA_PEND.subs.length; i++) {
+        lines.push("「" + DATA_PEND.subs[i].name + "」" + DATA_PEND.subs[i].knowledgePoints.length + " 个知识点");
+      }
+      pv.appendChild(txt("b", "", "准备导入（" + DATA_PEND.from + "）："));
+      pv.appendChild(document.createTextNode(" " + lines.join("、")));
+      f4.appendChild(pv);
+      if (DATA_PEND.warn && DATA_PEND.warn.length) {
+        f4.appendChild(txt("p", "derr", "注意：" + DATA_PEND.warn.slice(0, 3).join("；") + (DATA_PEND.warn.length > 3 ? "…" : "")));
+      }
+      var acts4 = el("div", "dacts");
+      var go = txt("button", "btn small primary", "确认导入");
+      go.type = "button";
+      go.addEventListener("click", function () {
+        var r2 = commitImport(DATA_PEND.subs);
+        DATA_MSG = "已导入「" + r2.first + "」" + (r2.replaced ? "（覆盖了同 id 的旧版本）" : "") +
+          "，已切换到该科目";
+        DATA_PEND = null;
+        renderData();
+      });
+      acts4.appendChild(go);
+      var no = txt("button", "btn small", "取消");
+      no.type = "button";
+      no.addEventListener("click", function () { DATA_PEND = null; DATA_MSG = ""; renderData(); });
+      acts4.appendChild(no);
+      f4.appendChild(acts4);
+      dataBody.appendChild(f4);
+    }
+
+    if (DATA_MSG) dataBody.appendChild(txt("p", "dok", DATA_MSG));
+
+    /* —— 自建科目清单 —— */
+    var list = userSubjectList();
+    var f5 = el("div", "dfield");
+    f5.appendChild(txt("label", "", "我导入的科目（" + list.length + "）"));
+    if (!list.length) {
+      f5.appendChild(txt("p", "dnote", "还没有导入过。可以先「下载空白模板」，或者用大纲直接写一个。"));
+    } else {
+      var ul = el("ul", "dlist");
+      for (var j = 0; j < list.length; j++) {
+        (function (s) {
+          var li = el("li");
+          li.appendChild(txt("span", "dname", s.name || s.id));
+          li.appendChild(txt("span", "dmeta", (s.knowledgePoints || []).length + " 点"));
+          var del = txt("button", "btn small", "删除");
+          del.type = "button";
+          del.title = "只删这份资料，不删内置科目";
+          del.addEventListener("click", function () {
+            if (!window.confirm("删除自建科目「" + (s.name || s.id) + "」？\n它的知识点与卡片会一起消失，勾选/笔记记录会留在本机但不再显示。")) return;
+            deleteUserSubject(s.id);
+            DATA_MSG = "已删除「" + (s.name || s.id) + "」";
+            renderData();
+          });
+          li.appendChild(del);
+          ul.appendChild(li);
+        })(list[j]);
+      }
+      f5.appendChild(ul);
+    }
+    dataBody.appendChild(f5);
+
+    var hintTxt = [];
+    hintTxt.push(sub ? sub.name : "");
+    hintTxt.push(list.length + " 份自建");
+    if (dataHint) dataHint.textContent = hintTxt.join(" · ");
+  }
+
+  /* ---------- [data] 资料库与成长路径的绑定 ---------- */
+  if (dataBtn) {
+    dataBtn.addEventListener("click", function (e) { e.stopPropagation(); dataOpen(); });
+  }
+  if (dataClose) dataClose.addEventListener("click", function () { dataShut(); });
+  if (dataScrim) dataScrim.addEventListener("click", function () { dataShut(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && dataDrawer && !dataDrawer.hidden) dataShut();
+  });
 
   /* ---------- 绑定 ---------- */
   if (QZ_READY) {
