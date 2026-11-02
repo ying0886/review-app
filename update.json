@@ -1,6 +1,6 @@
 {
   "version": "3.34.0",
-  "url": "https://ying0886.github.io/review-app/study.html",
-  "notes": "文件更名为 study.html（学习软件）；旧地址 review.html 自动跳转到新地址，书签与「立即更新」都不受影响",
+  "url": "https://ying0886.github.io/study-app/study.html",
+  "notes": "站点已迁移到 study-app（学习软件）；旧地址继续可用并自动跳转，更新也会指到新地址",
   "date": "2026-11-02"
 }
